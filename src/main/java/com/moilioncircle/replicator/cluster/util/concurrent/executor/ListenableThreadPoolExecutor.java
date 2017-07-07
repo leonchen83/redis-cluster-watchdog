@@ -16,7 +16,6 @@
 
 package com.moilioncircle.replicator.cluster.util.concurrent.executor;
 
-import com.moilioncircle.replicator.cluster.util.concurrent.future.ExecutorListener;
 import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableRunnableFuture;
 
 import java.util.List;

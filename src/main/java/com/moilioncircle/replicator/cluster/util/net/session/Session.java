@@ -1,6 +1,7 @@
-package com.moilioncircle.replicator.cluster.util.net;
+package com.moilioncircle.replicator.cluster.util.net.session;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
+import com.moilioncircle.replicator.cluster.util.net.ConnectionStatus;
 
 /**
  * Created by Baoyi Chen on 2017/7/7.
@@ -9,7 +10,7 @@ public interface Session<T> {
 
     long getId();
 
-    Status getStatus();
+    ConnectionStatus getStatus();
 
     CompletableFuture<Void> send(T message);
 

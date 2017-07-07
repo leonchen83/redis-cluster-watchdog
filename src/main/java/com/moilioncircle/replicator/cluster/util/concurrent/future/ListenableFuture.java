@@ -98,23 +98,38 @@ public class ListenableFuture<T> extends AbstractCompletableFuture<T> {
         return (T) object;
     }
 
+    /**
+     * @param value failure cause
+     * @throws IllegalStateException duplicate invoke failure method
+     */
     @Override
-    public void success(T t) {
-        if (!this.status.compareAndSet(NEW, COMPLETING)) return;
-        this.object = t;
+    public boolean success(T value) {
+        if (!this.status.compareAndSet(NEW, COMPLETING)) return false;
+        this.object = value;
         this.status.set(NORMAL);
         latch.countDown();
-        FutureListener<T> listener = this.listener;
-        if (listener != null) listener.onComplete(this);
+        if (!listeners.isEmpty()) {
+            for (FutureListener<T> listener : listeners) {
+                listener.onComplete(this);
+            }
+        }
+        return true;
     }
 
+    /**
+     * @param cause failure cause
+     */
     @Override
-    public void failure(Throwable t) {
-        if (!this.status.compareAndSet(NEW, COMPLETING)) return;
-        this.object = t;
+    public boolean failure(Throwable cause) {
+        if (!this.status.compareAndSet(NEW, COMPLETING)) return false;
+        this.object = cause;
         this.status.set(EXCEPTIONAL);
         latch.countDown();
-        FutureListener<T> listener = this.listener;
-        if (listener != null) listener.onComplete(this);
+        if (!listeners.isEmpty()) {
+            for (FutureListener<T> listener : listeners) {
+                listener.onComplete(this);
+            }
+        }
+        return true;
     }
 }

@@ -1,9 +1,24 @@
-package com.moilioncircle.replicator.cluster.util.net.acceptor;
+/*
+ * Copyright 2016 leon chen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.moilioncircle.replicator.cluster.util.net;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableChannelFuture;
 import com.moilioncircle.replicator.cluster.util.net.transport.NioTransport;
-import com.moilioncircle.replicator.cluster.util.net.transport.TransportListener;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -11,22 +26,24 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.redis.RedisMessage;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
 import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
 
 /**
- * Created by Baoyi Chen on 2017/7/7.
+ * @author Leon Chen
+ * @since 2.1.0
  */
-public class NioAcceptor extends AbstractNioAcceptor<RedisMessage> {
-
+public class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
     protected EventLoopGroup eventLoop;
     protected ServerBootstrap bootstrap;
-    protected final AcceptorConfiguration configuration;
 
-    public NioAcceptor(AcceptorConfiguration configuration) {
-        this.configuration = configuration;
+    protected AbstractNioAcceptor(Class<T> messageType, NioBootstrapConfiguration configuration) {
+        super(messageType, configuration);
+    }
+
+    @Override
+    public void setup() {
         this.eventLoop = new NioEventLoopGroup(configuration.getEventLoopThreads(), new DefaultThreadFactory("acceptor"));
         this.bootstrap = new ServerBootstrap();
         this.bootstrap.group(this.eventLoop);
@@ -37,7 +54,7 @@ public class NioAcceptor extends AbstractNioAcceptor<RedisMessage> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", new Handler(NioAcceptor.this));
+                p.addLast("transport", new NioTransport<>(messageType, AbstractNioAcceptor.this));
             }
         });
         this.bootstrap.option(ChannelOption.SO_BACKLOG, configuration.getSoBacklog());
@@ -61,19 +78,13 @@ public class NioAcceptor extends AbstractNioAcceptor<RedisMessage> {
     }
 
     @Override
-    public CompletableFuture<Void> bind(String host, int port) {
-        if (host == null) return new ListenableChannelFuture<>(this.bootstrap.bind(port));
-        else return new ListenableChannelFuture<>(this.bootstrap.bind(host, port));
-    }
-
-    @Override
     public CompletableFuture<?> shutdown() {
         return new ListenableChannelFuture<>(eventLoop.shutdownGracefully());
     }
 
-    private static class Handler extends NioTransport<RedisMessage> {
-        public Handler(TransportListener<RedisMessage> listener) {
-            super(listener);
-        }
+    @Override
+    public CompletableFuture<Void> connect(String host, int port) {
+        if (host == null) return new ListenableChannelFuture<>(this.bootstrap.bind(port));
+        else return new ListenableChannelFuture<>(this.bootstrap.bind(host, port));
     }
 }

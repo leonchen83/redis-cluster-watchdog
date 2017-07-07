@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package com.moilioncircle.replicator.cluster.util.concurrent.future;
+package com.moilioncircle.replicator.cluster.util.net;
 
-import java.util.concurrent.ExecutorService;
+import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
+import com.moilioncircle.replicator.cluster.util.net.transport.TransportListener;
 
 /**
  * @author Leon Chen
- * @since 1.0.0
+ * @since 2.1.0
  */
-public interface ExecutorListener {
-    void onTerminated(ExecutorService executor);
+public interface NioBootstrap<T> extends TransportListener<T> {
 
-    void beforeExecute(ExecutorService executor, ListenableRunnableFuture<?> future);
+    void setup();
 
-    void afterExecute(ExecutorService executor, ListenableRunnableFuture<?> future, Throwable tx);
+    CompletableFuture<?> shutdown();
+
+    CompletableFuture<Void> connect(String host, int port);
+
+    TransportListener<T> setTransportListener(TransportListener<T> listener);
 }

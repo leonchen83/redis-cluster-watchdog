@@ -16,6 +16,7 @@
 
 package com.moilioncircle.replicator.cluster.util.concurrent.future;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -39,19 +40,17 @@ public interface CompletableFuture<T> extends Future<T> {
         }
     }
 
-    default void success(T t) {
+    default boolean success(T value) {
         throw new UnsupportedOperationException();
     }
 
-    default void failure(Throwable t) {
+    default boolean failure(Throwable cause) {
         throw new UnsupportedOperationException();
     }
-
-    FutureListener<T> setListener(FutureListener<T> listener);
 
     default <U> CompletableFuture<U> map(Function<T, U> function) {
         CompletableFuture<U> r = new ListenableFuture<>();
-        this.setListener(f -> {
+        this.addListener(f -> {
             try {
                 r.success(function.apply(f.get()));
             } catch (InterruptedException e) {
@@ -62,4 +61,12 @@ public interface CompletableFuture<T> extends Future<T> {
         });
         return r;
     }
+
+    boolean addListener(FutureListener<T> listener);
+
+    boolean removeListener(FutureListener<T> listener);
+
+    boolean addListeners(List<FutureListener<T>> listeners);
+
+    boolean removeListeners(List<FutureListener<T>> listeners);
 }

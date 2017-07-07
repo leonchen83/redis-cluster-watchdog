@@ -1,14 +1,17 @@
-package com.moilioncircle.replicator.cluster.util.net;
+package com.moilioncircle.replicator.cluster.util.net.session;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableFuture;
+import com.moilioncircle.replicator.cluster.util.net.ConnectionStatus;
+import com.moilioncircle.replicator.cluster.util.net.exceptions.TransportException;
 import com.moilioncircle.replicator.cluster.util.net.transport.Transport;
 
 /**
  * Created by Baoyi Chen on 2017/7/7.
  */
 public class SessionImpl<T> implements Session<T> {
-    private final Transport<T> transport;
+
+    protected final Transport<T> transport;
 
     public SessionImpl(Transport<T> transport) {
         this.transport = transport;
@@ -20,17 +23,17 @@ public class SessionImpl<T> implements Session<T> {
     }
 
     @Override
-    public Status getStatus() {
+    public ConnectionStatus getStatus() {
         return this.transport.getStatus();
     }
 
     @Override
     public CompletableFuture<Void> send(T message) {
-        if (transport.getStatus() == Status.CONNECTED) {
+        if (transport.getStatus() == ConnectionStatus.CONNECTED) {
             return transport.write(message, true);
         } else {
             CompletableFuture<Void> r = new ListenableFuture<>();
-            r.failure(new ServiceTransportException());
+            r.failure(new TransportException("[cluster] connection disconnected: " + toString()));
             return r;
         }
     }

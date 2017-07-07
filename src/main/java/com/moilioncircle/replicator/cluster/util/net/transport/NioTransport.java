@@ -2,9 +2,9 @@ package com.moilioncircle.replicator.cluster.util.net.transport;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableChannelFuture;
-import com.moilioncircle.replicator.cluster.util.net.ServiceOverloadException;
-import com.moilioncircle.replicator.cluster.util.net.ServiceTransportException;
-import com.moilioncircle.replicator.cluster.util.net.Status;
+import com.moilioncircle.replicator.cluster.util.net.ConnectionStatus;
+import com.moilioncircle.replicator.cluster.util.net.exceptions.OverloadException;
+import com.moilioncircle.replicator.cluster.util.net.exceptions.TransportException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.moilioncircle.replicator.cluster.util.net.Status.CONNECTED;
-import static com.moilioncircle.replicator.cluster.util.net.Status.DISCONNECTED;
+import static com.moilioncircle.replicator.cluster.util.net.ConnectionStatus.CONNECTED;
+import static com.moilioncircle.replicator.cluster.util.net.ConnectionStatus.DISCONNECTED;
 
 /**
  * Created by Baoyi Chen on 2017/7/7.
@@ -25,7 +25,8 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
     private volatile ChannelHandlerContext context;
     private static AtomicInteger acc = new AtomicInteger();
 
-    public NioTransport(TransportListener<T> listener) {
+    public NioTransport(Class<T> clazz, TransportListener<T> listener) {
+        super(clazz);
         this.listener = listener;
         this.id = acc.incrementAndGet();
     }
@@ -48,7 +49,7 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
     }
 
     @Override
-    public Status getStatus() {
+    public ConnectionStatus getStatus() {
         if (this.context == null) return DISCONNECTED;
         return this.context.channel().isActive() ? CONNECTED : DISCONNECTED;
     }
@@ -96,7 +97,7 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        if (cause instanceof IOException) cause = new ServiceTransportException(toString(), cause);
+        if (cause instanceof IOException) cause = new TransportException(toString(), cause);
         TransportListener<T> listener = this.listener;
         if (listener != null) listener.onException(this, cause);
     }
@@ -105,7 +106,7 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
     public final void channelWritabilityChanged(final ChannelHandlerContext ctx) throws Exception {
         if (ctx.channel().isWritable()) return;
         TransportListener<T> listener = this.listener;
-        if (listener != null) listener.onException(this, new ServiceOverloadException("overload"));
+        if (listener != null) listener.onException(this, new OverloadException("overload"));
     }
 
     @Override

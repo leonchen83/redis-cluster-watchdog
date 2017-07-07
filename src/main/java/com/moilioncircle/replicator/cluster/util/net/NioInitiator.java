@@ -1,10 +1,9 @@
-package com.moilioncircle.replicator.cluster.util.net.initiator;
+package com.moilioncircle.replicator.cluster.util.net;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableChannelFuture;
 import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableFuture;
 import com.moilioncircle.replicator.cluster.util.net.transport.NioTransport;
-import com.moilioncircle.replicator.cluster.util.net.transport.TransportListener;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -21,17 +20,16 @@ import static com.sun.javafx.animation.TickCalculation.toMillis;
 /**
  * Created by Baoyi Chen on 2017/7/7.
  */
-public class NioInitiator extends AbstractNioInitiator<RedisMessage> {
+public class NioInitiator extends AbstractNioBootstrap<RedisMessage> {
 
     public static final Log logger = LogFactory.getLog(NioInitiator.class);
 
     protected final Bootstrap bootstrap;
     protected EventLoopGroup workerGroup;
     protected volatile NioTransport<RedisMessage> transport;
-    protected final InitiatorConfiguration configuration;
 
-    public NioInitiator(InitiatorConfiguration configuration) {
-        this.configuration = configuration;
+    public NioInitiator(NioBootstrapConfiguration configuration) {
+        super(RedisMessage.class, configuration);
         this.bootstrap = new Bootstrap();
         this.bootstrap.channel(NioSocketChannel.class);
         this.bootstrap.handler(new ChannelInitializer<SocketChannel>() {
@@ -40,7 +38,7 @@ public class NioInitiator extends AbstractNioInitiator<RedisMessage> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", transport = new Handler(NioInitiator.this));
+                p.addLast("transport", transport = new NioTransport<>(messageType, NioInitiator.this));
             }
         });
         this.bootstrap.option(ChannelOption.TCP_NODELAY, configuration.isTcpNoDelay());
@@ -71,14 +69,13 @@ public class NioInitiator extends AbstractNioInitiator<RedisMessage> {
     }
 
     @Override
-    public CompletableFuture<?> shutdown() {
-        return new ListenableChannelFuture<>(workerGroup.shutdownGracefully());
+    public void setup() {
+
     }
 
-    private static class Handler extends NioTransport<RedisMessage> {
-        public Handler(TransportListener<RedisMessage> listener) {
-            super(listener);
-        }
+    @Override
+    public CompletableFuture<?> shutdown() {
+        return new ListenableChannelFuture<>(workerGroup.shutdownGracefully());
     }
 
     private class ConnectFutureListenerImpl implements ChannelFutureListener {

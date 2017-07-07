@@ -1,23 +1,61 @@
-package com.moilioncircle.replicator.cluster.util.net.acceptor;
+/*
+ * Copyright 2016 leon chen
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.moilioncircle.replicator.cluster.util.net;
 
 import io.netty.util.internal.PlatformDependent;
 
+import java.util.concurrent.TimeUnit;
+
 /**
- * Created by Baoyi Chen on 2017/7/7.
+ * @author Leon Chen
+ * @since 2.1.0
  */
-public class AcceptorConfiguration {
-    protected int soLinger;
-    protected int soTimeout;
+public class NioBootstrapConfiguration {
+
+    protected int soLinger = 0;
+
+    protected int soTimeout = 0;
+
     protected int soBacklog = 1024;
-    protected int soSendBufferSize;
-    protected int soRecvBufferSize;
+
+    protected int soSendBufferSize = 0;
+
+    protected int soRecvBufferSize = 0;
+
     protected boolean tcpNoDelay = true;
+
     protected boolean soKeepAlive = true;
+
     protected boolean soReuseAddr = true;
-    protected int soSendBufferLowWaterMark;
-    protected int soSendBufferHighWaterMark;
-    protected int eventLoopThreads;
-    protected boolean poolingEnabled;
+
+    protected boolean autoReconnect = false;
+
+    protected boolean poolingEnabled = true;
+
+    protected int soSendBufferLowWaterMark = 0;
+
+    protected int soSendBufferHighWaterMark = 0;
+
+    protected volatile long connectTimeout = TimeUnit.SECONDS.toMillis(10);
+
+    protected volatile long reconnectInterval = TimeUnit.SECONDS.toMillis(15);
+
+    protected int eventLoopThreads = Runtime.getRuntime().availableProcessors();
+
     protected boolean preferDirect = PlatformDependent.directBufferPreferred();
 
     public int getSoLinger() {
@@ -84,6 +122,22 @@ public class AcceptorConfiguration {
         this.soReuseAddr = soReuseAddr;
     }
 
+    public boolean isAutoReconnect() {
+        return autoReconnect;
+    }
+
+    public void setAutoReconnect(boolean autoReconnect) {
+        this.autoReconnect = autoReconnect;
+    }
+
+    public boolean isPoolingEnabled() {
+        return poolingEnabled;
+    }
+
+    public void setPoolingEnabled(boolean poolingEnabled) {
+        this.poolingEnabled = poolingEnabled;
+    }
+
     public int getSoSendBufferLowWaterMark() {
         return soSendBufferLowWaterMark;
     }
@@ -100,20 +154,28 @@ public class AcceptorConfiguration {
         this.soSendBufferHighWaterMark = soSendBufferHighWaterMark;
     }
 
+    public long getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public void setConnectTimeout(long connectTimeout) {
+        this.connectTimeout = connectTimeout;
+    }
+
+    public long getReconnectInterval() {
+        return reconnectInterval;
+    }
+
+    public void setReconnectInterval(long reconnectInterval) {
+        this.reconnectInterval = reconnectInterval;
+    }
+
     public int getEventLoopThreads() {
         return eventLoopThreads;
     }
 
     public void setEventLoopThreads(int eventLoopThreads) {
         this.eventLoopThreads = eventLoopThreads;
-    }
-
-    public boolean isPoolingEnabled() {
-        return poolingEnabled;
-    }
-
-    public void setPoolingEnabled(boolean poolingEnabled) {
-        this.poolingEnabled = poolingEnabled;
     }
 
     public boolean isPreferDirect() {

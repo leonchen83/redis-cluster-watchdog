@@ -16,7 +16,9 @@
 
 package com.moilioncircle.replicator.cluster.util.concurrent.future;
 
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.FutureTask;
 
 /**
@@ -25,7 +27,7 @@ import java.util.concurrent.FutureTask;
  */
 public class ListenableRunnableFuture<T> extends FutureTask<T> implements CompletableFuture<T> {
 
-    protected volatile FutureListener<T> listener;
+    protected final List<FutureListener<T>> listeners = new CopyOnWriteArrayList<>();
 
     public ListenableRunnableFuture(Callable<T> callable) {
         super(callable);
@@ -37,16 +39,39 @@ public class ListenableRunnableFuture<T> extends FutureTask<T> implements Comple
 
     @Override
     protected void done() {
-        FutureListener<T> listener = this.listener;
-        if (listener != null) listener.onComplete(this);
+        if (!listeners.isEmpty()) {
+            for (FutureListener<T> listener : listeners) {
+                listener.onComplete(this);
+            }
+        }
     }
 
     @Override
-    public synchronized FutureListener<T> setListener(FutureListener<T> listener) {
-        FutureListener<T> r = this.listener;
-        this.listener = listener;
-        if (this.isDone() && listener != null) listener.onComplete(this);
-        return r;
+    public boolean addListener(FutureListener<T> listener) {
+        boolean rs = listeners.add(listener);
+        if (this.isDone() && !listeners.isEmpty()) {
+            for (FutureListener<T> r : listeners) r.onComplete(this);
+        }
+        return rs;
+    }
+
+    @Override
+    public boolean removeListener(FutureListener<T> listener) {
+        return listeners.remove(listener);
+    }
+
+    @Override
+    public boolean addListeners(List<FutureListener<T>> listeners) {
+        boolean rs = listeners.addAll(listeners);
+        if (this.isDone() && !listeners.isEmpty()) {
+            for (FutureListener<T> r : listeners) r.onComplete(this);
+        }
+        return rs;
+    }
+
+    @Override
+    public boolean removeListeners(List<FutureListener<T>> listeners) {
+        return listeners.removeAll(listeners);
     }
 
 }

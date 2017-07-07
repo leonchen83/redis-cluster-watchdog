@@ -1,7 +1,7 @@
 package com.moilioncircle.replicator.cluster.util.net.transport;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
-import com.moilioncircle.replicator.cluster.util.net.Status;
+import com.moilioncircle.replicator.cluster.util.net.ConnectionStatus;
 
 import java.net.SocketAddress;
 
@@ -12,7 +12,7 @@ public interface Transport<T> {
 
     long getId();
 
-    Status getStatus();
+    ConnectionStatus getStatus();
 
     SocketAddress getLocalAddress();
 
