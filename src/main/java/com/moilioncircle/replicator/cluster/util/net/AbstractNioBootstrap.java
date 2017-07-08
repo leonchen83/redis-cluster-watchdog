@@ -29,16 +29,14 @@ import java.util.function.Supplier;
  * @since 2.1.0
  */
 public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
-    protected static final Log logger = LogFactory.getLog(NioInitiator.class);
+    protected static final Log logger = LogFactory.getLog(AbstractNioBootstrap.class);
 
-    protected Class<T> messageType;
     protected Supplier<ChannelHandler> encoder;
     protected Supplier<ChannelHandler> decoder;
     protected volatile TransportListener<T> listener;
     protected final NioBootstrapConfiguration configuration;
 
-    protected AbstractNioBootstrap(Class<T> messageType, NioBootstrapConfiguration configuration) {
-        this.messageType = messageType;
+    protected AbstractNioBootstrap(NioBootstrapConfiguration configuration) {
         this.configuration = configuration;
     }
 
@@ -77,6 +75,7 @@ public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
         return encoder;
     }
 
+    @Override
     public void setEncoder(Supplier<ChannelHandler> encoder) {
         this.encoder = encoder;
     }
@@ -85,6 +84,7 @@ public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
         return decoder;
     }
 
+    @Override
     public void setDecoder(Supplier<ChannelHandler> decoder) {
         this.decoder = decoder;
     }

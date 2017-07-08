@@ -1,7 +1,7 @@
 package com.moilioncircle.replicator.cluster.util.net.acceptor;
 
-import com.moilioncircle.replicator.cluster.util.net.NioAcceptor;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapConfiguration;
+import com.moilioncircle.replicator.cluster.util.net.NioBootstrapImpl;
 import com.moilioncircle.replicator.cluster.util.net.transport.Transport;
 import com.moilioncircle.replicator.cluster.util.net.transport.TransportListener;
 import io.netty.handler.codec.redis.RedisDecoder;
@@ -17,9 +17,10 @@ public class NioAcceptorTest {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         NioBootstrapConfiguration configuration = new NioBootstrapConfiguration();
-        NioAcceptor server = new NioAcceptor(configuration);
+        NioBootstrapImpl<RedisMessage> server = new NioBootstrapImpl<>(true, configuration);
         server.setEncoder(RedisEncoder::new);
         server.setDecoder(RedisDecoder::new);
+        server.setup();
         server.setTransportListener(new TransportListener<RedisMessage>() {
             @Override
             public void onConnected(Transport<RedisMessage> transport) {

@@ -34,13 +34,14 @@ import static com.sun.javafx.animation.TickCalculation.toMillis;
  * @author Leon Chen
  * @since 2.1.0
  */
-public class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
-    protected Bootstrap bootstrap;
-    protected EventLoopGroup workerGroup;
+public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
+    protected volatile Bootstrap bootstrap;
+    protected volatile EventLoopGroup workerGroup;
     protected volatile NioTransport<T> transport;
 
-    protected AbstractNioInitiator(Class<T> messageType, NioBootstrapConfiguration configuration) {
-        super(messageType, configuration);
+
+    protected AbstractNioInitiator(NioBootstrapConfiguration configuration) {
+        super(configuration);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", transport = new NioTransport<>(messageType, AbstractNioInitiator.this));
+                p.addLast("transport", transport = new NioTransport<>(AbstractNioInitiator.this));
             }
         });
         this.bootstrap.option(ChannelOption.TCP_NODELAY, configuration.isTcpNoDelay());

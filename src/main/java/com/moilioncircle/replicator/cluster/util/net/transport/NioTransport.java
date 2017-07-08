@@ -25,10 +25,14 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
     private volatile ChannelHandlerContext context;
     private static AtomicInteger acc = new AtomicInteger();
 
-    public NioTransport(Class<T> clazz, TransportListener<T> listener) {
-        super(clazz);
+    public NioTransport(TransportListener<T> listener) {
+        super((Class<T>) Object.class);
         this.listener = listener;
         this.id = acc.incrementAndGet();
+    }
+
+    public boolean acceptInboundMessage(Object msg) throws Exception {
+        return true;
     }
 
     @Override

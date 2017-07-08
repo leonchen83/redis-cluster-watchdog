@@ -34,12 +34,12 @@ import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
  * @author Leon Chen
  * @since 2.1.0
  */
-public class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
-    protected EventLoopGroup eventLoop;
-    protected ServerBootstrap bootstrap;
+public abstract class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
+    protected volatile EventLoopGroup eventLoop;
+    protected volatile ServerBootstrap bootstrap;
 
-    protected AbstractNioAcceptor(Class<T> messageType, NioBootstrapConfiguration configuration) {
-        super(messageType, configuration);
+    protected AbstractNioAcceptor(NioBootstrapConfiguration configuration) {
+        super(configuration);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", new NioTransport<>(messageType, AbstractNioAcceptor.this));
+                p.addLast("transport", new NioTransport<>(AbstractNioAcceptor.this));
             }
         });
         this.bootstrap.option(ChannelOption.SO_BACKLOG, configuration.getSoBacklog());
