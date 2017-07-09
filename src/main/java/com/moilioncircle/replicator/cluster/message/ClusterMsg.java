@@ -14,13 +14,13 @@ public class ClusterMsg implements Message {
     public long configEpoch;
     public long offset;
     public String sender;
-    public String myslots;
+    public byte[] myslots;
     public String slaveof;
     public String myip;
     public byte[] notused = new byte[34];
     public int cport;
     public int flags;
     public int state;
-    public int mflags;
+    public byte mflags[];
     public ClusterMsgData data;
 }

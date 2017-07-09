@@ -1,6 +1,5 @@
 package com.moilioncircle.replicator.cluster;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_SLOTS;
@@ -16,7 +15,7 @@ public class ClusterNode {
     public byte[] slots = new byte[CLUSTER_SLOTS / 8];
     public int numslots;
     public int numslaves;
-    public ClusterNode[] slaves;
+    public List<ClusterNode> slaves;
     public ClusterNode slaveof;
     public long pingSent;
     public long pongReceived;
@@ -29,5 +28,5 @@ public class ClusterNode {
     public int port;
     public int cport;
     public ClusterLink link;
-    public List<ClusterNodeFailReport> failReports = new ArrayList<>();
+    public List<ClusterNodeFailReport> failReports;
 }

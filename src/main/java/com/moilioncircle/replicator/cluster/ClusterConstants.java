@@ -10,8 +10,8 @@ public class ClusterConstants {
     public static final int CLUSTER_NAMELEN = 40;    /* sha1 hex length */
     public static final int CLUSTER_PORT_INCR = 10000; /* Cluster port = baseport + PORT_INCR */
 
-    /* The following defines are amount of time, sometimes expressed as
-     * multiplicators of the node timeout value (when ending with MULT). */
+    public static final int CLUSTER_PROTO_VER = 1;
+
     public static final int CLUSTER_DEFAULT_NODE_TIMEOUT = 15000;
     public static final int CLUSTER_DEFAULT_SLAVE_VALIDITY = 10; /* Slave max data age factor. */
     public static final int CLUSTER_DEFAULT_REQUIRE_FULL_COVERAGE = 1;
@@ -24,7 +24,6 @@ public class ClusterConstants {
     public static final int CLUSTER_MF_PAUSE_MULT = 2; /* Master pause manual failover mult. */
     public static final int CLUSTER_SLAVE_MIGRATION_DELAY = 5000; /* Delay for slave migration. */
 
-    /* Redirection errors returned by getNodeByQuery(). */
     public static final int CLUSTER_REDIR_NONE = 0;          /* Node can serve the request. */
     public static final int CLUSTER_REDIR_CROSS_SLOT = 1;    /* -CROSSSLOT request. */
     public static final int CLUSTER_REDIR_UNSTABLE = 2;      /* -TRYAGAIN redirection required */
@@ -33,7 +32,6 @@ public class ClusterConstants {
     public static final int CLUSTER_REDIR_DOWN_STATE = 5;    /* -CLUSTERDOWN, global state. */
     public static final int CLUSTER_REDIR_DOWN_UNBOUND = 6;  /* -CLUSTERDOWN, unbound slot. */
 
-    /* Cluster node flags and macros. */
     public static final int CLUSTER_NODE_MASTER = 1;     /* The node is a master */
     public static final int CLUSTER_NODE_SLAVE = 2;      /* The node is a slave */
     public static final int CLUSTER_NODE_PFAIL = 4;      /* Failure? Need acknowledge */
@@ -73,7 +71,6 @@ public class ClusterConstants {
         return (n.flags & CLUSTER_NODE_FAIL) != 0;
     }
 
-    /* Reasons why a slave is not able to failover. */
     public static final int CLUSTER_CANT_FAILOVER_NONE = 0;
     public static final int CLUSTER_CANT_FAILOVER_DATA_AGE = 1;
     public static final int CLUSTER_CANT_FAILOVER_WAITING_DELAY = 2;
@@ -81,18 +78,11 @@ public class ClusterConstants {
     public static final int CLUSTER_CANT_FAILOVER_WAITING_VOTES = 4;
     public static final int CLUSTER_CANT_FAILOVER_RELOG_PERIOD = 300; /* seconds. */
 
-    /* clusterState todo_before_sleep flags. */
     public static final int CLUSTER_TODO_HANDLE_FAILOVER = (1 << 0);
     public static final int CLUSTER_TODO_UPDATE_STATE = (1 << 1);
     public static final int CLUSTER_TODO_SAVE_CONFIG = (1 << 2);
     public static final int CLUSTER_TODO_FSYNC_CONFIG = (1 << 3);
 
-    /* Message types.
-     *
-     * Note that the PING, PONG and MEET messages are actually the same exact
-     * kind of packet. PONG is the reply to ping, in the exact format as a PING,
-     * while MEET is a special PING that forces the receiver to add the sender
-     * as a node (if it is not already in the list). */
     public static final int CLUSTERMSG_TYPE_PING = 0;          /* Ping */
     public static final int CLUSTERMSG_TYPE_PONG = 1;          /* Pong (reply to Ping) */
     public static final int CLUSTERMSG_TYPE_MEET = 2;          /* Meet "let's join" message */
@@ -108,4 +98,6 @@ public class ClusterConstants {
 
     public static final int CLUSTERMSG_FLAG0_PAUSED = (1 << 0); /* Master paused for manual failover. */
     public static final int CLUSTERMSG_FLAG0_FORCEACK = (1 << 1); /* Give ACK to AUTH_REQUEST even if is up. *//* Total number of message types. */
+
+    public static final int CLUSTER_BLACKLIST_TTL = 60;
 }

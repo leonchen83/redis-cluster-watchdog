@@ -18,6 +18,16 @@ public class SessionImpl<T> implements Session<T> {
     }
 
     @Override
+    public String getLocalAddress() {
+        return transport.getLocalAddress().toString();
+    }
+
+    @Override
+    public String getRemoteAddress() {
+        return transport.getRemoteAddress().toString();
+    }
+
+    @Override
     public long getId() {
         return transport.getId();
     }

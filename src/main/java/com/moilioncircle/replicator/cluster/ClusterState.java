@@ -1,6 +1,5 @@
 package com.moilioncircle.replicator.cluster;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTERMSG_TYPE_COUNT;
@@ -14,12 +13,12 @@ public class ClusterState {
     public long currentEpoch;
     public int state;
     public int size;
-    public Map<String, ClusterNode> nodes = new HashMap<>();
-    public Map<String, ClusterNode> nodesBlackList = new HashMap<>();
+    public Map<String, ClusterNode> nodes;
+    public Map<String, ClusterNode> nodesBlackList;
     public ClusterNode[] migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
     public ClusterNode[] importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
     public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
-    public long[] slotsKeysCount = new long[CLUSTER_SLOTS];
+    //TODO public long[] slotsKeysCount = new long[CLUSTER_SLOTS];
     //TODO rax *slots_to_keys;
     public long failoverAuthTime;
     public int failoverAuthCount;
