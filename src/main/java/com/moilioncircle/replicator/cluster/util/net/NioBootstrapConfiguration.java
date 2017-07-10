@@ -16,8 +16,6 @@
 
 package com.moilioncircle.replicator.cluster.util.net;
 
-import io.netty.util.internal.PlatformDependent;
-
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,19 +42,9 @@ public class NioBootstrapConfiguration {
 
     protected boolean autoReconnect = false;
 
-    protected boolean poolingEnabled = true;
-
-    protected int soSendBufferLowWaterMark = 0;
-
-    protected int soSendBufferHighWaterMark = 0;
-
     protected volatile long connectTimeout = TimeUnit.SECONDS.toMillis(10);
 
     protected volatile long reconnectInterval = TimeUnit.SECONDS.toMillis(15);
-
-    protected int eventLoopThreads = Runtime.getRuntime().availableProcessors();
-
-    protected boolean preferDirect = PlatformDependent.directBufferPreferred();
 
     public int getSoLinger() {
         return soLinger;
@@ -130,30 +118,6 @@ public class NioBootstrapConfiguration {
         this.autoReconnect = autoReconnect;
     }
 
-    public boolean isPoolingEnabled() {
-        return poolingEnabled;
-    }
-
-    public void setPoolingEnabled(boolean poolingEnabled) {
-        this.poolingEnabled = poolingEnabled;
-    }
-
-    public int getSoSendBufferLowWaterMark() {
-        return soSendBufferLowWaterMark;
-    }
-
-    public void setSoSendBufferLowWaterMark(int soSendBufferLowWaterMark) {
-        this.soSendBufferLowWaterMark = soSendBufferLowWaterMark;
-    }
-
-    public int getSoSendBufferHighWaterMark() {
-        return soSendBufferHighWaterMark;
-    }
-
-    public void setSoSendBufferHighWaterMark(int soSendBufferHighWaterMark) {
-        this.soSendBufferHighWaterMark = soSendBufferHighWaterMark;
-    }
-
     public long getConnectTimeout() {
         return connectTimeout;
     }
@@ -168,21 +132,5 @@ public class NioBootstrapConfiguration {
 
     public void setReconnectInterval(long reconnectInterval) {
         this.reconnectInterval = reconnectInterval;
-    }
-
-    public int getEventLoopThreads() {
-        return eventLoopThreads;
-    }
-
-    public void setEventLoopThreads(int eventLoopThreads) {
-        this.eventLoopThreads = eventLoopThreads;
-    }
-
-    public boolean isPreferDirect() {
-        return preferDirect;
-    }
-
-    public void setPreferDirect(boolean preferDirect) {
-        this.preferDirect = preferDirect;
     }
 }
