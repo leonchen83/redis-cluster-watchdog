@@ -21,12 +21,10 @@ import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableCha
 import com.moilioncircle.replicator.cluster.util.net.transport.NioTransport;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.concurrent.DefaultThreadFactory;
 
 import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
 
@@ -44,7 +42,7 @@ public abstract class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
 
     @Override
     public void setup() {
-        this.eventLoop = new NioEventLoopGroup(configuration.getEventLoopThreads(), new DefaultThreadFactory("acceptor"));
+        this.eventLoop = new NioEventLoopGroup();
         this.bootstrap = new ServerBootstrap();
         this.bootstrap.group(this.eventLoop);
         this.bootstrap.channel(NioServerSocketChannel.class);
@@ -65,16 +63,12 @@ public abstract class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
         //
         if (configuration.getSoLinger() > 0)
             this.bootstrap.childOption(ChannelOption.SO_LINGER, configuration.getSoLinger());
-        if (configuration.isPoolingEnabled()) {
-            this.bootstrap.childOption(ChannelOption.ALLOCATOR, new PooledByteBufAllocator(configuration.isPreferDirect()));
-        } else {
-            this.bootstrap.childOption(ChannelOption.ALLOCATOR, new UnpooledByteBufAllocator(configuration.isPreferDirect()));
-        }
+        this.bootstrap.childOption(ChannelOption.ALLOCATOR, new PooledByteBufAllocator(true));
         if (configuration.getSoSendBufferSize() > 0)
             this.bootstrap.childOption(ChannelOption.SO_SNDBUF, configuration.getSoSendBufferSize());
         if (configuration.getSoRecvBufferSize() > 0)
             this.bootstrap.childOption(ChannelOption.SO_RCVBUF, configuration.getSoRecvBufferSize());
-        bootstrap.childOption(WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(configuration.getSoSendBufferLowWaterMark(), configuration.getSoSendBufferHighWaterMark()));
+        bootstrap.childOption(WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT);
     }
 
     @Override
