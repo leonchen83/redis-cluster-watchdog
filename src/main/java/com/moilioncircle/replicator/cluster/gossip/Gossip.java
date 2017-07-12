@@ -124,7 +124,7 @@ public class Gossip {
                                 int idx = argi.indexOf("-");
                                 direction = ary[idx + 1];
                                 slot = parseInt(argi.substring(1, idx));
-                                String p = argi.substring(idx + 3)
+                                String p = argi.substring(idx + 3);
                                 cn = clusterLookupNode(p);
                                 if (cn == null) {
                                     cn = createClusterNode(p, 0);
@@ -171,7 +171,8 @@ public class Gossip {
             File file = new File(server.clusterConfigfile);
             if (!file.exists()) file.createNewFile();
             r = new BufferedWriter(new FileWriter(file));
-            StringBuilder ci = clusterGenNodesDescription(CLUSTER_NODE_HANDSHAKE);
+            StringBuilder ci = new StringBuilder();
+            ci.append(clusterGenNodesDescription(CLUSTER_NODE_HANDSHAKE));
             ci.append("vars currentEpoch ").append(server.cluster.currentEpoch);
             ci.append(" lastVoteEpoch ").append(server.cluster.lastVoteEpoch);
             r.write(ci.toString());
@@ -303,6 +304,20 @@ public class Gossip {
         clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
     }
 
+    private void replicationUnsetMaster() {
+
+    }
+
+    public static final char[] chars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+    private String getRandomHexChars(int clusterNamelen) {
+        StringBuilder r = new StringBuilder();
+        for (int i = 0; i < clusterNamelen; i++) {
+            r.append(chars[new Random().nextInt(chars.length)]);
+        }
+        return r.toString();
+    }
+
     public ClusterLink createClusterLink(ClusterNode node) {
         ClusterLink link = new ClusterLink();
         link.ctime = System.currentTimeMillis();
@@ -320,7 +335,7 @@ public class Gossip {
     public void clusterAcceptHandler(Transport<Message> transport, Message message) {
         ClusterLink link = createClusterLink(null);
         link.fd = new SessionImpl<>(transport);
-        clusterReadHandler(link, message);
+        clusterProcessPacket(link, message);
     }
 
     public int keyHashSlot(String key) {
@@ -331,6 +346,11 @@ public class Gossip {
         if (ed < 0 || ed == st + 1) return crc16(key) & 0x3FFF;
         if (st > ed) return crc16(key) & 0x3FFF;
         return crc16(key.substring(st + 1, ed)) & 0x3FFF;
+    }
+
+    private int crc16(String key) {
+        //TODO
+        return 0;
     }
 
     public ClusterNode createClusterNode(String nodename, int flags) {
@@ -537,10 +557,19 @@ public class Gossip {
         }
     }
 
+    private long dictGetUnsignedIntegerVal(ClusterNode node) {
+        //TODO
+        return 0;
+    }
+
     public void clusterBlacklistAddNode(ClusterNode node) {
         clusterBlacklistCleanup();
         ClusterNode de = server.cluster.nodesBlackList.get(node.name);
         dictSetUnsignedIntegerVal(de, System.currentTimeMillis() + CLUSTER_BLACKLIST_TTL * 1000);
+    }
+
+    private void dictSetUnsignedIntegerVal(ClusterNode de, long l) {
+        //TODO
     }
 
     public boolean clusterBlacklistExists(String nodeid) {
@@ -619,7 +648,7 @@ public class Gossip {
             ClusterNode node = clusterLookupNode(g.nodename);
 
             if (node == null) {
-                if (sender != null && flags & CLUSTER_NODE_NOADDR != 0 && !clusterBlacklistExists(g.nodename)) {
+                if (sender != null && (flags & CLUSTER_NODE_NOADDR) != 0 && !clusterBlacklistExists(g.nodename)) {
                     clusterStartHandshake(g.ip, g.port, g.cport);
                 }
                 continue;
@@ -683,6 +712,10 @@ public class Gossip {
         return true;
     }
 
+    private void replicationSetMaster(String ip, int port) {
+        //TODO
+    }
+
     public void clusterSetNodeAsMaster(ClusterNode n) {
         if (nodeIsMaster(n)) return;
 
@@ -740,6 +773,15 @@ public class Gossip {
         }
     }
 
+    private void delKeysInSlot(int dirtySlot) {
+        //TODO
+    }
+
+    private boolean countKeysInSlot(int i) {
+        //TODO
+        return false;
+    }
+
     public boolean clusterProcessPacket(ClusterLink link, Message message) {
         ClusterMsg hdr = (ClusterMsg) message;
         int totlen = hdr.totlen;
@@ -790,13 +832,12 @@ public class Gossip {
             }
 
             if (sender == null && type == CLUSTERMSG_TYPE_MEET) {
-                ClusterNode node = createClusterNode(null, CLUSTER_NODE_HANDSHAKE) {
-                    node.ip = nodeIp2String(link, hdr.myip);
-                    node.port = hdr.port;
-                    node.cport = hdr.cport;
-                    clusterAddNode(node);
-                    clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
-                }
+                ClusterNode node = createClusterNode(null, CLUSTER_NODE_HANDSHAKE);
+                node.ip = nodeIp2String(link, hdr.myip);
+                node.port = hdr.port;
+                node.cport = hdr.cport;
+                clusterAddNode(node);
+                clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
             }
 
             if (sender == null && type == CLUSTERMSG_TYPE_MEET) {
@@ -909,7 +950,7 @@ public class Gossip {
             if (sender != null) clusterProcessGossipSection(hdr, link);
         } else if (type == CLUSTERMSG_TYPE_FAIL) {
             if (sender != null) {
-                ClusterNode failing = clusterLookupNode(hdr.data.fail.about.nodename);
+                ClusterNode failing = clusterLookupNode(hdr.data.about.nodename);
                 if (failing != null && (failing.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_MYSELF)) == 0) {
                     logger.info("FAIL message received from " + hdr.sender + " about " + hdr.data.about.nodename);
                     failing.flags |= CLUSTER_NODE_FAIL;
@@ -958,8 +999,956 @@ public class Gossip {
         return true;
     }
 
+    private void pauseClients(long l) {
+        //TODO
+    }
+
     public void handleLinkIOError(ClusterLink link) {
         freeClusterLink(link);
+    }
+
+    public void clusterSendMessage(ClusterLink link, ClusterMsg hdr) {
+        link.fd.send(hdr);
+        int type = hdr.type;
+        if (type < CLUSTERMSG_TYPE_COUNT)
+            server.cluster.statsBusMessagesSent[type]++;
+    }
+
+    public void clusterBroadcastMessage(ClusterMsg hdr) {
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            if (node.link == null) continue;
+            if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0) continue;
+            clusterSendMessage(node.link, hdr);
+        }
+    }
+
+    public ClusterMsg clusterBuildMessageHdr(int type) {
+        ClusterMsg hdr = new ClusterMsg();
+        ClusterNode master = (nodeIsSlave(myself) && myself.slaveof != null) ? myself.slaveof : myself;
+        hdr.ver = CLUSTER_PROTO_VER;
+        hdr.sig = "RCmb";
+        hdr.type = type;
+        hdr.sender = myself.name;
+        if (server.clusterAnnounceIp != null) {
+            hdr.myip = server.clusterAnnounceIp;
+        }
+
+        int announcedPort = server.clusterAnnouncePort != 0 ? server.clusterAnnouncePort : server.port;
+        int announcedCport = server.clusterAnnounceBusPort != 0 ? server.clusterAnnounceBusPort : (server.port + CLUSTER_PORT_INCR);
+        hdr.myslots = master.slots;
+        if (master.slaveof != null) {
+            hdr.slaveof = myself.slaveof.name;
+        }
+
+        hdr.port = announcedPort;
+        hdr.cport = announcedCport;
+        hdr.flags = myself.flags;
+        hdr.state = server.cluster.state;
+
+        hdr.currentEpoch = server.cluster.currentEpoch;
+        hdr.configEpoch = master.configEpoch;
+
+        long offset = 0;
+        if (nodeIsSlave(myself))
+            offset = replicationGetSlaveOffset();
+        else
+            offset = server.masterReplOffset;
+        hdr.offset = offset;
+
+        if (nodeIsMaster(myself) && server.cluster.mfEnd != 0)
+            hdr.mflags[0] |= CLUSTERMSG_FLAG0_PAUSED;
+
+        // TODO hdr.totlen = xx;
+        return hdr;
+    }
+
+    private long replicationGetSlaveOffset() {
+        //TOOD
+        return 0;
+    }
+
+    public boolean clusterNodeIsInGossipSection(ClusterMsg hdr, int count, ClusterNode n) {
+        for (int i = 0; i < count; i++) {
+            if (hdr.data.gossip[i].nodename.equals(n.name)) return true;
+        }
+        return false;
+    }
+
+    public void clusterSetGossipEntry(ClusterMsg hdr, int i, ClusterNode n) {
+        ClusterMsgDataGossip gossip = hdr.data.gossip[i];
+        gossip.nodename = n.name;
+        gossip.pingSent = n.pingSent / 1000;
+        gossip.pongReceived = n.pongReceived / 1000;
+        gossip.ip = n.ip;
+        gossip.port = n.port;
+        gossip.cport = n.cport;
+        gossip.flags = n.flags;
+        gossip.notused1 = 0;
+    }
+
+    public void clusterSendPing(ClusterLink link, int type) {
+        int gossipcount = 0;
+
+        int freshnodes = server.cluster.nodes.size() - 2;
+
+        int wanted = server.cluster.nodes.size() / 10;
+        if (wanted < 3) wanted = 3;
+        if (wanted > freshnodes) wanted = freshnodes;
+
+        int pfailWanted = (int) server.cluster.statsPfailNodes;
+
+        if (link.node != null && type == CLUSTERMSG_TYPE_PING)
+            link.node.pingSent = System.currentTimeMillis();
+        ClusterMsg hdr = clusterBuildMessageHdr(type);
+
+        int maxiterations = wanted * 3;
+        while (freshnodes > 0 && gossipcount < wanted && maxiterations-- > 0) {
+            List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
+            int idx = new Random().nextInt(list.size());
+            ClusterNode t = list.get(idx);
+
+            if (t.equals(myself)) continue;
+
+            if ((t.flags & CLUSTER_NODE_PFAIL) != 0) continue;
+
+            if ((t.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (t.link == null && t.numslots == 0)) {
+                freshnodes--;
+                continue;
+            }
+
+            if (clusterNodeIsInGossipSection(hdr, gossipcount, t)) continue;
+
+            clusterSetGossipEntry(hdr, gossipcount, t);
+            freshnodes--;
+            gossipcount++;
+        }
+
+        if (pfailWanted != 0) {
+            List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
+            for (int i = 0; i < list.size() && pfailWanted > 0; i++) {
+                ClusterNode node = list.get(i);
+                if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
+                if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
+                if ((node.flags & CLUSTER_NODE_PFAIL) == 0) continue;
+                clusterSetGossipEntry(hdr, gossipcount, node);
+                freshnodes--;
+                gossipcount++;
+                pfailWanted--;
+            }
+        }
+
+        hdr.count = gossipcount;
+        //TODO hdr.totlen = xx
+        clusterSendMessage(link, hdr);
+    }
+
+    public void clusterBroadcastPong(int target) {
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            if (node.link == null) continue;
+            if (node.equals(myself) || nodeInHandshake(node)) continue;
+            if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
+                boolean localSlave = nodeIsSlave(node) && node.slaveof != null && (node.slaveof.equals(myself) || node.slaveof.equals(myself.slaveof));
+                if (!localSlave) continue;
+            }
+            clusterSendPing(node.link, CLUSTERMSG_TYPE_PONG);
+        }
+    }
+
+    public void clusterSendFail(String nodename) {
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAIL);
+        hdr.data.about.nodename = nodename;
+        clusterBroadcastMessage(hdr);
+    }
+
+    public void clusterSendUpdate(ClusterLink link, ClusterNode node) {
+        if (link == null) return;
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_UPDATE);
+        hdr.data.nodecfg.nodename = node.name;
+        hdr.data.nodecfg.configEpoch = node.configEpoch;
+        hdr.data.nodecfg.slots = node.slots;
+        clusterSendMessage(link, hdr);
+    }
+
+    public void clusterRequestFailoverAuth() {
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST);
+        if (server.cluster.mfEnd > 0) hdr.mflags[0] |= CLUSTERMSG_FLAG0_FORCEACK;
+        clusterBroadcastMessage(hdr);
+    }
+
+    public void clusterSendFailoverAuth(ClusterNode node) {
+        if (node.link == null) return;
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK);
+        clusterSendMessage(node.link, hdr);
+    }
+
+    public void clusterSendMFStart(ClusterNode node) {
+        if (node.link == null) return;
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_MFSTART);
+        clusterSendMessage(node.link, hdr);
+    }
+
+    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMsg request) {
+        ClusterNode master = node.slaveof;
+        long requestCurrentEpoch = request.currentEpoch;
+        long requestConfigEpoch = request.configEpoch;
+        byte[] claimedSlots = request.myslots;
+        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
+
+        if (nodeIsSlave(myself) || myself.numslots == 0) return;
+
+        if (requestCurrentEpoch < server.cluster.currentEpoch) {
+            logger.warn("Failover auth denied to " + node.name + ": reqEpoch (" + requestCurrentEpoch + ") < curEpoch(" + server.cluster.currentEpoch + ")");
+            return;
+        }
+
+        if (server.cluster.lastVoteEpoch == server.cluster.currentEpoch) {
+            logger.warn("Failover auth denied to " + node.name + ": already voted for epoch " + server.cluster.currentEpoch);
+            return;
+        }
+
+        if (nodeIsMaster(node) || master == null || (!nodeFailed(master) && !forceAck)) {
+            if (nodeIsMaster(node)) {
+                logger.warn("Failover auth denied to " + node.name + ": it is a master node");
+            } else if (master == null) {
+                logger.warn("Failover auth denied to " + node.name + ": I don't know its master");
+            } else if (!nodeFailed(master)) {
+                logger.warn("Failover auth denied to " + node.name + ": its master is up");
+            }
+            return;
+        }
+
+        if (System.currentTimeMillis() - node.slaveof.votedTime < server.clusterNodeTimeout * 2) {
+            logger.warn("Failover auth denied to " + node.name + ": can't vote about this master before " + (server.clusterNodeTimeout * 2 - System.currentTimeMillis() - node.slaveof.votedTime) + " milliseconds");
+            return;
+        }
+
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            if (!bitmapTestBit(claimedSlots, i)) continue;
+            if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= requestConfigEpoch) {
+                continue;
+            }
+            logger.warn("Failover auth denied to " + node.name + ": slot " + i + " epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + requestConfigEpoch + ")");
+            return;
+        }
+
+        clusterSendFailoverAuth(node);
+        server.cluster.lastVoteEpoch = server.cluster.currentEpoch;
+        node.slaveof.votedTime = System.currentTimeMillis();
+        logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
+    }
+
+    public int clusterGetSlaveRank() {
+        int rank = 0;
+        ClusterNode master = myself.slaveof;
+        if (master == null) return rank;
+        long myoffset = replicationGetSlaveOffset();
+        for (int i = 0; i < master.numslaves; i++)
+            if (!master.slaves.get(i).equals(myself) && master.slaves.get(i).replOffset > myoffset)
+                rank++;
+        return rank;
+    }
+
+    public static long lastlogTime = 0;
+
+    public void clusterLogCantFailover(int reason) {
+        long nologFailTime = server.clusterNodeTimeout + 5000;
+
+        if (reason == server.cluster.cantFailoverReason && System.currentTimeMillis() - lastlogTime < CLUSTER_CANT_FAILOVER_RELOG_PERIOD)
+            return;
+
+        server.cluster.cantFailoverReason = reason;
+
+        if (myself.slaveof != null && nodeFailed(myself.slaveof) && (System.currentTimeMillis() - myself.slaveof.failTime) < nologFailTime)
+            return;
+
+        String msg;
+        switch (reason) {
+            case CLUSTER_CANT_FAILOVER_DATA_AGE:
+                msg = "Disconnected from master for longer than allowed. Please check the 'cluster-slave-validity-factor' configuration option.";
+                break;
+            case CLUSTER_CANT_FAILOVER_WAITING_DELAY:
+                msg = "Waiting the delay before I can start a new failover.";
+                break;
+            case CLUSTER_CANT_FAILOVER_EXPIRED:
+                msg = "Failover attempt expired.";
+                break;
+            case CLUSTER_CANT_FAILOVER_WAITING_VOTES:
+                msg = "Waiting for votes, but majority still not reached.";
+                break;
+            default:
+                msg = "Unknown reason code.";
+                break;
+        }
+        lastlogTime = System.currentTimeMillis();
+        logger.warn("Currently unable to failover: " + msg);
+    }
+
+    public void clusterFailoverReplaceYourMaster() {
+        ClusterNode oldmaster = myself.slaveof;
+
+        if (nodeIsMaster(myself) || oldmaster == null) return;
+
+        clusterSetNodeAsMaster(myself);
+        replicationUnsetMaster();
+
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            if (clusterNodeGetSlotBit(oldmaster, i)) {
+                clusterDelSlot(i);
+                clusterAddSlot(myself, i);
+            }
+        }
+
+        clusterUpdateState();
+        clusterSaveConfigOrDie();
+        clusterBroadcastPong(CLUSTER_BROADCAST_ALL);
+
+        resetManualFailover();
+    }
+
+    public void clusterHandleSlaveFailover() {
+
+        long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
+        int neededQuorum = (server.cluster.size / 2) + 1;
+        boolean manualFailover = server.cluster.mfEnd != 0 && server.cluster.mfCanStart != 0;
+
+        server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_HANDLE_FAILOVER;
+
+        long authTimeout = server.clusterNodeTimeout * 2;
+        if (authTimeout < 2000) authTimeout = 2000;
+        long authRetryTime = authTimeout * 2;
+
+        if (nodeIsMaster(myself) || myself.slaveof == null || (!nodeFailed(myself.slaveof) && !manualFailover) || myself.slaveof.numslots == 0) {
+            server.cluster.cantFailoverReason = CLUSTER_CANT_FAILOVER_NONE;
+            return;
+        }
+
+        long data_age;
+        if (server.replState == REPL_STATE_CONNECTED) {
+            data_age = (System.currentTimeMillis() - server.lastinteraction) * 1000;
+        } else {
+            data_age = (System.currentTimeMillis() - server.replDownSince) * 1000;
+        }
+
+        if (data_age > server.clusterNodeTimeout)
+            data_age -= server.clusterNodeTimeout;
+
+        if (server.clusterSlaveValidityFactor != 0 && data_age > (server.replPingSlavePeriod * 1000) + (server.clusterNodeTimeout * server.clusterSlaveValidityFactor)) {
+            if (!manualFailover) {
+                clusterLogCantFailover(CLUSTER_CANT_FAILOVER_DATA_AGE);
+                return;
+            }
+        }
+
+        if (authAge > authRetryTime) {
+            server.cluster.failoverAuthTime = System.currentTimeMillis() +
+                    500 + new Random().nextInt(500);
+            server.cluster.failoverAuthCount = 0;
+            server.cluster.failoverAuthSent = 0;
+            server.cluster.failoverAuthRank = clusterGetSlaveRank();
+            server.cluster.failoverAuthTime += server.cluster.failoverAuthRank * 1000;
+            if (server.cluster.mfEnd != 0) {
+                server.cluster.failoverAuthTime = System.currentTimeMillis();
+                server.cluster.failoverAuthRank = 0;
+            }
+            logger.warn("Start of election delayed for " + (server.cluster.failoverAuthTime - System.currentTimeMillis()) + " milliseconds (rank #" + server.cluster.failoverAuthRank + ", offset " + replicationGetSlaveOffset() + ").");
+            clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES);
+            return;
+        }
+
+        if (server.cluster.failoverAuthSent == 0 && server.cluster.mfEnd == 0) {
+            int newrank = clusterGetSlaveRank();
+            if (newrank > server.cluster.failoverAuthRank) {
+                long addedDelay = (newrank - server.cluster.failoverAuthRank) * 1000;
+                server.cluster.failoverAuthTime += addedDelay;
+                server.cluster.failoverAuthRank = newrank;
+                logger.warn("Slave rank updated to #" + newrank + ", added " + addedDelay + " milliseconds of delay.");
+            }
+        }
+
+        if (System.currentTimeMillis() < server.cluster.failoverAuthTime) {
+            clusterLogCantFailover(CLUSTER_CANT_FAILOVER_WAITING_DELAY);
+            return;
+        }
+
+        if (authAge > authTimeout) {
+            clusterLogCantFailover(CLUSTER_CANT_FAILOVER_EXPIRED);
+            return;
+        }
+
+        if (server.cluster.failoverAuthSent == 0) {
+            server.cluster.currentEpoch++;
+            server.cluster.failoverAuthEpoch = server.cluster.currentEpoch;
+            logger.warn("Starting a failover election for epoch " + server.cluster.currentEpoch);
+            clusterRequestFailoverAuth();
+            server.cluster.failoverAuthSent = 1;
+            clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
+            return;
+        }
+
+        if (server.cluster.failoverAuthCount >= neededQuorum) {
+
+            logger.warn("Failover election won: I'm the new master.");
+
+            if (myself.configEpoch < server.cluster.failoverAuthEpoch) {
+                myself.configEpoch = server.cluster.failoverAuthEpoch;
+                logger.warn("configEpoch set to " + myself.configEpoch + " after successful failover");
+            }
+
+            clusterFailoverReplaceYourMaster();
+        } else {
+            clusterLogCantFailover(CLUSTER_CANT_FAILOVER_WAITING_VOTES);
+        }
+    }
+
+    public void clusterHandleSlaveMigration(int maxSlaves) {
+        int okslaves = 0;
+        ClusterNode mymaster = myself.slaveof;
+
+        if (server.cluster.state != CLUSTER_OK) return;
+
+        if (mymaster == null) return;
+        for (int i = 0; i < mymaster.numslaves; i++)
+            if (!nodeFailed(mymaster.slaves.get(i)) && !nodeTimedOut(mymaster.slaves.get(i))) okslaves++;
+        if (okslaves <= server.clusterMigrationBarrier) return;
+
+        ClusterNode candidate = myself;
+        ClusterNode target = null;
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            okslaves = 0;
+            boolean isOrphaned = true;
+
+            if (nodeIsSlave(node) || nodeFailed(node)) isOrphaned = false;
+            if ((node.flags & CLUSTER_NODE_MIGRATE_TO) == 0) isOrphaned = false;
+
+            if (nodeIsMaster(node)) okslaves = clusterCountNonFailingSlaves(node);
+            if (okslaves > 0) isOrphaned = false;
+
+            if (isOrphaned) {
+                if (target == null && node.numslots > 0) target = node;
+                if (node.orphanedTime == 0) node.orphanedTime = System.currentTimeMillis();
+            } else {
+                node.orphanedTime = 0;
+            }
+
+            if (okslaves == maxSlaves) {
+                for (int i = 0; i < node.numslaves; i++) {
+                    if (node.slaves.get(i).name.compareTo(candidate.name) < 0) {
+                        candidate = node.slaves.get(i);
+                    }
+                }
+            }
+        }
+
+        if (target != null && candidate.equals(myself) &&
+                (System.currentTimeMillis() - target.orphanedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
+            logger.warn("Migrating to orphaned master " + target.name);
+            clusterSetMaster(target);
+        }
+    }
+
+    public void resetManualFailover() {
+        if (server.cluster.mfEnd != 0 && clientsArePaused()) {
+            server.clientsPauseEndTime = 0;
+            clientsArePaused();
+        }
+        server.cluster.mfEnd = 0;
+        server.cluster.mfCanStart = 0;
+        server.cluster.mfSlave = null;
+        server.cluster.mfMasterOffset = 0;
+    }
+
+    private boolean clientsArePaused() {
+        //TODO
+        return false;
+    }
+
+    public void manualFailoverCheckTimeout() {
+        if (server.cluster.mfEnd != 0 && server.cluster.mfEnd < System.currentTimeMillis()) {
+            logger.warn("Manual failover timed out.");
+            resetManualFailover();
+        }
+    }
+
+    public void clusterHandleManualFailover() {
+        if (server.cluster.mfEnd == 0) return;
+        if (server.cluster.mfCanStart == 0) return;
+
+        if (server.cluster.mfMasterOffset == 0) return;
+
+        if (server.cluster.mfMasterOffset == replicationGetSlaveOffset()) {
+            server.cluster.mfCanStart = 1;
+            logger.warn("All master replication stream processed, manual failover can start.");
+        }
+    }
+
+    public void clusterBeforeSleep() {
+        if ((server.cluster.todoBeforeSleep & CLUSTER_TODO_HANDLE_FAILOVER) != 0)
+            clusterHandleSlaveFailover();
+
+        if ((server.cluster.todoBeforeSleep & CLUSTER_TODO_UPDATE_STATE) != 0)
+            clusterUpdateState();
+
+        if ((server.cluster.todoBeforeSleep & CLUSTER_TODO_SAVE_CONFIG) != 0) {
+            clusterSaveConfigOrDie();
+        }
+
+        server.cluster.todoBeforeSleep = 0;
+    }
+
+    void clusterDoBeforeSleep(int flags) {
+        server.cluster.todoBeforeSleep |= flags;
+    }
+
+    public boolean bitmapTestBit(byte[] bitmap, int pos) {
+        int offset = pos / 8;
+        int bit = pos & 7;
+        return (bitmap[offset] & (1 << bit)) != 0;
+    }
+
+    public void bitmapSetBit(byte[] bitmap, int pos) {
+        int offset = pos / 8;
+        int bit = pos & 7;
+        bitmap[offset] |= 1 << bit;
+    }
+
+    public void bitmapClearBit(byte[] bitmap, int pos) {
+        int offset = pos / 8;
+        int bit = pos & 7;
+        bitmap[offset] &= ~(1 << bit);
+    }
+
+    public boolean clusterMastersHaveSlaves() {
+        int slaves = 0;
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            if (nodeIsSlave(node)) continue;
+            slaves += node.numslaves;
+        }
+        return slaves != 0;
+    }
+
+    public boolean clusterNodeSetSlotBit(ClusterNode n, int slot) {
+        boolean old = bitmapTestBit(n.slots, slot);
+        bitmapSetBit(n.slots, slot);
+        if (!old) {
+            n.numslots++;
+            if (n.numslots == 1 && clusterMastersHaveSlaves())
+                n.flags |= CLUSTER_NODE_MIGRATE_TO;
+        }
+        return old;
+    }
+
+    public boolean clusterNodeClearSlotBit(ClusterNode n, int slot) {
+        boolean old = bitmapTestBit(n.slots, slot);
+        bitmapClearBit(n.slots, slot);
+        if (old) n.numslots--;
+        return old;
+    }
+
+    public boolean clusterNodeGetSlotBit(ClusterNode n, int slot) {
+        return bitmapTestBit(n.slots, slot);
+    }
+
+    public boolean clusterAddSlot(ClusterNode n, int slot) {
+        if (server.cluster.slots[slot] == null) return false;
+        clusterNodeSetSlotBit(n, slot);
+        server.cluster.slots[slot] = n;
+        return true;
+    }
+
+    public boolean clusterDelSlot(int slot) {
+        ClusterNode n = server.cluster.slots[slot];
+        if (n == null) return false;
+        assert clusterNodeClearSlotBit(n, slot) == true;
+        server.cluster.slots[slot] = null;
+        return true;
+    }
+
+    public int clusterDelNodeSlots(ClusterNode node) {
+        int deleted = 0;
+        for (int j = 0; j < CLUSTER_SLOTS; j++) {
+            if (clusterNodeGetSlotBit(node, j)) clusterDelSlot(j);
+            deleted++;
+        }
+        return deleted;
+    }
+
+    public void clusterCloseAllSlots() {
+        server.cluster.migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
+        server.cluster.importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
+    }
+
+    public static long amongMinorityTime = 0;
+    public static long firstCallTime = 0;
+
+    public void clusterUpdateState() {
+        server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_UPDATE_STATE;
+
+        if (firstCallTime == 0) firstCallTime = System.currentTimeMillis();
+        if (nodeIsMaster(myself) && server.cluster.state == CLUSTER_FAIL && System.currentTimeMillis() - firstCallTime < CLUSTER_WRITABLE_DELAY)
+            return;
+
+        int newState = CLUSTER_OK;
+
+        if (server.clusterRequireFullCoverage) {
+            for (int i = 0; i < CLUSTER_SLOTS; i++) {
+                if (server.cluster.slots[i] == null || (server.cluster.slots[i].flags & CLUSTER_NODE_FAIL) != 0) {
+                    newState = CLUSTER_FAIL;
+                    break;
+                }
+            }
+        }
+
+        int reachableMasters = 0;
+        server.cluster.size = 0;
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            if (nodeIsMaster(node) && node.numslots > 0) {
+                server.cluster.size++;
+                if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0)
+                    reachableMasters++;
+            }
+        }
+
+        int neededQuorum = (server.cluster.size / 2) + 1;
+
+        if (reachableMasters < neededQuorum) {
+            newState = CLUSTER_FAIL;
+            amongMinorityTime = System.currentTimeMillis();
+        }
+
+
+        if (newState != server.cluster.state) {
+            long rejoinDelay = server.clusterNodeTimeout;
+
+            if (rejoinDelay > CLUSTER_MAX_REJOIN_DELAY)
+                rejoinDelay = CLUSTER_MAX_REJOIN_DELAY;
+            if (rejoinDelay < CLUSTER_MIN_REJOIN_DELAY)
+                rejoinDelay = CLUSTER_MIN_REJOIN_DELAY;
+
+            if (newState == CLUSTER_OK && nodeIsMaster(myself) && System.currentTimeMillis() - amongMinorityTime < rejoinDelay) {
+                return;
+            }
+
+            logger.warn("Cluster state changed: " + (newState == CLUSTER_OK ? "ok" : "fail"));
+            server.cluster.state = newState;
+        }
+    }
+
+    public boolean verifyClusterConfigWithData() {
+        boolean updateConfig = false;
+
+        if (nodeIsSlave(myself)) return true;
+
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            if (!countKeysInSlot(i)) continue;
+            if (server.cluster.slots[i].equals(myself) || server.cluster.importingSlotsFrom[i] != null) continue;
+
+            updateConfig = true;
+            if (server.cluster.slots[i] == null) {
+                logger.warn("I have keys for unassigned slot " + i + ". Taking responsibility for it.");
+                clusterAddSlot(myself, i);
+            } else {
+                logger.warn("I have keys for slot " + i + ", but the slot is assigned to another node. Setting it to importing state.");
+                server.cluster.importingSlotsFrom[i] = server.cluster.slots[i];
+            }
+        }
+        if (updateConfig) clusterSaveConfigOrDie();
+        return true;
+    }
+
+    public void clusterSetMaster(ClusterNode n) {
+
+        if (nodeIsMaster(myself)) {
+            myself.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
+            myself.flags |= CLUSTER_NODE_SLAVE;
+            clusterCloseAllSlots();
+        } else {
+            if (myself.slaveof != null)
+                clusterNodeRemoveSlave(myself.slaveof, myself);
+        }
+        myself.slaveof = n;
+        clusterNodeAddSlave(n, myself);
+        replicationSetMaster(n.ip, n.port);
+        resetManualFailover();
+    }
+
+    private static class RedisNodeFlags {
+        public int flag;
+        public String name;
+
+        public RedisNodeFlags(int flag, String name) {
+            this.flag = flag;
+            this.name = name;
+        }
+    }
+
+    public static RedisNodeFlags[] redisNodeFlags = new RedisNodeFlags[]{
+            new RedisNodeFlags(CLUSTER_NODE_MYSELF, "myself,"),
+            new RedisNodeFlags(CLUSTER_NODE_MASTER, "master,"),
+            new RedisNodeFlags(CLUSTER_NODE_SLAVE, "slave,"),
+            new RedisNodeFlags(CLUSTER_NODE_PFAIL, "fail?,"),
+            new RedisNodeFlags(CLUSTER_NODE_FAIL, "fail,"),
+            new RedisNodeFlags(CLUSTER_NODE_HANDSHAKE, "handshake,"),
+            new RedisNodeFlags(CLUSTER_NODE_NOADDR, "noaddr,"),
+    };
+
+    public String representClusterNodeFlags(int flags) {
+        StringBuilder builder = new StringBuilder();
+        if (flags == 0) {
+            builder.append("noflags,");
+        } else {
+            for (int i = 0; i < redisNodeFlags.length; i++) {
+                RedisNodeFlags nodeflag = redisNodeFlags[i];
+                if ((flags & nodeflag.flag) != 0) builder.append(nodeflag.name);
+            }
+        }
+        builder.deleteCharAt(builder.length() - 1);
+        return builder.toString();
+    }
+
+    public String clusterGenNodeDescription(ClusterNode node) {
+        StringBuilder ci = new StringBuilder();
+
+        ci.append(node.name).append(" ").append(node.ip).append(":").append(node.port).append("@").append(node.cport);
+
+        ci.append(representClusterNodeFlags(node.flags));
+
+        if (node.slaveof != null)
+            ci.append(" ").append(node.slaveof.name).append(" ");
+        else
+            ci.append(" - ");
+
+        ci.append(node.pingSent).append(" ").append(node.pongReceived).append(" ").append(node.configEpoch).append(" ").append((node.link != null || (node.flags & CLUSTER_NODE_MYSELF) != 0) ? "connected" : "disconnected");
+
+        int start = -1;
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            boolean bit;
+
+            if ((bit = clusterNodeGetSlotBit(node, i))) {
+                if (start == -1) start = i;
+            }
+            if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
+                if (bit && i == CLUSTER_SLOTS - 1) i++;
+
+                if (start == i - 1) {
+                    ci.append(" ").append(start);
+                } else {
+                    ci.append(" ").append(start).append("-").append(i - 1);
+                }
+                start = -1;
+            }
+        }
+
+        if ((node.flags & CLUSTER_NODE_MYSELF) != 0) {
+            for (int i = 0; i < CLUSTER_SLOTS; i++) {
+                if (server.cluster.migratingSlotsTo[i] != null) {
+                    ci.append(" [").append(i).append("->-").append(server.cluster.migratingSlotsTo[i].name).append("]");
+                } else if (server.cluster.importingSlotsFrom[i] != null) {
+                    ci.append(" [").append(i).append("-<-").append(server.cluster.importingSlotsFrom[i].name).append("]");
+                }
+            }
+        }
+        return ci.toString();
+    }
+
+    public String clusterGenNodesDescription(int filter) {
+        String ni = "";
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            if ((node.flags & filter) != 0) continue;
+            ni = clusterGenNodeDescription(node);
+            ni += "\n";
+        }
+        return ni;
+    }
+
+    public String clusterGetMessageTypeString(int type) {
+        switch (type) {
+            case CLUSTERMSG_TYPE_PING:
+                return "ping";
+            case CLUSTERMSG_TYPE_PONG:
+                return "pong";
+            case CLUSTERMSG_TYPE_MEET:
+                return "meet";
+            case CLUSTERMSG_TYPE_FAIL:
+                return "fail";
+            case CLUSTERMSG_TYPE_PUBLISH:
+                return "publish";
+            case CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST:
+                return "auth-req";
+            case CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK:
+                return "auth-ack";
+            case CLUSTERMSG_TYPE_UPDATE:
+                return "update";
+            case CLUSTERMSG_TYPE_MFSTART:
+                return "mfstart";
+        }
+        return "unknown";
+    }
+
+    public static long iteration = 0;
+    public static String prevIp = null;
+
+    public void clusterCron() {
+        long minPong = 0, now = System.currentTimeMillis();
+        ClusterNode minPongNode = null;
+        iteration++;
+
+        String currIp = server.clusterAnnounceIp;
+        boolean changed = false;
+
+        if (prevIp == null && currIp != null) changed = true;
+        if (prevIp != null && currIp == null) changed = true;
+        if (prevIp != null && currIp != null && !prevIp.equals(currIp)) changed = true;
+
+        if (changed) {
+            prevIp = currIp;
+            if (currIp != null) {
+                myself.ip = currIp;
+            } else {
+                myself.ip = null;
+            }
+        }
+        long handshakeTimeout = server.clusterNodeTimeout;
+        if (handshakeTimeout < 1000) handshakeTimeout = 1000;
+
+        server.cluster.statsPfailNodes = 0;
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0) continue;
+
+            if ((node.flags & CLUSTER_NODE_PFAIL) != 0)
+                server.cluster.statsPfailNodes++;
+
+            if (nodeInHandshake(node) && now - node.ctime > handshakeTimeout) {
+                clusterDelNode(node);
+                continue;
+            }
+
+            if (node.link == null) {
+                final ClusterLink link = createClusterLink(node);
+                NioBootstrapImpl<Message> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration()); //client
+                //TODO fd.setEncoder();
+                //TODO fd.setDecoder();
+                fd.setup();
+                fd.setTransportListener(new TransportListener<Message>() {
+                    @Override
+                    public void onConnected(Transport<Message> transport) {
+                        link.fd = new SessionImpl<>(transport);
+                    }
+
+                    @Override
+                    public void onMessage(Transport<Message> transport, Message message) {
+                        clusterProcessPacket(link, message);
+                    }
+
+                    @Override
+                    public void onException(Transport<Message> transport, Throwable cause) {
+
+                    }
+
+                    @Override
+                    public void onDisconnected(Transport<Message> transport, Throwable cause) {
+
+                    }
+                });
+                fd.connect(node.ip, node.cport);
+
+                long oldPingSent = node.pingSent;
+
+                clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
+                if (oldPingSent != 0) {
+                    node.pingSent = oldPingSent;
+                }
+
+                node.flags &= ~CLUSTER_NODE_MEET;
+
+                logger.debug("Connecting with Node " + node.name + " at " + node.ip + ":" + node.cport);
+            }
+        }
+
+        if (iteration % 10 == 0) {
+            for (int i = 0; i < 5; i++) {
+                List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
+                int idx = new Random().nextInt(list.size());
+                ClusterNode t = list.get(idx);
+
+                if (t.link == null || t.pingSent != 0) continue;
+                if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0)
+                    continue;
+                if (minPongNode == null || minPong > t.pongReceived) {
+                    minPongNode = t;
+                    minPong = t.pongReceived;
+                }
+            }
+            if (minPongNode != null) {
+                logger.debug("Pinging node " + minPongNode.name);
+                clusterSendPing(minPongNode.link, CLUSTERMSG_TYPE_PING);
+            }
+        }
+
+        boolean updateState = false;
+        int orphanedMasters = 0;
+        int maxSlaves = 0;
+        int thisSlaves = 0;
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            now = System.currentTimeMillis();
+
+            if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR | CLUSTER_NODE_HANDSHAKE)) != 0)
+                continue;
+
+            if (nodeIsSlave(myself) && nodeIsMaster(node) && !nodeFailed(node)) {
+                int okslaves = clusterCountNonFailingSlaves(node);
+
+                if (okslaves == 0 && node.numslots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) {
+                    orphanedMasters++;
+                }
+                if (okslaves > maxSlaves) maxSlaves = okslaves;
+                if (nodeIsSlave(myself) && myself.slaveof.equals(node))
+                    thisSlaves = okslaves;
+            }
+
+            if (node.link != null && now - node.link.ctime > server.clusterNodeTimeout &&
+                    node.pingSent != 0 && node.pongReceived < node.pingSent && now - node.pingSent > server.clusterNodeTimeout / 2) {
+                freeClusterLink(node.link);
+            }
+
+            if (node.link != null && node.pingSent == 0 && (now - node.pongReceived) > server.clusterNodeTimeout / 2) {
+                clusterSendPing(node.link, CLUSTERMSG_TYPE_PING);
+                continue;
+            }
+
+            if (server.cluster.mfEnd != 0 && nodeIsMaster(myself) && server.cluster.mfSlave.equals(node) && node.link != null) {
+                clusterSendPing(node.link, CLUSTERMSG_TYPE_PING);
+                continue;
+            }
+
+            if (node.pingSent == 0) continue;
+
+            long delay = now - node.pingSent;
+
+            if (delay > server.clusterNodeTimeout) {
+                if ((node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
+                    logger.debug("*** NODE " + node.name + " possibly failing");
+                    node.flags |= CLUSTER_NODE_PFAIL;
+                    updateState = true;
+                }
+            }
+        }
+
+        if (nodeIsSlave(myself) && server.masterhost == null &&
+                myself.slaveof != null && nodeHasAddr(myself.slaveof)) {
+            replicationSetMaster(myself.slaveof.ip, myself.slaveof.port);
+        }
+
+        manualFailoverCheckTimeout();
+
+        if (nodeIsSlave(myself)) {
+            clusterHandleManualFailover();
+            clusterHandleSlaveFailover();
+            if (orphanedMasters != 0 && maxSlaves >= 2 && thisSlaves == maxSlaves)
+                clusterHandleSlaveMigration(maxSlaves);
+        }
+
+        if (updateState || server.cluster.state == CLUSTER_FAIL)
+            clusterUpdateState();
     }
 
 }

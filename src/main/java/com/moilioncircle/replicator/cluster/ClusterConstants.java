@@ -11,6 +11,8 @@ public class ClusterConstants {
     public static final int CLUSTER_PORT_INCR = 10000; /* Cluster port = baseport + PORT_INCR */
 
     public static final int CLUSTER_PROTO_VER = 1;
+    public static final int CLUSTER_BROADCAST_ALL = 0;
+    public static final int CLUSTER_BROADCAST_LOCAL_SLAVES = 1;
 
     public static final int CLUSTER_DEFAULT_NODE_TIMEOUT = 15000;
     public static final int CLUSTER_DEFAULT_SLAVE_VALIDITY = 10; /* Slave max data age factor. */
@@ -100,4 +102,9 @@ public class ClusterConstants {
     public static final int CLUSTERMSG_FLAG0_FORCEACK = (1 << 1); /* Give ACK to AUTH_REQUEST even if is up. *//* Total number of message types. */
 
     public static final int CLUSTER_BLACKLIST_TTL = 60;
+
+    public static final int REPL_STATE_CONNECTED = 15;
+    public static final int CLUSTER_MAX_REJOIN_DELAY = 5000;
+    public static final int CLUSTER_MIN_REJOIN_DELAY = 500;
+    public static final int CLUSTER_WRITABLE_DELAY = 2000;
 }

@@ -19,4 +19,14 @@ public class Server {
     public String clusterAnnounceIp;
     public int clusterAnnouncePort;
     public int clusterAnnounceBusPort;
+    public long masterReplOffset;
+    public int replState;
+    public long lastinteraction;
+    public long replDownSince;
+    public long clusterSlaveValidityFactor;
+    public long replPingSlavePeriod;
+    public int clusterMigrationBarrier;
+    public long clientsPauseEndTime;
+    public boolean clusterRequireFullCoverage;
+    public String masterhost;
 }
