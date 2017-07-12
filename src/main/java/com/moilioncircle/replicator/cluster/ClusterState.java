@@ -22,14 +22,14 @@ public class ClusterState {
     //TODO rax *slots_to_keys;
     public long failoverAuthTime;
     public int failoverAuthCount;
-    public int failoverAuthSent;
+    public boolean failoverAuthSent;
     public int failoverAuthRank;
     public long failoverAuthEpoch;
     public int cantFailoverReason;
     public long mfEnd;
     public ClusterNode mfSlave;
     public long mfMasterOffset;
-    public int mfCanStart;
+    public boolean mfCanStart;
     public long lastVoteEpoch;
     public int todoBeforeSleep;
     public long[] statsBusMessagesSent = new long[CLUSTERMSG_TYPE_COUNT];

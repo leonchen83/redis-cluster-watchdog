@@ -933,7 +933,7 @@ public class Gossip1 {
         } else if (type == CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK) {
             if (sender == null) return true;
             if (nodeIsMaster(sender) && sender.numslots > 0 && senderCurrentEpoch >= server.cluster.failoverAuthEpoch) {
-                server.cluster.failoverAuthEpoch++;
+                server.cluster.failoverAuthCount++;
                 clusterDoBeforeSleep(CLUSTER_TODO_HANDLE_FAILOVER);
             }
         } else if (type == CLUSTERMSG_TYPE_MFSTART) {
@@ -1113,6 +1113,7 @@ public class Gossip1 {
             if (node.link == null) continue;
             if (node.equals(myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
+                //node.slaveof.equals(myself)这个条件有点问题
                 boolean localSlave = nodeIsSlave(node) && node.slaveof != null && (node.slaveof.equals(myself) || node.slaveof.equals(myself.slaveof));
                 if (!localSlave) continue;
             }
@@ -1135,31 +1136,24 @@ public class Gossip1 {
         clusterSendMessage(link, hdr);
     }
 
-    public void clusterRequestFailoverAuth() {
-        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST);
-        if (server.cluster.mfEnd > 0) hdr.mflags[0] |= CLUSTERMSG_FLAG0_FORCEACK;
-        clusterBroadcastMessage(hdr);
-    }
-
-    public void clusterSendFailoverAuth(ClusterNode node) {
-        if (node.link == null) return;
-        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK);
-        clusterSendMessage(node.link, hdr);
-    }
-
     public void clusterSendMFStart(ClusterNode node) {
         if (node.link == null) return;
         ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_MFSTART);
         clusterSendMessage(node.link, hdr);
     }
 
-    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMsg request) {
-        ClusterNode master = node.slaveof;
-        long requestCurrentEpoch = request.currentEpoch;
-        long requestConfigEpoch = request.configEpoch;
-        byte[] claimedSlots = request.myslots;
-        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
+    // 一对
+    public void clusterRequestFailoverAuth() {
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST);
+        if (server.cluster.mfEnd > 0) hdr.mflags[0] |= CLUSTERMSG_FLAG0_FORCEACK;
+        clusterBroadcastMessage(hdr);
+    }
 
+    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMsg request) {
+
+        long requestCurrentEpoch = request.currentEpoch;
+
+        //只有持有1个以上slot的master有投票权
         if (nodeIsSlave(myself) || myself.numslots == 0) return;
 
         if (requestCurrentEpoch < server.cluster.currentEpoch) {
@@ -1167,11 +1161,15 @@ public class Gossip1 {
             return;
         }
 
+        //已经投完票的直接返回
         if (server.cluster.lastVoteEpoch == server.cluster.currentEpoch) {
             logger.warn("Failover auth denied to " + node.name + ": already voted for epoch " + server.cluster.currentEpoch);
             return;
         }
 
+        ClusterNode master = node.slaveof;
+        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
+        //目标node是master 或者 目标node的master不明确 或者在非手动模式下目标node的master没挂都返回
         if (nodeIsMaster(node) || master == null || (!nodeFailed(master) && !forceAck)) {
             if (nodeIsMaster(node)) {
                 logger.warn("Failover auth denied to " + node.name + ": it is a master node");
@@ -1183,13 +1181,19 @@ public class Gossip1 {
             return;
         }
 
+        //这里要求目标node 是slave, 目标node的master != null,目标node的master没挂的情况下必须forceAck为true
+
+        //这里是投票超时的情况
         if (System.currentTimeMillis() - node.slaveof.votedTime < server.clusterNodeTimeout * 2) {
             logger.warn("Failover auth denied to " + node.name + ": can't vote about this master before " + (server.clusterNodeTimeout * 2 - System.currentTimeMillis() - node.slaveof.votedTime) + " milliseconds");
             return;
         }
 
+        byte[] claimedSlots = request.myslots;
+        long requestConfigEpoch = request.configEpoch;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(claimedSlots, i)) continue;
+            // 检测本地slot的configEpoch必须要小于等于远程的, 否则认为本地较新, 终止投票
             if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= requestConfigEpoch) {
                 continue;
             }
@@ -1202,6 +1206,15 @@ public class Gossip1 {
         node.slaveof.votedTime = System.currentTimeMillis();
         logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
     }
+
+    public void clusterSendFailoverAuth(ClusterNode node) {
+        if (node.link == null) return;
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK);
+        clusterSendMessage(node.link, hdr);
+    }
+
+    // 发送 failover request ,接收failover ack
+    // CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST -> CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK
 
     public int clusterGetSlaveRank() {
         int rank = 0;
@@ -1272,10 +1285,11 @@ public class Gossip1 {
     }
 
     public void clusterHandleSlaveFailover() {
+        //此方法要求myself是slave而且myself有master而且非手动模式下master有slot还得是挂的状态
 
         long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
         int neededQuorum = (server.cluster.size / 2) + 1;
-        boolean manualFailover = server.cluster.mfEnd != 0 && server.cluster.mfCanStart != 0;
+        boolean manualFailover = server.cluster.mfEnd != 0 && server.cluster.mfCanStart;
 
         server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_HANDLE_FAILOVER;
 
@@ -1288,40 +1302,44 @@ public class Gossip1 {
             return;
         }
 
-        long data_age;
+        //TODO 存疑
+        long dataAge;
         if (server.replState == REPL_STATE_CONNECTED) {
-            data_age = (System.currentTimeMillis() - server.lastinteraction) * 1000;
+            dataAge = (System.currentTimeMillis() - server.lastinteraction) * 1000;
         } else {
-            data_age = (System.currentTimeMillis() - server.replDownSince) * 1000;
+            dataAge = (System.currentTimeMillis() - server.replDownSince) * 1000;
         }
 
-        if (data_age > server.clusterNodeTimeout)
-            data_age -= server.clusterNodeTimeout;
+        if (dataAge > server.clusterNodeTimeout)
+            dataAge -= server.clusterNodeTimeout;
 
-        if (server.clusterSlaveValidityFactor != 0 && data_age > (server.replPingSlavePeriod * 1000) + (server.clusterNodeTimeout * server.clusterSlaveValidityFactor)) {
+        if (server.clusterSlaveValidityFactor != 0 && dataAge > server.replPingSlavePeriod * 1000 + server.clusterNodeTimeout * server.clusterSlaveValidityFactor) {
             if (!manualFailover) {
                 clusterLogCantFailover(CLUSTER_CANT_FAILOVER_DATA_AGE);
                 return;
             }
         }
 
+        //说明是第一次收到ack ,设置一下初始值
         if (authAge > authRetryTime) {
-            server.cluster.failoverAuthTime = System.currentTimeMillis() +
-                    500 + new Random().nextInt(500);
+            server.cluster.failoverAuthTime = System.currentTimeMillis() + 500 + new Random().nextInt(500);
             server.cluster.failoverAuthCount = 0;
-            server.cluster.failoverAuthSent = 0;
-            server.cluster.failoverAuthRank = clusterGetSlaveRank();
+            server.cluster.failoverAuthSent = false;
+            server.cluster.failoverAuthRank = clusterGetSlaveRank();// 大于myself repl offset的同级的slave有多少个 ,在集群中,这个值在每个node中都不同,所以形成rank
             server.cluster.failoverAuthTime += server.cluster.failoverAuthRank * 1000;
             if (server.cluster.mfEnd != 0) {
                 server.cluster.failoverAuthTime = System.currentTimeMillis();
                 server.cluster.failoverAuthRank = 0;
             }
             logger.warn("Start of election delayed for " + (server.cluster.failoverAuthTime - System.currentTimeMillis()) + " milliseconds (rank #" + server.cluster.failoverAuthRank + ", offset " + replicationGetSlaveOffset() + ").");
+            //最先收到failover ack的slave, 要向同级的slave广播一次
             clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES);
             return;
         }
+        //=================================================================================================
 
-        if (server.cluster.failoverAuthSent == 0 && server.cluster.mfEnd == 0) {
+        //failoverAuthRequest还没发送 自动failover rank有变化的时候更新failoverAuthTime,failoverAuthRank
+        if (!server.cluster.failoverAuthSent && server.cluster.mfEnd == 0) {
             int newrank = clusterGetSlaveRank();
             if (newrank > server.cluster.failoverAuthRank) {
                 long addedDelay = (newrank - server.cluster.failoverAuthRank) * 1000;
@@ -1341,12 +1359,14 @@ public class Gossip1 {
             return;
         }
 
-        if (server.cluster.failoverAuthSent == 0) {
+        //还没发送failover auth request
+        if (!server.cluster.failoverAuthSent) {
             server.cluster.currentEpoch++;
             server.cluster.failoverAuthEpoch = server.cluster.currentEpoch;
             logger.warn("Starting a failover election for epoch " + server.cluster.currentEpoch);
+            // 发送CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST
             clusterRequestFailoverAuth();
-            server.cluster.failoverAuthSent = 1;
+            server.cluster.failoverAuthSent = true;
             clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
             return;
         }
@@ -1418,7 +1438,7 @@ public class Gossip1 {
             clientsArePaused();
         }
         server.cluster.mfEnd = 0;
-        server.cluster.mfCanStart = 0;
+        server.cluster.mfCanStart = false;
         server.cluster.mfSlave = null;
         server.cluster.mfMasterOffset = 0;
     }
@@ -1437,12 +1457,12 @@ public class Gossip1 {
 
     public void clusterHandleManualFailover() {
         if (server.cluster.mfEnd == 0) return;
-        if (server.cluster.mfCanStart == 0) return;
+        if (!server.cluster.mfCanStart) return;
 
         if (server.cluster.mfMasterOffset == 0) return;
 
         if (server.cluster.mfMasterOffset == replicationGetSlaveOffset()) {
-            server.cluster.mfCanStart = 1;
+            server.cluster.mfCanStart = true;
             logger.warn("All master replication stream processed, manual failover can start.");
         }
     }
