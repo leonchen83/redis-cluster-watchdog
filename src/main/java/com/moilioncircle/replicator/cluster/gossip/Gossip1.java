@@ -26,8 +26,8 @@ import static java.lang.Integer.parseInt;
 /**
  * Created by Baoyi Chen on 2017/7/6.
  */
-public class Gossip {
-    private static final Log logger = LogFactory.getLog(Gossip.class);
+public class Gossip1 {
+    private static final Log logger = LogFactory.getLog(Gossip1.class);
 
     private ClusterNode myself;
 
@@ -503,24 +503,9 @@ public class Gossip {
         return max;
     }
 
-    public boolean clusterBumpConfigEpochWithoutConsensus() {
-        long maxEpoch = clusterGetMaxEpoch();
-
-        if (myself.configEpoch == 0 || myself.configEpoch != maxEpoch) {
-            server.cluster.currentEpoch++;
-            myself.configEpoch = server.cluster.currentEpoch;
-            clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
-            logger.warn("New configEpoch set to " + myself.configEpoch);
-            return true;
-        }
-        return false;
-    }
-
     public void clusterHandleConfigEpochCollision(ClusterNode sender) {
-        if (sender.configEpoch != myself.configEpoch || !nodeIsMaster(sender) || !nodeIsMaster(myself)) return;
-
+        if (sender.configEpoch != myself.configEpoch || nodeIsSlave(sender) || nodeIsSlave(myself)) return;
         if (sender.name.compareTo(myself.name) <= 0) return;
-
         server.cluster.currentEpoch++;
         myself.configEpoch = server.cluster.currentEpoch;
         clusterSaveConfigOrDie();
@@ -533,9 +518,7 @@ public class Gossip {
         while (it.hasNext()) {
             ClusterNode node = it.next();
             long expire = dictGetUnsignedIntegerVal(node);
-            if (expire < System.currentTimeMillis()) {
-                it.remove();
-            }
+            if (expire < System.currentTimeMillis()) it.remove();
         }
     }
 
@@ -554,16 +537,15 @@ public class Gossip {
         //TODO
     }
 
-    public boolean clusterBlacklistExists(String nodeid) {
+    public boolean clusterBlacklistExists(String nodename) {
         clusterBlacklistCleanup();
-        return server.cluster.nodesBlackList.containsKey(nodeid);
+        return server.cluster.nodesBlackList.containsKey(nodename);
     }
 
     public void markNodeAsFailingIfNeeded(ClusterNode node) {
         int neededQuorum = server.cluster.size / 2 + 1;
 
-        if (!nodeTimedOut(node)) return;
-        if (nodeFailed(node)) return;
+        if (!nodeTimedOut(node) || nodeFailed(node)) return;
 
         int failures = clusterNodeFailureReportsCount(node);
 
@@ -598,18 +580,14 @@ public class Gossip {
 
     public boolean clusterHandshakeInProgress(String ip, int port, int cport) {
         for (ClusterNode node : server.cluster.nodes.values()) {
-            if (!nodeInHandshake(node)) continue;
-            if (node.ip.equalsIgnoreCase(ip) && node.port == port && node.cport == cport) {
+            if (nodeInHandshake(node) && node.ip.equalsIgnoreCase(ip) && node.port == port && node.cport == cport)
                 return true;
-            }
         }
         return false;
     }
 
     public boolean clusterStartHandshake(String ip, int port, int cport) {
-        if (clusterHandshakeInProgress(ip, port, cport)) {
-            return false;
-        }
+        if (clusterHandshakeInProgress(ip, port, cport)) return false;
 
         ClusterNode n = createClusterNode(null, CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_MEET);
         n.ip = ip;
@@ -630,7 +608,7 @@ public class Gossip {
             ClusterNode node = clusterLookupNode(g.nodename);
 
             if (node == null) {
-                if (sender != null && (flags & CLUSTER_NODE_NOADDR) != 0 && !clusterBlacklistExists(g.nodename)) {
+                if (sender != null && (flags & CLUSTER_NODE_NOADDR) == 0 && !clusterBlacklistExists(g.nodename)) {
                     clusterStartHandshake(g.ip, g.port, g.cport);
                 }
                 continue;
@@ -649,14 +627,17 @@ public class Gossip {
                 }
             }
 
-            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && node.pingSent == 0 && clusterNodeFailureReportsCount(node) == 0) {
-                long pongtime = g.pongReceived * 1000;
+            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && node.pingSent == 0 && clusterNodeFailureReportsCount(node) == 0) {
+                //把gossip消息里的节点的pongReceived更新到本地节点上
+                //恶心的是这里需要cluster进行ntp同步，而且误差要小于500ms
+                long pongtime = g.pongReceived;
                 if (pongtime <= (System.currentTimeMillis() + 500) && pongtime > node.pongReceived) {
                     node.pongReceived = pongtime;
                 }
             }
 
-            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && (flags & CLUSTER_NODE_NOADDR) != 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 &&
+            //本地节点有fail状态了, 发送这个gossip消息的节点是正常的,并且本地节点ip端口和远程节点不一致，更新本地节点ip端口信息
+            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && (flags & CLUSTER_NODE_NOADDR) == 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 &&
                     (!node.ip.equalsIgnoreCase(g.ip) || node.port != g.port || node.cport != g.cport)) {
                 if (node.link != null) freeClusterLink(node.link);
                 node.ip = g.ip;
@@ -685,6 +666,7 @@ public class Gossip {
         node.port = port;
         node.cport = cport;
 
+        //更新ip端口后，把原来的链接释放了
         if (node.link != null) freeClusterLink(node.link);
         logger.warn("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
 
@@ -877,7 +859,7 @@ public class Gossip {
             }
 
             if (sender != null) {
-                if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) {
+                if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) { // hdr.slaveof == null
                     clusterSetNodeAsMaster(sender);
                 } else {
                     ClusterNode master = clusterLookupNode(hdr.slaveof);
@@ -1071,7 +1053,7 @@ public class Gossip {
     public void clusterSendPing(ClusterLink link, int type) {
         int gossipcount = 0;
 
-        int freshnodes = server.cluster.nodes.size() - 2;
+        int freshnodes = server.cluster.nodes.size() - 2; //去掉当前节点和发送的目标节点
 
         int wanted = server.cluster.nodes.size() / 10;
         if (wanted < 3) wanted = 3;
@@ -1084,6 +1066,7 @@ public class Gossip {
         ClusterMsg hdr = clusterBuildMessageHdr(type);
 
         int maxiterations = wanted * 3;
+        //不对所有节点发送消息，选取<=wanted个节点
         while (freshnodes > 0 && gossipcount < wanted && maxiterations-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             int idx = new Random().nextInt(list.size());
@@ -1094,7 +1077,7 @@ public class Gossip {
             if ((t.flags & CLUSTER_NODE_PFAIL) != 0) continue;
 
             if ((t.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (t.link == null && t.numslots == 0)) {
-                freshnodes--;
+//                freshnodes--;
                 continue;
             }
 
@@ -1105,6 +1088,7 @@ public class Gossip {
             gossipcount++;
         }
 
+        //把pfail节点加到最后
         if (pfailWanted != 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             for (int i = 0; i < list.size() && pfailWanted > 0; i++) {
