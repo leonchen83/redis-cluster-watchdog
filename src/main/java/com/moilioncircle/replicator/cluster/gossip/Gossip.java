@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 import static com.moilioncircle.replicator.cluster.config.ConfigFileParser.parseLine;
 import static java.lang.Integer.parseInt;
+import static java.lang.Long.parseLong;
 
 /**
  * Created by Baoyi Chen on 2017/7/6.
@@ -504,10 +505,8 @@ public class Gossip {
     }
 
     public void clusterHandleConfigEpochCollision(ClusterNode sender) {
-        if (sender.configEpoch != myself.configEpoch || !nodeIsMaster(sender) || !nodeIsMaster(myself)) return;
-
+        if (sender.configEpoch != myself.configEpoch || nodeIsSlave(sender) || nodeIsSlave(myself)) return;
         if (sender.name.compareTo(myself.name) <= 0) return;
-
         server.cluster.currentEpoch++;
         myself.configEpoch = server.cluster.currentEpoch;
         clusterSaveConfigOrDie();
@@ -520,9 +519,7 @@ public class Gossip {
         while (it.hasNext()) {
             ClusterNode node = it.next();
             long expire = dictGetUnsignedIntegerVal(node);
-            if (expire < System.currentTimeMillis()) {
-                it.remove();
-            }
+            if (expire < System.currentTimeMillis()) it.remove();
         }
     }
 
@@ -541,16 +538,15 @@ public class Gossip {
         //TODO
     }
 
-    public boolean clusterBlacklistExists(String nodeid) {
+    public boolean clusterBlacklistExists(String nodename) {
         clusterBlacklistCleanup();
-        return server.cluster.nodesBlackList.containsKey(nodeid);
+        return server.cluster.nodesBlackList.containsKey(nodename);
     }
 
     public void markNodeAsFailingIfNeeded(ClusterNode node) {
         int neededQuorum = server.cluster.size / 2 + 1;
 
-        if (!nodeTimedOut(node)) return;
-        if (nodeFailed(node)) return;
+        if (!nodeTimedOut(node) || nodeFailed(node)) return;
 
         int failures = clusterNodeFailureReportsCount(node);
 
@@ -585,18 +581,14 @@ public class Gossip {
 
     public boolean clusterHandshakeInProgress(String ip, int port, int cport) {
         for (ClusterNode node : server.cluster.nodes.values()) {
-            if (!nodeInHandshake(node)) continue;
-            if (node.ip.equalsIgnoreCase(ip) && node.port == port && node.cport == cport) {
+            if (nodeInHandshake(node) && node.ip.equalsIgnoreCase(ip) && node.port == port && node.cport == cport)
                 return true;
-            }
         }
         return false;
     }
 
     public boolean clusterStartHandshake(String ip, int port, int cport) {
-        if (clusterHandshakeInProgress(ip, port, cport)) {
-            return false;
-        }
+        if (clusterHandshakeInProgress(ip, port, cport)) return false;
 
         ClusterNode n = createClusterNode(null, CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_MEET);
         n.ip = ip;
@@ -617,7 +609,7 @@ public class Gossip {
             ClusterNode node = clusterLookupNode(g.nodename);
 
             if (node == null) {
-                if (sender != null && (flags & CLUSTER_NODE_NOADDR) != 0 && !clusterBlacklistExists(g.nodename)) {
+                if (sender != null && (flags & CLUSTER_NODE_NOADDR) == 0 && !clusterBlacklistExists(g.nodename)) {
                     clusterStartHandshake(g.ip, g.port, g.cport);
                 }
                 continue;
@@ -636,14 +628,17 @@ public class Gossip {
                 }
             }
 
-            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && node.pingSent == 0 && clusterNodeFailureReportsCount(node) == 0) {
-                long pongtime = g.pongReceived * 1000;
+            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && node.pingSent == 0 && clusterNodeFailureReportsCount(node) == 0) {
+                //把gossip消息里的节点的pongReceived更新到本地节点上
+                //恶心的是这里需要cluster进行ntp同步，而且误差要小于500ms
+                long pongtime = g.pongReceived;
                 if (pongtime <= (System.currentTimeMillis() + 500) && pongtime > node.pongReceived) {
                     node.pongReceived = pongtime;
                 }
             }
 
-            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && (flags & CLUSTER_NODE_NOADDR) != 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 &&
+            //本地节点有fail状态了, 发送这个gossip消息的节点是正常的,并且本地节点ip端口和远程节点不一致，更新本地节点ip端口信息
+            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && (flags & CLUSTER_NODE_NOADDR) == 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 &&
                     (!node.ip.equalsIgnoreCase(g.ip) || node.port != g.port || node.cport != g.cport)) {
                 if (node.link != null) freeClusterLink(node.link);
                 node.ip = g.ip;
@@ -672,6 +667,7 @@ public class Gossip {
         node.port = port;
         node.cport = cport;
 
+        //更新ip端口后，把原来的链接释放了
         if (node.link != null) freeClusterLink(node.link);
         logger.warn("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
 
@@ -718,7 +714,7 @@ public class Gossip {
                 if (server.cluster.importingSlotsFrom[i] != null) continue;
 
                 if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
-                    if (server.cluster.slots[i].equals(myself) && countKeysInSlot(i) && !sender.equals(myself)) {
+                    if (server.cluster.slots[i].equals(myself) && countKeysInSlot(i) != 0 && !sender.equals(myself)) {
                         dirtySlots[dirtySlotsCount] = i;
                         dirtySlotsCount++;
                     }
@@ -746,9 +742,9 @@ public class Gossip {
         //TODO
     }
 
-    private boolean countKeysInSlot(int i) {
+    private int countKeysInSlot(int i) {
         //TODO
-        return false;
+        return 0;
     }
 
     public boolean clusterProcessPacket(ClusterLink link, Message message) {
@@ -864,7 +860,7 @@ public class Gossip {
             }
 
             if (sender != null) {
-                if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) {
+                if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) { // hdr.slaveof == null
                     clusterSetNodeAsMaster(sender);
                 } else {
                     ClusterNode master = clusterLookupNode(hdr.slaveof);
@@ -938,7 +934,7 @@ public class Gossip {
         } else if (type == CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK) {
             if (sender == null) return true;
             if (nodeIsMaster(sender) && sender.numslots > 0 && senderCurrentEpoch >= server.cluster.failoverAuthEpoch) {
-                server.cluster.failoverAuthEpoch++;
+                server.cluster.failoverAuthCount++;
                 clusterDoBeforeSleep(CLUSTER_TODO_HANDLE_FAILOVER);
             }
         } else if (type == CLUSTERMSG_TYPE_MFSTART) {
@@ -1058,7 +1054,7 @@ public class Gossip {
     public void clusterSendPing(ClusterLink link, int type) {
         int gossipcount = 0;
 
-        int freshnodes = server.cluster.nodes.size() - 2;
+        int freshnodes = server.cluster.nodes.size() - 2; //去掉当前节点和发送的目标节点
 
         int wanted = server.cluster.nodes.size() / 10;
         if (wanted < 3) wanted = 3;
@@ -1071,6 +1067,7 @@ public class Gossip {
         ClusterMsg hdr = clusterBuildMessageHdr(type);
 
         int maxiterations = wanted * 3;
+        //不对所有节点发送消息，选取<=wanted个节点
         while (freshnodes > 0 && gossipcount < wanted && maxiterations-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             int idx = new Random().nextInt(list.size());
@@ -1081,7 +1078,7 @@ public class Gossip {
             if ((t.flags & CLUSTER_NODE_PFAIL) != 0) continue;
 
             if ((t.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (t.link == null && t.numslots == 0)) {
-                freshnodes--;
+//                freshnodes--;
                 continue;
             }
 
@@ -1092,6 +1089,7 @@ public class Gossip {
             gossipcount++;
         }
 
+        //把pfail节点加到最后
         if (pfailWanted != 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             for (int i = 0; i < list.size() && pfailWanted > 0; i++) {
@@ -1116,6 +1114,7 @@ public class Gossip {
             if (node.link == null) continue;
             if (node.equals(myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
+                //node.slaveof.equals(myself)这个条件有点问题
                 boolean localSlave = nodeIsSlave(node) && node.slaveof != null && (node.slaveof.equals(myself) || node.slaveof.equals(myself.slaveof));
                 if (!localSlave) continue;
             }
@@ -1138,31 +1137,24 @@ public class Gossip {
         clusterSendMessage(link, hdr);
     }
 
-    public void clusterRequestFailoverAuth() {
-        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST);
-        if (server.cluster.mfEnd > 0) hdr.mflags[0] |= CLUSTERMSG_FLAG0_FORCEACK;
-        clusterBroadcastMessage(hdr);
-    }
-
-    public void clusterSendFailoverAuth(ClusterNode node) {
-        if (node.link == null) return;
-        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK);
-        clusterSendMessage(node.link, hdr);
-    }
-
     public void clusterSendMFStart(ClusterNode node) {
         if (node.link == null) return;
         ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_MFSTART);
         clusterSendMessage(node.link, hdr);
     }
 
-    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMsg request) {
-        ClusterNode master = node.slaveof;
-        long requestCurrentEpoch = request.currentEpoch;
-        long requestConfigEpoch = request.configEpoch;
-        byte[] claimedSlots = request.myslots;
-        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
+    // 一对
+    public void clusterRequestFailoverAuth() {
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST);
+        if (server.cluster.mfEnd > 0) hdr.mflags[0] |= CLUSTERMSG_FLAG0_FORCEACK;
+        clusterBroadcastMessage(hdr);
+    }
 
+    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMsg request) {
+
+        long requestCurrentEpoch = request.currentEpoch;
+
+        //只有持有1个以上slot的master有投票权
         if (nodeIsSlave(myself) || myself.numslots == 0) return;
 
         if (requestCurrentEpoch < server.cluster.currentEpoch) {
@@ -1170,11 +1162,15 @@ public class Gossip {
             return;
         }
 
+        //已经投完票的直接返回
         if (server.cluster.lastVoteEpoch == server.cluster.currentEpoch) {
             logger.warn("Failover auth denied to " + node.name + ": already voted for epoch " + server.cluster.currentEpoch);
             return;
         }
 
+        ClusterNode master = node.slaveof;
+        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
+        //目标node是master 或者 目标node的master不明确 或者在非手动模式下目标node的master没挂都返回
         if (nodeIsMaster(node) || master == null || (!nodeFailed(master) && !forceAck)) {
             if (nodeIsMaster(node)) {
                 logger.warn("Failover auth denied to " + node.name + ": it is a master node");
@@ -1186,13 +1182,19 @@ public class Gossip {
             return;
         }
 
+        //这里要求目标node 是slave, 目标node的master != null,目标node的master没挂的情况下必须forceAck为true
+
+        //这里是投票超时的情况
         if (System.currentTimeMillis() - node.slaveof.votedTime < server.clusterNodeTimeout * 2) {
             logger.warn("Failover auth denied to " + node.name + ": can't vote about this master before " + (server.clusterNodeTimeout * 2 - System.currentTimeMillis() - node.slaveof.votedTime) + " milliseconds");
             return;
         }
 
+        byte[] claimedSlots = request.myslots;
+        long requestConfigEpoch = request.configEpoch;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(claimedSlots, i)) continue;
+            // 检测本地slot的configEpoch必须要小于等于远程的, 否则认为本地较新, 终止投票
             if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= requestConfigEpoch) {
                 continue;
             }
@@ -1205,6 +1207,15 @@ public class Gossip {
         node.slaveof.votedTime = System.currentTimeMillis();
         logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
     }
+
+    public void clusterSendFailoverAuth(ClusterNode node) {
+        if (node.link == null) return;
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK);
+        clusterSendMessage(node.link, hdr);
+    }
+
+    // 发送 failover request ,接收failover ack
+    // CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST -> CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK
 
     public int clusterGetSlaveRank() {
         int rank = 0;
@@ -1275,6 +1286,8 @@ public class Gossip {
     }
 
     public void clusterHandleSlaveFailover() {
+        //此方法要求myself是slave而且myself有master而且非手动模式下master有slot还得是挂的状态
+        //还有一种情况是200ms检测一次是否需要failover 在clusterCron里
 
         long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
         int neededQuorum = (server.cluster.size / 2) + 1;
@@ -1286,22 +1299,30 @@ public class Gossip {
         if (authTimeout < 2000) authTimeout = 2000;
         long authRetryTime = authTimeout * 2;
 
+        /* Pre conditions to run the function, that must be met both in case
+         * of an automatic or manual failover:
+         * 1) We are a slave.
+         * 2) Our master is flagged as FAIL, or this is a manual failover.
+         * 3) It is serving slots. */
         if (nodeIsMaster(myself) || myself.slaveof == null || (!nodeFailed(myself.slaveof) && !manualFailover) || myself.slaveof.numslots == 0) {
             server.cluster.cantFailoverReason = CLUSTER_CANT_FAILOVER_NONE;
             return;
         }
 
-        long data_age;
+        /* Set dataAge to the number of seconds we are disconnected from the master. */
+        long dataAge;
         if (server.replState == REPL_STATE_CONNECTED) {
-            data_age = (System.currentTimeMillis() - server.lastinteraction) * 1000;
+            dataAge = (System.currentTimeMillis() - server.lastinteraction) * 1000;
         } else {
-            data_age = (System.currentTimeMillis() - server.replDownSince) * 1000;
+            dataAge = (System.currentTimeMillis() - server.replDownSince) * 1000;
         }
 
-        if (data_age > server.clusterNodeTimeout)
-            data_age -= server.clusterNodeTimeout;
+        //减去clusterNodeTimeout时间,因为断开之后要等一个clusterNodeTimeout
+        if (dataAge > server.clusterNodeTimeout)
+            dataAge -= server.clusterNodeTimeout;
 
-        if (server.clusterSlaveValidityFactor != 0 && data_age > (server.replPingSlavePeriod * 1000) + (server.clusterNodeTimeout * server.clusterSlaveValidityFactor)) {
+        //超过了要等的最大时间,如果不是手动的话返回
+        if (server.clusterSlaveValidityFactor != 0 && dataAge > server.replPingSlavePeriod * 1000 + server.clusterNodeTimeout * server.clusterSlaveValidityFactor) {
             if (!manualFailover) {
                 clusterLogCantFailover(CLUSTER_CANT_FAILOVER_DATA_AGE);
                 return;
@@ -1309,21 +1330,22 @@ public class Gossip {
         }
 
         if (authAge > authRetryTime) {
-            server.cluster.failoverAuthTime = System.currentTimeMillis() +
-                    500 + new Random().nextInt(500);
+            server.cluster.failoverAuthTime = System.currentTimeMillis() + 500 + new Random().nextInt(500);
             server.cluster.failoverAuthCount = 0;
             server.cluster.failoverAuthSent = false;
-            server.cluster.failoverAuthRank = clusterGetSlaveRank();
+            server.cluster.failoverAuthRank = clusterGetSlaveRank();// 大于myself repl offset的同级的slave有多少个 ,在集群中,这个值在每个node中都不同,所以形成rank
             server.cluster.failoverAuthTime += server.cluster.failoverAuthRank * 1000;
             if (server.cluster.mfEnd != 0) {
                 server.cluster.failoverAuthTime = System.currentTimeMillis();
                 server.cluster.failoverAuthRank = 0;
             }
             logger.warn("Start of election delayed for " + (server.cluster.failoverAuthTime - System.currentTimeMillis()) + " milliseconds (rank #" + server.cluster.failoverAuthRank + ", offset " + replicationGetSlaveOffset() + ").");
+            //向同级的slave广播一次
             clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES);
             return;
         }
 
+        //failoverAuthRequest还没发送 自动failover rank有变化的时候更新failoverAuthTime,failoverAuthRank
         if (!server.cluster.failoverAuthSent && server.cluster.mfEnd == 0) {
             int newrank = clusterGetSlaveRank();
             if (newrank > server.cluster.failoverAuthRank) {
@@ -1344,10 +1366,12 @@ public class Gossip {
             return;
         }
 
+        //还没发送failover auth request
         if (!server.cluster.failoverAuthSent) {
             server.cluster.currentEpoch++;
             server.cluster.failoverAuthEpoch = server.cluster.currentEpoch;
             logger.warn("Starting a failover election for epoch " + server.cluster.currentEpoch);
+            // 发送CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST
             clusterRequestFailoverAuth();
             server.cluster.failoverAuthSent = true;
             clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
@@ -1608,7 +1632,7 @@ public class Gossip {
         if (nodeIsSlave(myself)) return true;
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (!countKeysInSlot(i)) continue;
+            if (countKeysInSlot(i) == 0) continue;
             if (server.cluster.slots[i].equals(myself) || server.cluster.importingSlotsFrom[i] != null) continue;
 
             updateConfig = true;
@@ -1913,6 +1937,397 @@ public class Gossip {
 
         if (updateState || server.cluster.state == CLUSTER_FAIL)
             clusterUpdateState();
+    }
+
+    public boolean clusterBumpConfigEpochWithoutConsensus() {
+        long maxEpoch = clusterGetMaxEpoch();
+
+        if (myself.configEpoch == 0 || myself.configEpoch != maxEpoch) {
+            server.cluster.currentEpoch++;
+            myself.configEpoch = server.cluster.currentEpoch;
+            clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
+            logger.warn("New configEpoch set to " + myself.configEpoch);
+            return true;
+        }
+        return false;
+    }
+
+    public void clusterCommand(Transport t, String[] argv) {
+        if (!server.clusterEnabled) {
+            reply(t, "This instance has cluster support disabled");
+            return;
+        }
+
+        if (argv[1].equalsIgnoreCase("meet") && (argv.length == 4 || argv.length == 5)) {
+            /* CLUSTER MEET <ip> <port> [cport] */
+            int cport = 0;
+            int port = parseInt(argv[3]);
+            if (argv.length == 5) {
+                cport = parseInt(argv[4]);
+            } else {
+                cport = port + CLUSTER_PORT_INCR;
+            }
+
+            clusterStartHandshake(argv[2], port, cport);
+        } else if (argv[1].equalsIgnoreCase("nodes") && argv.length == 2) {
+            /* CLUSTER NODES */
+            String ci = clusterGenNodesDescription(0);
+            reply(t, ci);
+        } else if (argv[1].equalsIgnoreCase("myid") && argv.length == 2) {
+            /* CLUSTER MYID */
+            reply(t, myself.name);
+        } else if (argv[1].equalsIgnoreCase("flushslots") && argv.length == 2) {
+            /* CLUSTER FLUSHSLOTS */
+            clusterDelNodeSlots(myself);
+            clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
+            reply(t, "OK");
+        } else if ((argv[1].equalsIgnoreCase("addslots") || argv[1].equalsIgnoreCase("delslots")) && argv.length >= 3) {
+            /* CLUSTER ADDSLOTS <slot> [slot] ... */
+            /* CLUSTER DELSLOTS <slot> [slot] ... */
+
+            byte[] slots = new byte[CLUSTER_SLOTS];
+            boolean del = argv[1].equalsIgnoreCase("delslots");
+
+            for (int j = 2; j < argv.length; j++) {
+                int slot = parseInt(argv[j]);
+                if (slot < 0 || slot >= CLUSTER_SLOTS) {
+                    replyError(t, "Invalid or out of range slot");
+                    return;
+                }
+                if (del && server.cluster.slots[slot] == null) {
+                    replyError(t, "Slot " + slot + " is already unassigned");
+                    return;
+                } else if (!del && server.cluster.slots[slot] != null) {
+                    replyError(t, "Slot " + slot + " is already busy");
+                    return;
+                }
+                if (slots[slot]++ == 1) {
+                    replyError(t, "Slot " + slot + " specified multiple times");
+                    return;
+                }
+            }
+            for (int j = 0; j < CLUSTER_SLOTS; j++) {
+                if (slots[j] != 0) {
+                    if (server.cluster.importingSlotsFrom[j] != null)
+                        server.cluster.importingSlotsFrom[j] = null;
+                    boolean retval = del ? clusterDelSlot(j) : clusterAddSlot(myself, j);
+                }
+            }
+            clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
+            reply(t, "OK");
+        } else if (argv[1].equalsIgnoreCase("setslot") && argv.length >= 4) {
+            /* SETSLOT 10 MIGRATING <node ID> */
+            /* SETSLOT 10 IMPORTING <node ID> */
+            /* SETSLOT 10 STABLE */
+            /* SETSLOT 10 NODE <node ID> */
+            if (nodeIsSlave(myself)) {
+                replyError(t, "Please use SETSLOT only with masters.");
+                return;
+            }
+
+            int slot = parseInt(argv[2]);
+            if (slot < 0 || slot >= CLUSTER_SLOTS) {
+                replyError(t, "Invalid or out of range slot");
+                return;
+            }
+
+            if (argv[3].equalsIgnoreCase("migrating") && argv.length == 5) {
+                if (!server.cluster.slots[slot].equals(myself)) {
+                    replyError(t, "I'm not the owner of hash slot " + slot);
+                    return;
+                }
+                ClusterNode n;
+                if ((n = clusterLookupNode(argv[4])) == null) {
+                    replyError(t, "I don't know about node " + argv[4]);
+                    return;
+                }
+                server.cluster.migratingSlotsTo[slot] = n;
+            } else if (argv[3].equalsIgnoreCase("importing") && argv.length == 5) {
+                if (server.cluster.slots[slot].equals(myself)) {
+                    replyError(t, "I'm already the owner of hash slot " + slot);
+                    return;
+                }
+                ClusterNode n;
+                if ((n = clusterLookupNode(argv[4])) == null) {
+                    replyError(t, "I don't know about node " + argv[3]);
+                    return;
+                }
+                server.cluster.importingSlotsFrom[slot] = n;
+            } else if (argv[3].equalsIgnoreCase("stable") && argv.length == 4) {
+                /* CLUSTER SETSLOT <SLOT> STABLE */
+                server.cluster.importingSlotsFrom[slot] = null;
+                server.cluster.migratingSlotsTo[slot] = null;
+            } else if (argv[3].equalsIgnoreCase("node") && argv.length == 5) {
+                /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
+                ClusterNode n = clusterLookupNode(argv[4]);
+
+                if (n == null) {
+                    replyError(t, "Unknown node " + argv[4]);
+                    return;
+                }
+                if (server.cluster.slots[slot].equals(myself) && !n.equals(myself)) {
+                    if (countKeysInSlot(slot) != 0) {
+                        replyError(t, "Can't assign hashslot " + slot + " to a different node while I still hold keys for this hash slot.");
+                        return;
+                    }
+                }
+                if (countKeysInSlot(slot) == 0 && server.cluster.migratingSlotsTo[slot] != null)
+                    server.cluster.migratingSlotsTo[slot] = null;
+
+                if (n.equals(myself) && server.cluster.importingSlotsFrom[slot] != null) {
+                    if (clusterBumpConfigEpochWithoutConsensus()) {
+                        logger.warn("configEpoch updated after importing slot " + slot);
+                    }
+                    server.cluster.importingSlotsFrom[slot] = null;
+                }
+                clusterDelSlot(slot);
+                clusterAddSlot(n, slot);
+            } else {
+                replyError(t, "Invalid CLUSTER SETSLOT action or number of arguments");
+                return;
+            }
+            clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
+            reply(t, "OK");
+        } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
+            /* CLUSTER BUMPEPOCH */
+            boolean retval = clusterBumpConfigEpochWithoutConsensus();
+            String reply = new StringBuilder("+").append(retval ? "BUMPED" : "STILL").append(" ").append(myself.configEpoch).append("\r\n").toString();
+            replyString(t, reply);
+        } else if (argv[1].equalsIgnoreCase("info") && argv.length == 2) {
+            /* CLUSTER INFO */
+            String[] statestr = {"ok", "fail", "needhelp"};
+            int slotsAssigned = 0, slotsOk = 0, slotsFail = 0, slotsPfail = 0;
+
+            for (int j = 0; j < CLUSTER_SLOTS; j++) {
+                ClusterNode n = server.cluster.slots[j];
+
+                if (n == null) continue;
+                slotsAssigned++;
+                if (nodeFailed(n)) {
+                    slotsFail++;
+                } else if (nodeTimedOut(n)) {
+                    slotsPfail++;
+                } else {
+                    slotsOk++;
+                }
+            }
+
+            long myepoch = (nodeIsSlave(myself) && myself.slaveof != null) ? myself.slaveof.configEpoch : myself.configEpoch;
+
+            StringBuilder info = new StringBuilder("cluster_state:").append(statestr[server.cluster.state]).append("\r\n")
+                    .append("cluster_slots_assigned:").append(slotsAssigned).append("\r\n")
+                    .append("cluster_slots_ok:").append(slotsOk).append("\r\n")
+                    .append("cluster_slots_pfail:").append(slotsPfail).append("\r\n")
+                    .append("cluster_slots_fail:").append(slotsFail).append("\r\n")
+                    .append("cluster_known_nodes:").append(server.cluster.nodes.size()).append("\r\n")
+                    .append("cluster_size:").append(server.cluster.size).append("\r\n")
+                    .append("cluster_current_epoch:").append(server.cluster.currentEpoch).append("\r\n")
+                    .append("cluster_my_epoch:").append(myepoch).append("\r\n");
+
+
+            long totMsgSent = 0;
+            long totMsgReceived = 0;
+
+            for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
+                if (server.cluster.statsBusMessagesSent[i] == 0) continue;
+                totMsgSent += server.cluster.statsBusMessagesSent[i];
+                info.append("cluster_stats_messages_" + clusterGetMessageTypeString(i) + "_sent:").append(server.cluster.statsBusMessagesSent[i]).append("\r\n");
+            }
+
+            info.append("cluster_stats_messages_sent:").append(totMsgSent).append("\r\n");
+
+            for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
+                if (server.cluster.statsBusMessagesReceived[i] == 0) continue;
+                totMsgReceived += server.cluster.statsBusMessagesReceived[i];
+                info.append("cluster_stats_messages_" + clusterGetMessageTypeString(i) + "_received:").append(server.cluster.statsBusMessagesReceived[i]).append("\r\n");
+            }
+
+            info.append("cluster_stats_messages_received:").append(totMsgReceived).append("\r\n");
+
+            String s = "$" + info.length() + "\r\n" + info.toString() + "\r\n";
+            replyString(t, s);
+        } else if (argv[1].equalsIgnoreCase("saveconfig") && argv.length == 2) {
+            if (clusterSaveConfig())
+                reply(t, "OK");
+            else
+                replyError(t, "error saving the cluster node config.");
+        } else if (argv[1].equalsIgnoreCase("keyslot") && argv.length == 3) {
+            /* CLUSTER KEYSLOT <key> */
+            reply(t, String.valueOf(keyHashSlot(argv[2])));
+        } else if (argv[1].equalsIgnoreCase("countkeysinslot") && argv.length == 3) {
+            /* CLUSTER COUNTKEYSINSLOT <slot> */
+            int slot = parseInt(argv[2]);
+            if (slot < 0 || slot >= CLUSTER_SLOTS) {
+                replyError(t, "Invalid slot");
+                return;
+            }
+            reply(t, String.valueOf(countKeysInSlot(slot)));
+        } else if (argv[1].equalsIgnoreCase("forget") && argv.length == 3) {
+            /* CLUSTER FORGET <NODE ID> */
+            ClusterNode n = clusterLookupNode(argv[2]);
+
+            if (n == null) {
+                replyError(t, "Unknown node " + argv[2]);
+                return;
+            } else if (n.equals(myself)) {
+                replyError(t, "I tried hard but I can't forget myself...");
+                return;
+            } else if (nodeIsSlave(myself) && myself.slaveof.equals(n)) {
+                replyError(t, "Can't forget my master!");
+                return;
+            }
+            clusterBlacklistAddNode(n);
+            clusterDelNode(n);
+            clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
+            reply(t, "OK");
+        } else if (argv[1].equalsIgnoreCase("replicate") && argv.length == 3) {
+            /* CLUSTER REPLICATE <NODE ID> */
+            ClusterNode n = clusterLookupNode(argv[2]);
+
+            if (n == null) {
+                replyError(t, "Unknown node " + argv[2]);
+                return;
+            }
+
+            if (n.equals(myself)) {
+                replyError(t, "Can't replicate myself");
+                return;
+            }
+
+            if (nodeIsSlave(n)) {
+                replyError(t, "I can only replicate a master, not a slave.");
+                return;
+            }
+
+            if (nodeIsMaster(myself) && (myself.numslots != 0 /*|| dictSize(server.db[0].dict) != 0 */)) {
+                replyError(t, "To set a master the node must be empty and without assigned slots.");
+                return;
+            }
+
+            clusterSetMaster(n);
+            clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
+            reply(t, "OK");
+        } else if (argv[1].equalsIgnoreCase("slaves") && argv.length == 3) {
+            /* CLUSTER SLAVES <NODE ID> */
+            ClusterNode n = clusterLookupNode(argv[2]);
+
+            if (n == null) {
+                replyError(t, "Unknown node " + argv[2]);
+                return;
+            }
+
+            if (nodeIsSlave(n)) {
+                replyError(t, "The specified node is not a master");
+                return;
+            }
+
+            for (int j = 0; j < n.numslaves; j++) {
+                String ni = clusterGenNodeDescription(n.slaves.get(j));
+            }
+            //TODO
+        } else if (argv[1].equalsIgnoreCase("count-failure-reports") && argv.length == 3) {
+            /* CLUSTER COUNT-FAILURE-REPORTS <NODE ID> */
+            ClusterNode n = clusterLookupNode(argv[2]);
+
+            if (n == null) {
+                replyError(t, "Unknown node " + argv[2]);
+                return;
+            } else {
+                reply(t, String.valueOf(clusterNodeFailureReportsCount(n)));
+            }
+        } else if (argv[1].equalsIgnoreCase("failover") && (argv.length == 2 || argv.length == 3)) {
+            /* CLUSTER FAILOVER [FORCE|TAKEOVER] */
+            boolean force = false, takeover = false;
+
+            if (argv.length == 3) {
+                if (argv[2].equalsIgnoreCase("force")) {
+                    force = true;
+                } else if (argv[2].equalsIgnoreCase("takeover")) {
+                    takeover = true;
+                    force = true;
+                } else {
+                    reply(t, "syntax error");
+                    return;
+                }
+            }
+
+            /* Check preconditions. */
+            if (nodeIsMaster(myself)) {
+                replyError(t, "You should send CLUSTER FAILOVER to a slave");
+                return;
+            } else if (myself.slaveof == null) {
+                replyError(t, "I'm a slave but my master is unknown to me");
+                return;
+            } else if (!force && (nodeFailed(myself.slaveof) || myself.slaveof.link == null)) {
+                replyError(t, "Master is down or failed, please use CLUSTER FAILOVER FORCE");
+                return;
+            }
+            resetManualFailover();
+            server.cluster.mfEnd = System.currentTimeMillis() + CLUSTER_MF_TIMEOUT;
+
+            if (takeover) {
+                logger.warn("Taking over the master (user request).");
+                clusterBumpConfigEpochWithoutConsensus();
+                clusterFailoverReplaceYourMaster();
+            } else if (force) {
+                logger.warn("Forced failover user request accepted.");
+                server.cluster.mfCanStart = true;
+            } else {
+                logger.warn("Manual failover user request accepted.");
+                clusterSendMFStart(myself.slaveof);
+            }
+            reply(t, "OK");
+        } else if (argv[1].equalsIgnoreCase("set-config-epoch") && argv.length == 3) {
+            long epoch = parseLong(argv[2]);
+
+            if (epoch < 0) {
+                replyError(t, "Invalid config epoch specified: " + epoch);
+            } else if (server.cluster.nodes.size() > 1) {
+                replyError(t, "The user can assign a config epoch only when the node does not know any other node.");
+            } else if (myself.configEpoch != 0) {
+                replyError(t, "Node config epoch is already non-zero");
+            } else {
+                myself.configEpoch = epoch;
+                logger.warn("configEpoch set to " + myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
+                if (server.cluster.currentEpoch < epoch)
+                    server.cluster.currentEpoch = epoch;
+                clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
+                reply(t, "OK");
+            }
+        } else if (argv[1].equalsIgnoreCase("reset") && (argv.length == 2 || argv.length == 3)) {
+            boolean hard = false;
+            if (argv.length == 3) {
+                if (argv[2].equalsIgnoreCase("hard")) {
+                    hard = true;
+                } else if (argv[2].equalsIgnoreCase("soft")) {
+                    hard = false;
+                } else {
+                    reply(t, "syntax error");
+                    return;
+                }
+            }
+
+            if (nodeIsMaster(myself) /* && dictSize(c -> db -> dict) != 0 */) {
+                replyError(t, "CLUSTER RESET can't be called with master nodes containing keys");
+                return;
+            }
+            clusterReset(hard);
+            reply(t, "OK");
+        } else {
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
+        }
+    }
+
+    private void replyString(Transport t, String s) {
+
+    }
+
+    private void replyError(Transport t, String s) {
+
+    }
+
+    private void reply(Transport t, String s) {
+
     }
 
 }
