@@ -503,19 +503,6 @@ public class Gossip {
         return max;
     }
 
-    public boolean clusterBumpConfigEpochWithoutConsensus() {
-        long maxEpoch = clusterGetMaxEpoch();
-
-        if (myself.configEpoch == 0 || myself.configEpoch != maxEpoch) {
-            server.cluster.currentEpoch++;
-            myself.configEpoch = server.cluster.currentEpoch;
-            clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
-            logger.warn("New configEpoch set to " + myself.configEpoch);
-            return true;
-        }
-        return false;
-    }
-
     public void clusterHandleConfigEpochCollision(ClusterNode sender) {
         if (sender.configEpoch != myself.configEpoch || !nodeIsMaster(sender) || !nodeIsMaster(myself)) return;
 
@@ -1291,7 +1278,7 @@ public class Gossip {
 
         long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
         int neededQuorum = (server.cluster.size / 2) + 1;
-        boolean manualFailover = server.cluster.mfEnd != 0 && server.cluster.mfCanStart != 0;
+        boolean manualFailover = server.cluster.mfEnd != 0 && server.cluster.mfCanStart;
 
         server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_HANDLE_FAILOVER;
 
@@ -1325,7 +1312,7 @@ public class Gossip {
             server.cluster.failoverAuthTime = System.currentTimeMillis() +
                     500 + new Random().nextInt(500);
             server.cluster.failoverAuthCount = 0;
-            server.cluster.failoverAuthSent = 0;
+            server.cluster.failoverAuthSent = false;
             server.cluster.failoverAuthRank = clusterGetSlaveRank();
             server.cluster.failoverAuthTime += server.cluster.failoverAuthRank * 1000;
             if (server.cluster.mfEnd != 0) {
@@ -1337,7 +1324,7 @@ public class Gossip {
             return;
         }
 
-        if (server.cluster.failoverAuthSent == 0 && server.cluster.mfEnd == 0) {
+        if (!server.cluster.failoverAuthSent && server.cluster.mfEnd == 0) {
             int newrank = clusterGetSlaveRank();
             if (newrank > server.cluster.failoverAuthRank) {
                 long addedDelay = (newrank - server.cluster.failoverAuthRank) * 1000;
@@ -1357,12 +1344,12 @@ public class Gossip {
             return;
         }
 
-        if (server.cluster.failoverAuthSent == 0) {
+        if (!server.cluster.failoverAuthSent) {
             server.cluster.currentEpoch++;
             server.cluster.failoverAuthEpoch = server.cluster.currentEpoch;
             logger.warn("Starting a failover election for epoch " + server.cluster.currentEpoch);
             clusterRequestFailoverAuth();
-            server.cluster.failoverAuthSent = 1;
+            server.cluster.failoverAuthSent = true;
             clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
             return;
         }
@@ -1434,7 +1421,7 @@ public class Gossip {
             clientsArePaused();
         }
         server.cluster.mfEnd = 0;
-        server.cluster.mfCanStart = 0;
+        server.cluster.mfCanStart = false;
         server.cluster.mfSlave = null;
         server.cluster.mfMasterOffset = 0;
     }
@@ -1453,12 +1440,12 @@ public class Gossip {
 
     public void clusterHandleManualFailover() {
         if (server.cluster.mfEnd == 0) return;
-        if (server.cluster.mfCanStart == 0) return;
+        if (!server.cluster.mfCanStart) return;
 
         if (server.cluster.mfMasterOffset == 0) return;
 
         if (server.cluster.mfMasterOffset == replicationGetSlaveOffset()) {
-            server.cluster.mfCanStart = 1;
+            server.cluster.mfCanStart = true;
             logger.warn("All master replication stream processed, manual failover can start.");
         }
     }

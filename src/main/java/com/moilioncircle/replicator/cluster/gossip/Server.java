@@ -29,4 +29,5 @@ public class Server {
     public long clientsPauseEndTime;
     public boolean clusterRequireFullCoverage;
     public String masterhost;
+    public boolean clusterEnabled;
 }
