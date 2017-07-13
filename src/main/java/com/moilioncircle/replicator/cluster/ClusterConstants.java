@@ -65,7 +65,7 @@ public class ClusterConstants {
         return (n.flags & CLUSTER_NODE_NOADDR) != 0;
     }
 
-    public static boolean nodeTimedOut(ClusterNode n) {
+    public static boolean nodePFailed(ClusterNode n) {
         return (n.flags & CLUSTER_NODE_PFAIL) != 0;
     }
 
@@ -83,7 +83,6 @@ public class ClusterConstants {
     public static final int CLUSTER_TODO_HANDLE_FAILOVER = (1 << 0);
     public static final int CLUSTER_TODO_UPDATE_STATE = (1 << 1);
     public static final int CLUSTER_TODO_SAVE_CONFIG = (1 << 2);
-    public static final int CLUSTER_TODO_FSYNC_CONFIG = (1 << 3);
 
     public static final int CLUSTERMSG_TYPE_PING = 0;          /* Ping */
     public static final int CLUSTERMSG_TYPE_PONG = 1;          /* Pong (reply to Ping) */
@@ -96,12 +95,10 @@ public class ClusterConstants {
     public static final int CLUSTERMSG_TYPE_MFSTART = 8;       /* Pause clients for manual failover */
     public static final int CLUSTERMSG_TYPE_COUNT = 9;
 
-    public static final int CLUSTERMSG_MIN_LEN = 100; //TODO
-
     public static final int CLUSTERMSG_FLAG0_PAUSED = (1 << 0); /* Master paused for manual failover. */
     public static final int CLUSTERMSG_FLAG0_FORCEACK = (1 << 1); /* Give ACK to AUTH_REQUEST even if is up. *//* Total number of message types. */
 
-    public static final int CLUSTER_BLACKLIST_TTL = 60;
+    public static final int CLUSTER_BLACKLIST_TTL = 60000;
 
     public static final int REPL_STATE_CONNECTED = 15;
     public static final int CLUSTER_MAX_REJOIN_DELAY = 5000;

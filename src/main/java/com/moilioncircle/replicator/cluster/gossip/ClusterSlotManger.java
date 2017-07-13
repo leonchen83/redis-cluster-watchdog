@@ -5,6 +5,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
+import static com.moilioncircle.replicator.cluster.util.Crc16.crc16;
 
 /**
  * Created by Baoyi Chen on 2017/7/12.
@@ -12,10 +13,10 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 public class ClusterSlotManger {
     private static final Log logger = LogFactory.getLog(ClusterSlotManger.class);
     private Server server;
-    private ThinGossip gossip;
+    private ThinGossip1 gossip;
     private ClusterNode myself;
 
-    public ClusterSlotManger(ThinGossip gossip) {
+    public ClusterSlotManger(ThinGossip1 gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;
@@ -94,17 +95,10 @@ public class ClusterSlotManger {
         return deleted;
     }
 
-    public void clusterCloseAllSlots() {
-        server.cluster.migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
-        server.cluster.importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
-    }
-
     public void delKeysInSlot(int dirtySlot) {
-        //TODO
     }
 
     public int countKeysInSlot(int i) {
-        //TODO
         return 0;
     }
 
@@ -115,10 +109,5 @@ public class ClusterSlotManger {
         if (ed < 0 || ed == st + 1) return crc16(key) & 0x3FFF; //{}
         if (st > ed) return crc16(key) & 0x3FFF; //}{
         return crc16(key.substring(st + 1, ed)) & 0x3FFF;
-    }
-
-    private int crc16(String key) {
-        //TODO
-        return 0;
     }
 }

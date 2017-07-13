@@ -32,10 +32,10 @@ import static java.lang.Long.parseLong;
 public class Client {
     private static final Log logger = LogFactory.getLog(Client.class);
     private Server server;
-    private ThinGossip gossip;
+    private ThinGossip1 gossip;
     private ClusterNode myself;
 
-    public Client(ThinGossip gossip) {
+    public Client(ThinGossip1 gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;
@@ -66,117 +66,11 @@ public class Client {
             /* CLUSTER MYID */
             reply(t, myself.name);
         } else if (argv[1].equalsIgnoreCase("flushslots") && argv.length == 2) {
-            /* CLUSTER FLUSHSLOTS */
-            gossip.slotManger.clusterDelNodeSlots(myself);
-            gossip.clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
-            reply(t, "OK");
+            //unsupported
         } else if ((argv[1].equalsIgnoreCase("addslots") || argv[1].equalsIgnoreCase("delslots")) && argv.length >= 3) {
-            /* CLUSTER ADDSLOTS <slot> [slot] ... */
-            /* CLUSTER DELSLOTS <slot> [slot] ... */
-
-            byte[] slots = new byte[CLUSTER_SLOTS];
-            boolean del = argv[1].equalsIgnoreCase("delslots");
-
-            for (int j = 2; j < argv.length; j++) {
-                int slot = parseInt(argv[j]);
-                if (slot < 0 || slot >= CLUSTER_SLOTS) {
-                    replyError(t, "Invalid or out of range slot");
-                    return;
-                }
-                if (del && server.cluster.slots[slot] == null) {
-                    replyError(t, "Slot " + slot + " is already unassigned");
-                    return;
-                } else if (!del && server.cluster.slots[slot] != null) {
-                    replyError(t, "Slot " + slot + " is already busy");
-                    return;
-                }
-                if (slots[slot]++ == 1) {
-                    replyError(t, "Slot " + slot + " specified multiple times");
-                    return;
-                }
-            }
-            for (int j = 0; j < CLUSTER_SLOTS; j++) {
-                if (slots[j] != 0) {
-                    if (server.cluster.importingSlotsFrom[j] != null)
-                        server.cluster.importingSlotsFrom[j] = null;
-                    boolean retval = del ? gossip.slotManger.clusterDelSlot(j) : gossip.slotManger.clusterAddSlot(myself, j);
-                }
-            }
-            gossip.clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
-            reply(t, "OK");
+            //unsupported
         } else if (argv[1].equalsIgnoreCase("setslot") && argv.length >= 4) {
-            /* SETSLOT 10 MIGRATING <node ID> */
-            /* SETSLOT 10 IMPORTING <node ID> */
-            /* SETSLOT 10 STABLE */
-            /* SETSLOT 10 NODE <node ID> */
-            if (nodeIsSlave(myself)) {
-                replyError(t, "Please use SETSLOT only with masters.");
-                return;
-            }
-
-            int slot = parseInt(argv[2]);
-            if (slot < 0 || slot >= CLUSTER_SLOTS) {
-                replyError(t, "Invalid or out of range slot");
-                return;
-            }
-
-            if (argv[3].equalsIgnoreCase("migrating") && argv.length == 5) {
-                if (!server.cluster.slots[slot].equals(myself)) {
-                    replyError(t, "I'm not the owner of hash slot " + slot);
-                    return;
-                }
-                ClusterNode n;
-                if ((n = gossip.nodeManager.clusterLookupNode(argv[4])) == null) {
-                    replyError(t, "I don't know about node " + argv[4]);
-                    return;
-                }
-                server.cluster.migratingSlotsTo[slot] = n;
-            } else if (argv[3].equalsIgnoreCase("importing") && argv.length == 5) {
-                if (server.cluster.slots[slot].equals(myself)) {
-                    replyError(t, "I'm already the owner of hash slot " + slot);
-                    return;
-                }
-                ClusterNode n;
-                if ((n = gossip.nodeManager.clusterLookupNode(argv[4])) == null) {
-                    replyError(t, "I don't know about node " + argv[3]);
-                    return;
-                }
-                server.cluster.importingSlotsFrom[slot] = n;
-            } else if (argv[3].equalsIgnoreCase("stable") && argv.length == 4) {
-                /* CLUSTER SETSLOT <SLOT> STABLE */
-                server.cluster.importingSlotsFrom[slot] = null;
-                server.cluster.migratingSlotsTo[slot] = null;
-            } else if (argv[3].equalsIgnoreCase("node") && argv.length == 5) {
-                /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
-                ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[4]);
-
-                if (n == null) {
-                    replyError(t, "Unknown node " + argv[4]);
-                    return;
-                }
-                if (server.cluster.slots[slot].equals(myself) && !n.equals(myself)) {
-                    if (gossip.slotManger.countKeysInSlot(slot) != 0) {
-                        replyError(t, "Can't assign hashslot " + slot + " to a different node while I still hold keys for this hash slot.");
-                        return;
-                    }
-                }
-                if (gossip.slotManger.countKeysInSlot(slot) == 0 && server.cluster.migratingSlotsTo[slot] != null)
-                    server.cluster.migratingSlotsTo[slot] = null;
-
-                if (n.equals(myself) && server.cluster.importingSlotsFrom[slot] != null) {
-                    if (clusterBumpConfigEpochWithoutConsensus()) {
-                        logger.warn("configEpoch updated after importing slot " + slot);
-                    }
-                    server.cluster.importingSlotsFrom[slot] = null;
-                }
-                gossip.slotManger.clusterDelSlot(slot);
-                gossip.slotManger.clusterAddSlot(n, slot);
-            } else {
-                replyError(t, "Invalid CLUSTER SETSLOT action or number of arguments");
-                return;
-            }
-            gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
-            reply(t, "OK");
+            //unsupported
         } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
             /* CLUSTER BUMPEPOCH */
             boolean retval = clusterBumpConfigEpochWithoutConsensus();
@@ -194,7 +88,7 @@ public class Client {
                 slotsAssigned++;
                 if (nodeFailed(n)) {
                     slotsFail++;
-                } else if (nodeTimedOut(n)) {
+                } else if (nodePFailed(n)) {
                     slotsPfail++;
                 } else {
                     slotsOk++;
@@ -244,13 +138,7 @@ public class Client {
             /* CLUSTER KEYSLOT <key> */
             reply(t, String.valueOf(gossip.slotManger.keyHashSlot(argv[2])));
         } else if (argv[1].equalsIgnoreCase("countkeysinslot") && argv.length == 3) {
-            /* CLUSTER COUNTKEYSINSLOT <slot> */
-            int slot = parseInt(argv[2]);
-            if (slot < 0 || slot >= CLUSTER_SLOTS) {
-                replyError(t, "Invalid slot");
-                return;
-            }
-            reply(t, String.valueOf(gossip.slotManger.countKeysInSlot(slot)));
+            //unsupported
         } else if (argv[1].equalsIgnoreCase("forget") && argv.length == 3) {
             /* CLUSTER FORGET <NODE ID> */
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
@@ -265,7 +153,7 @@ public class Client {
                 replyError(t, "Can't forget my master!");
                 return;
             }
-            gossip.clusterBlacklistAddNode(n);
+            gossip.blacklistManager.clusterBlacklistAddNode(n);
             gossip.nodeManager.clusterDelNode(n);
             gossip.clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
             reply(t, "OK");
@@ -310,10 +198,11 @@ public class Client {
                 return;
             }
 
+            StringBuilder ci = new StringBuilder();
             for (int j = 0; j < n.numslaves; j++) {
-                String ni = gossip.configManager.clusterGenNodeDescription(n.slaves.get(j));
+                ci.append(gossip.configManager.clusterGenNodeDescription(n.slaves.get(j)));
             }
-            //TODO
+            reply(t, ci.toString());
         } else if (argv[1].equalsIgnoreCase("count-failure-reports") && argv.length == 3) {
             /* CLUSTER COUNT-FAILURE-REPORTS <NODE ID> */
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
@@ -324,48 +213,6 @@ public class Client {
             } else {
                 reply(t, String.valueOf(gossip.nodeManager.clusterNodeFailureReportsCount(n)));
             }
-        } else if (argv[1].equalsIgnoreCase("failover") && (argv.length == 2 || argv.length == 3)) {
-            /* CLUSTER FAILOVER [FORCE|TAKEOVER] */
-            boolean force = false, takeover = false;
-
-            if (argv.length == 3) {
-                if (argv[2].equalsIgnoreCase("force")) {
-                    force = true;
-                } else if (argv[2].equalsIgnoreCase("takeover")) {
-                    takeover = true;
-                    force = true;
-                } else {
-                    reply(t, "syntax error");
-                    return;
-                }
-            }
-
-            /* Check preconditions. */
-            if (nodeIsMaster(myself)) {
-                replyError(t, "You should send CLUSTER FAILOVER to a slave");
-                return;
-            } else if (myself.slaveof == null) {
-                replyError(t, "I'm a slave but my master is unknown to me");
-                return;
-            } else if (!force && (nodeFailed(myself.slaveof) || myself.slaveof.link == null)) {
-                replyError(t, "Master is down or failed, please use CLUSTER FAILOVER FORCE");
-                return;
-            }
-            gossip.resetManualFailover();
-            server.cluster.mfEnd = System.currentTimeMillis() + CLUSTER_MF_TIMEOUT;
-
-            if (takeover) {
-                logger.warn("Taking over the master (user request).");
-                clusterBumpConfigEpochWithoutConsensus();
-                gossip.clusterFailoverReplaceYourMaster();
-            } else if (force) {
-                logger.warn("Forced failover user request accepted.");
-                server.cluster.mfCanStart = true;
-            } else {
-                logger.warn("Manual failover user request accepted.");
-                gossip.msgManager.clusterSendMFStart(myself.slaveof);
-            }
-            reply(t, "OK");
         } else if (argv[1].equalsIgnoreCase("set-config-epoch") && argv.length == 3) {
             long epoch = parseLong(argv[2]);
 
@@ -384,24 +231,7 @@ public class Client {
                 reply(t, "OK");
             }
         } else if (argv[1].equalsIgnoreCase("reset") && (argv.length == 2 || argv.length == 3)) {
-            boolean hard = false;
-            if (argv.length == 3) {
-                if (argv[2].equalsIgnoreCase("hard")) {
-                    hard = true;
-                } else if (argv[2].equalsIgnoreCase("soft")) {
-                    hard = false;
-                } else {
-                    reply(t, "syntax error");
-                    return;
-                }
-            }
-
-            if (nodeIsMaster(myself) /* && dictSize(c -> db -> dict) != 0 */) {
-                replyError(t, "CLUSTER RESET can't be called with master nodes containing keys");
-                return;
-            }
-            gossip.clusterReset(hard);
-            reply(t, "OK");
+            //unsupport
         } else {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
         }
@@ -430,6 +260,13 @@ public class Client {
 
     private void reply(Transport t, String s) {
 
+    }
+
+    public void pauseClients(long l) {
+    }
+
+    public boolean clientsArePaused() {
+        return true;
     }
 
 }

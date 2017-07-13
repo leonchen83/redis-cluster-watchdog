@@ -37,10 +37,10 @@ public class ClusterMsgManager {
 
     private static final Log logger = LogFactory.getLog(ClusterMsgManager.class);
     private Server server;
-    private ThinGossip gossip;
+    private ThinGossip1 gossip;
     private ClusterNode myself;
 
-    public ClusterMsgManager(ThinGossip gossip) {
+    public ClusterMsgManager(ThinGossip1 gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;
@@ -89,15 +89,11 @@ public class ClusterMsgManager {
 
         long offset = 0;
         if (nodeIsSlave(myself))
-            offset = gossip.replicationGetSlaveOffset();
+            offset = gossip.replicationManager.replicationGetSlaveOffset();
         else
             offset = server.masterReplOffset;
         hdr.offset = offset;
-
-        if (nodeIsMaster(myself) && server.cluster.mfEnd != 0)
-            hdr.mflags[0] |= CLUSTERMSG_FLAG0_PAUSED;
-
-        // TODO hdr.totlen = xx;
+        hdr.totlen = 100;
         return hdr;
     }
 
@@ -136,7 +132,7 @@ public class ClusterMsgManager {
         ClusterMsg hdr = clusterBuildMessageHdr(type);
 
         int maxiterations = wanted * 3;
-        //不对所有节点发送消息，选取<=wanted个节点
+        //选取<=wanted个节点加到gossip消息体里
         while (freshnodes > 0 && gossipcount < wanted && maxiterations-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             int idx = new Random().nextInt(list.size());
@@ -146,10 +142,8 @@ public class ClusterMsgManager {
 
             if ((t.flags & CLUSTER_NODE_PFAIL) != 0) continue;
 
-            if ((t.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (t.link == null && t.numslots == 0)) {
-//                freshnodes--;
+            if ((t.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (t.link == null && t.numslots == 0))
                 continue;
-            }
 
             if (clusterNodeIsInGossipSection(hdr, gossipcount, t)) continue;
 
@@ -163,9 +157,7 @@ public class ClusterMsgManager {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             for (int i = 0; i < list.size() && pfailWanted > 0; i++) {
                 ClusterNode node = list.get(i);
-                if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
-                if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
-                if ((node.flags & CLUSTER_NODE_PFAIL) == 0) continue;
+                if (nodeInHandshake(node) || nodeWithoutAddr(node) || !nodePFailed(node)) continue;
                 clusterSetGossipEntry(hdr, gossipcount, node);
                 freshnodes--;
                 gossipcount++;
@@ -174,7 +166,7 @@ public class ClusterMsgManager {
         }
 
         hdr.count = gossipcount;
-        //TODO hdr.totlen = xx
+        hdr.totlen = 100;
         clusterSendMessage(link, hdr);
     }
 
@@ -204,83 +196,6 @@ public class ClusterMsgManager {
         hdr.data.nodecfg.configEpoch = node.configEpoch;
         hdr.data.nodecfg.slots = node.slots;
         clusterSendMessage(link, hdr);
-    }
-
-    public void clusterSendMFStart(ClusterNode node) {
-        if (node.link == null) return;
-        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_MFSTART);
-        clusterSendMessage(node.link, hdr);
-    }
-
-    // 一对
-    public void clusterRequestFailoverAuth() {
-        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST);
-        if (server.cluster.mfEnd > 0) hdr.mflags[0] |= CLUSTERMSG_FLAG0_FORCEACK;
-        clusterBroadcastMessage(hdr);
-    }
-
-    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMsg request) {
-
-        long requestCurrentEpoch = request.currentEpoch;
-
-        //只有持有1个以上slot的master有投票权
-        if (nodeIsSlave(myself) || myself.numslots == 0) return;
-
-        if (requestCurrentEpoch < server.cluster.currentEpoch) {
-            logger.warn("Failover auth denied to " + node.name + ": reqEpoch (" + requestCurrentEpoch + ") < curEpoch(" + server.cluster.currentEpoch + ")");
-            return;
-        }
-
-        //已经投完票的直接返回
-        if (server.cluster.lastVoteEpoch == server.cluster.currentEpoch) {
-            logger.warn("Failover auth denied to " + node.name + ": already voted for epoch " + server.cluster.currentEpoch);
-            return;
-        }
-
-        ClusterNode master = node.slaveof;
-        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
-        //目标node是master 或者 目标node的master不明确 或者在非手动模式下目标node的master没挂都返回
-        if (nodeIsMaster(node) || master == null || (!nodeFailed(master) && !forceAck)) {
-            if (nodeIsMaster(node)) {
-                logger.warn("Failover auth denied to " + node.name + ": it is a master node");
-            } else if (master == null) {
-                logger.warn("Failover auth denied to " + node.name + ": I don't know its master");
-            } else if (!nodeFailed(master)) {
-                logger.warn("Failover auth denied to " + node.name + ": its master is up");
-            }
-            return;
-        }
-
-        //这里要求目标node 是slave, 目标node的master != null,目标node的master没挂的情况下必须forceAck为true
-
-        //这里是投票超时的情况
-        if (System.currentTimeMillis() - node.slaveof.votedTime < server.clusterNodeTimeout * 2) {
-            logger.warn("Failover auth denied to " + node.name + ": can't vote about this master before " + (server.clusterNodeTimeout * 2 - System.currentTimeMillis() - node.slaveof.votedTime) + " milliseconds");
-            return;
-        }
-
-        byte[] claimedSlots = request.myslots;
-        long requestConfigEpoch = request.configEpoch;
-        for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (!gossip.slotManger.bitmapTestBit(claimedSlots, i)) continue;
-            // 检测本地slot的configEpoch必须要小于等于远程的, 否则认为本地较新, 终止投票
-            if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= requestConfigEpoch) {
-                continue;
-            }
-            logger.warn("Failover auth denied to " + node.name + ": slot " + i + " epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + requestConfigEpoch + ")");
-            return;
-        }
-
-        clusterSendFailoverAuth(node);
-        server.cluster.lastVoteEpoch = server.cluster.currentEpoch;
-        node.slaveof.votedTime = System.currentTimeMillis();
-        logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
-    }
-
-    public void clusterSendFailoverAuth(ClusterNode node) {
-        if (node.link == null) return;
-        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK);
-        clusterSendMessage(node.link, hdr);
     }
 
     // 发送 failover request ,接收failover ack

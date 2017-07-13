@@ -5,7 +5,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
+import java.util.AbstractMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 import static com.moilioncircle.replicator.cluster.config.ConfigFileParser.parseLine;
@@ -17,10 +19,10 @@ import static java.lang.Integer.parseInt;
 public class ClusterConfigManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
     private Server server;
-    private ThinGossip gossip;
+    private ThinGossip1 gossip;
     private ClusterNode myself;
 
-    public ClusterConfigManager(ThinGossip gossip) {
+    public ClusterConfigManager(ThinGossip1 gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;
@@ -38,7 +40,7 @@ public class ClusterConfigManager {
                         if (list.get(i).equals("currentEpoch")) {
                             server.cluster.currentEpoch = parseInt(list.get(i + 1));
                         } else if (list.get(i).equals("lastVoteEpoch")) {
-                            server.cluster.lastVoteEpoch = parseInt(list.get(i + 1));
+                            //skip
                         } else {
                             logger.warn("Skipping unknown cluster config variable '" + list.get(i) + "'");
                         }
@@ -104,27 +106,7 @@ public class ClusterConfigManager {
                     for (int i = 8; i < list.size(); i++) {
                         int start = 0, stop = 0;
                         String argi = list.get(i);
-                        char[] ary = argi.toCharArray();
-                        if (ary[0] == '[') {
-                            // [slot_number-<-importing_from_node_id]
-                            if (argi.contains("-")) {
-                                int idx = argi.indexOf("-");
-                                char direction = ary[idx + 1];
-                                int slot = parseInt(argi.substring(1, idx));
-                                String p = argi.substring(idx + 3);
-                                ClusterNode cn = gossip.nodeManager.clusterLookupNode(p);
-                                if (cn == null) {
-                                    cn = gossip.nodeManager.createClusterNode(p, 0);
-                                    gossip.nodeManager.clusterAddNode(cn);
-                                }
-                                if (direction == '>') {
-                                    server.cluster.migratingSlotsTo[slot] = cn;
-                                } else {
-                                    server.cluster.importingSlotsFrom[slot] = cn;
-                                }
-                                continue;
-                            }
-                        } else if (argi.contains("-")) {
+                        if (argi.contains("-")) {
                             int idx = argi.indexOf("-");
                             start = parseInt(argi.substring(0, idx));
                             stop = parseInt(argi.substring(idx));
@@ -160,7 +142,7 @@ public class ClusterConfigManager {
             StringBuilder ci = new StringBuilder();
             ci.append(clusterGenNodesDescription(CLUSTER_NODE_HANDSHAKE));
             ci.append("vars currentEpoch ").append(server.cluster.currentEpoch);
-            ci.append(" lastVoteEpoch ").append(server.cluster.lastVoteEpoch);
+            ci.append(" lastVoteEpoch ").append(0); //always 0
             r.write(ci.toString());
             r.flush();
             return true;
@@ -179,24 +161,14 @@ public class ClusterConfigManager {
         throw new UnsupportedOperationException("Fatal: can't update cluster config file.");
     }
 
-    private static class RedisNodeFlags {
-        public int flag;
-        public String name;
-
-        public RedisNodeFlags(int flag, String name) {
-            this.flag = flag;
-            this.name = name;
-        }
-    }
-
-    public static RedisNodeFlags[] redisNodeFlags = new RedisNodeFlags[]{
-            new RedisNodeFlags(CLUSTER_NODE_MYSELF, "myself,"),
-            new RedisNodeFlags(CLUSTER_NODE_MASTER, "master,"),
-            new RedisNodeFlags(CLUSTER_NODE_SLAVE, "slave,"),
-            new RedisNodeFlags(CLUSTER_NODE_PFAIL, "fail?,"),
-            new RedisNodeFlags(CLUSTER_NODE_FAIL, "fail,"),
-            new RedisNodeFlags(CLUSTER_NODE_HANDSHAKE, "handshake,"),
-            new RedisNodeFlags(CLUSTER_NODE_NOADDR, "noaddr,"),
+    public static Map.Entry<Integer, String>[] redisNodeFlags = new Map.Entry[]{
+            new AbstractMap.SimpleEntry<>(CLUSTER_NODE_MYSELF, "myself,"),
+            new AbstractMap.SimpleEntry<>(CLUSTER_NODE_MASTER, "master,"),
+            new AbstractMap.SimpleEntry<>(CLUSTER_NODE_SLAVE, "slave,"),
+            new AbstractMap.SimpleEntry<>(CLUSTER_NODE_PFAIL, "fail?,"),
+            new AbstractMap.SimpleEntry<>(CLUSTER_NODE_FAIL, "fail,"),
+            new AbstractMap.SimpleEntry<>(CLUSTER_NODE_HANDSHAKE, "handshake,"),
+            new AbstractMap.SimpleEntry<>(CLUSTER_NODE_NOADDR, "noaddr,"),
     };
 
     public String representClusterNodeFlags(int flags) {
@@ -204,8 +176,8 @@ public class ClusterConfigManager {
         if (flags == 0) {
             builder.append("noflags,");
         } else {
-            for (RedisNodeFlags rnf : redisNodeFlags) {
-                if ((flags & rnf.flag) != 0) builder.append(rnf.name);
+            for (Map.Entry<Integer, String> rnf : redisNodeFlags) {
+                if ((flags & rnf.getKey()) != 0) builder.append(rnf.getValue());
             }
         }
         builder.deleteCharAt(builder.length() - 1);
@@ -242,15 +214,6 @@ public class ClusterConfigManager {
             }
         }
 
-        if ((node.flags & CLUSTER_NODE_MYSELF) != 0) {
-            for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                if (server.cluster.migratingSlotsTo[i] != null) {
-                    ci.append(" [").append(i).append("->-").append(server.cluster.migratingSlotsTo[i].name).append("]");
-                } else if (server.cluster.importingSlotsFrom[i] != null) {
-                    ci.append(" [").append(i).append("-<-").append(server.cluster.importingSlotsFrom[i].name).append("]");
-                }
-            }
-        }
         return ci.toString();
     }
 

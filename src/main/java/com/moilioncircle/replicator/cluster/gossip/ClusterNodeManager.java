@@ -18,10 +18,10 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 public class ClusterNodeManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
     private Server server;
-    private ThinGossip gossip;
+    private ThinGossip1 gossip;
     private ClusterNode myself;
 
-    public ClusterNodeManager(ThinGossip gossip) {
+    public ClusterNodeManager(ThinGossip1 gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;
@@ -47,11 +47,6 @@ public class ClusterNodeManager {
 
     public void clusterDelNode(ClusterNode delnode) {
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (server.cluster.importingSlotsFrom[i].equals(delnode))
-                server.cluster.importingSlotsFrom[i] = null;
-            if (server.cluster.migratingSlotsTo[i].equals(delnode)) {
-                server.cluster.migratingSlotsTo[i] = null;
-            }
             if (server.cluster.slots[i].equals(delnode)) {
                 gossip.slotManger.clusterDelSlot(i);
             }
@@ -182,7 +177,7 @@ public class ClusterNodeManager {
         int rank = 0;
         ClusterNode master = myself.slaveof;
         if (master == null) return rank;
-        long myoffset = gossip.replicationGetSlaveOffset();
+        long myoffset = gossip.replicationManager.replicationGetSlaveOffset();
         for (int i = 0; i < master.numslaves; i++)
             if (!master.slaves.get(i).equals(myself) && master.slaves.get(i).replOffset > myoffset)
                 rank++;
