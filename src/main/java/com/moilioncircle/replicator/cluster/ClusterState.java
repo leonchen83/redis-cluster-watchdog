@@ -9,15 +9,15 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_SLOT
  * Created by Baoyi Chen on 2017/7/6.
  */
 public class ClusterState {
-    public ClusterNode myself;
-    public long currentEpoch;
-    public int state;
     public int size;
-    public Map<String, ClusterNode> nodes;
-    public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList;
-    public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
+    public int state;
+    public long currentEpoch;
+    public ClusterNode myself;
     public int todoBeforeSleep;
+    public long statsPfailNodes;
+    public Map<String, ClusterNode> nodes;
+    public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
+    public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList;
     public long[] statsBusMessagesSent = new long[CLUSTERMSG_TYPE_COUNT];
     public long[] statsBusMessagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
-    public long statsPfailNodes;
 }

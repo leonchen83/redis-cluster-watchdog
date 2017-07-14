@@ -20,11 +20,11 @@ public class ClusterMsgPingHandler extends AbstractClusterMsgHandler {
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMsg hdr) {
         logger.debug("Ping packet received: " + link.node);
-        if (myself.ip == null && server.clusterAnnounceIp == null) {
+        if (server.myself.ip == null && gossip.configuration.getClusterAnnounceIp() == null) {
             String ip = link.fd.getLocalAddress(null);
-            if (ip != null && !ip.equals(myself.ip)) {
-                myself.ip = ip;
-                logger.warn("IP address for this node updated to " + myself.ip);
+            if (ip != null && !ip.equals(server.myself.ip)) {
+                server.myself.ip = ip;
+                logger.warn("IP address for this node updated to " + server.myself.ip);
                 gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
             }
         }
@@ -97,18 +97,17 @@ public class ClusterMsgPingHandler extends AbstractClusterMsgHandler {
 
         if (dirtySlots) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                if (gossip.slotManger.bitmapTestBit(hdr.myslots, i)) {
-                    if (server.cluster.slots[i].equals(sender) || server.cluster.slots[i] == null) continue;
-                    if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
-                        logger.debug("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
-                        gossip.msgManager.clusterSendUpdate(sender.link, server.cluster.slots[i]);
-                        break;
-                    }
+                if (!gossip.slotManger.bitmapTestBit(hdr.myslots, i)) continue;
+                if (server.cluster.slots[i].equals(sender) || server.cluster.slots[i] == null) continue;
+                if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
+                    logger.debug("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
+                    gossip.msgManager.clusterSendUpdate(sender.link, server.cluster.slots[i]);
+                    break;
                 }
             }
         }
 
-        if (nodeIsMaster(myself) && nodeIsMaster(sender) && hdr.configEpoch == myself.configEpoch) {
+        if (nodeIsMaster(server.myself) && nodeIsMaster(sender) && hdr.configEpoch == server.myself.configEpoch) {
             gossip.clusterHandleConfigEpochCollision(sender);
         }
 

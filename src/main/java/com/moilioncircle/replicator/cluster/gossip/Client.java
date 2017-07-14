@@ -33,16 +33,14 @@ public class Client {
     private static final Log logger = LogFactory.getLog(Client.class);
     private Server server;
     private ThinGossip gossip;
-    private ClusterNode myself;
 
     public Client(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
-        this.myself = gossip.myself;
     }
 
     public void clusterCommand(Transport t, String[] argv) {
-        if (!server.clusterEnabled) {
+        if (!gossip.configuration.isClusterEnabled()) {
             reply(t, "This instance has cluster support disabled");
             return;
         }
@@ -64,7 +62,7 @@ public class Client {
             reply(t, ci);
         } else if (argv[1].equalsIgnoreCase("myid") && argv.length == 2) {
             /* CLUSTER MYID */
-            reply(t, myself.name);
+            reply(t, server.myself.name);
         } else if (argv[1].equalsIgnoreCase("flushslots") && argv.length == 2) {
             //unsupported
         } else if ((argv[1].equalsIgnoreCase("addslots") || argv[1].equalsIgnoreCase("delslots")) && argv.length >= 3) {
@@ -74,7 +72,7 @@ public class Client {
         } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
             /* CLUSTER BUMPEPOCH */
             boolean retval = clusterBumpConfigEpochWithoutConsensus();
-            String reply = new StringBuilder("+").append(retval ? "BUMPED" : "STILL").append(" ").append(myself.configEpoch).append("\r\n").toString();
+            String reply = new StringBuilder("+").append(retval ? "BUMPED" : "STILL").append(" ").append(server.myself.configEpoch).append("\r\n").toString();
             replyString(t, reply);
         } else if (argv[1].equalsIgnoreCase("info") && argv.length == 2) {
             /* CLUSTER INFO */
@@ -95,7 +93,7 @@ public class Client {
                 }
             }
 
-            long myepoch = (nodeIsSlave(myself) && myself.slaveof != null) ? myself.slaveof.configEpoch : myself.configEpoch;
+            long myepoch = (nodeIsSlave(server.myself) && server.myself.slaveof != null) ? server.myself.slaveof.configEpoch : server.myself.configEpoch;
 
             StringBuilder info = new StringBuilder("cluster_state:").append(statestr[server.cluster.state]).append("\r\n")
                     .append("cluster_slots_assigned:").append(slotsAssigned).append("\r\n")
@@ -146,10 +144,10 @@ public class Client {
             if (n == null) {
                 replyError(t, "Unknown node " + argv[2]);
                 return;
-            } else if (n.equals(myself)) {
+            } else if (n.equals(server.myself)) {
                 replyError(t, "I tried hard but I can't forget myself...");
                 return;
-            } else if (nodeIsSlave(myself) && myself.slaveof.equals(n)) {
+            } else if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(n)) {
                 replyError(t, "Can't forget my master!");
                 return;
             }
@@ -166,7 +164,7 @@ public class Client {
                 return;
             }
 
-            if (n.equals(myself)) {
+            if (n.equals(server.myself)) {
                 replyError(t, "Can't replicate myself");
                 return;
             }
@@ -176,7 +174,7 @@ public class Client {
                 return;
             }
 
-            if (nodeIsMaster(myself) && (myself.numslots != 0 /*|| dictSize(server.db[0].dict) != 0 */)) {
+            if (nodeIsMaster(server.myself) && (server.myself.numslots != 0)) {
                 replyError(t, "To set a master the node must be empty and without assigned slots.");
                 return;
             }
@@ -220,11 +218,11 @@ public class Client {
                 replyError(t, "Invalid config epoch specified: " + epoch);
             } else if (server.cluster.nodes.size() > 1) {
                 replyError(t, "The user can assign a config epoch only when the node does not know any other node.");
-            } else if (myself.configEpoch != 0) {
+            } else if (server.myself.configEpoch != 0) {
                 replyError(t, "Node config epoch is already non-zero");
             } else {
-                myself.configEpoch = epoch;
-                logger.warn("configEpoch set to " + myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
+                server.myself.configEpoch = epoch;
+                logger.warn("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
                 if (server.cluster.currentEpoch < epoch)
                     server.cluster.currentEpoch = epoch;
                 gossip.clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
@@ -240,11 +238,11 @@ public class Client {
     public boolean clusterBumpConfigEpochWithoutConsensus() {
         long maxEpoch = gossip.clusterGetMaxEpoch();
 
-        if (myself.configEpoch == 0 || myself.configEpoch != maxEpoch) {
+        if (server.myself.configEpoch == 0 || server.myself.configEpoch != maxEpoch) {
             server.cluster.currentEpoch++;
-            myself.configEpoch = server.cluster.currentEpoch;
+            server.myself.configEpoch = server.cluster.currentEpoch;
             gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
-            logger.warn("New configEpoch set to " + myself.configEpoch);
+            logger.warn("New configEpoch set to " + server.myself.configEpoch);
             return true;
         }
         return false;
@@ -261,12 +259,4 @@ public class Client {
     private void reply(Transport t, String s) {
 
     }
-
-    public void pauseClients(long l) {
-    }
-
-    public boolean clientsArePaused() {
-        return true;
-    }
-
 }

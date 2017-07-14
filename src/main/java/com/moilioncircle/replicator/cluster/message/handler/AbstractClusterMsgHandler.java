@@ -1,6 +1,5 @@
 package com.moilioncircle.replicator.cluster.message.handler;
 
-import com.moilioncircle.replicator.cluster.ClusterNode;
 import com.moilioncircle.replicator.cluster.gossip.Server;
 import com.moilioncircle.replicator.cluster.gossip.ThinGossip;
 import org.apache.commons.logging.Log;
@@ -15,11 +14,9 @@ public abstract class AbstractClusterMsgHandler implements ClusterMsgHandler {
 
     protected Server server;
     protected ThinGossip gossip;
-    protected ClusterNode myself;
 
     public AbstractClusterMsgHandler(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
-        this.myself = gossip.myself;
     }
 }

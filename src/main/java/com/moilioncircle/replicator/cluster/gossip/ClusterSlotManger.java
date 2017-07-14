@@ -14,12 +14,10 @@ public class ClusterSlotManger {
     private static final Log logger = LogFactory.getLog(ClusterSlotManger.class);
     private Server server;
     private ThinGossip gossip;
-    private ClusterNode myself;
 
     public ClusterSlotManger(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
-        this.myself = gossip.myself;
     }
 
     public boolean bitmapTestBit(byte[] bitmap, int pos) {

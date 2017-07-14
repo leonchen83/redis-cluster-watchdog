@@ -93,18 +93,17 @@ public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
 
         if (dirtySlots) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                if (gossip.slotManger.bitmapTestBit(hdr.myslots, i)) {
-                    if (server.cluster.slots[i].equals(sender) || server.cluster.slots[i] == null) continue;
-                    if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
-                        logger.debug("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
-                        gossip.msgManager.clusterSendUpdate(sender.link, server.cluster.slots[i]);
-                        break;
-                    }
+                if (!gossip.slotManger.bitmapTestBit(hdr.myslots, i)) continue;
+                if (server.cluster.slots[i].equals(sender) || server.cluster.slots[i] == null) continue;
+                if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
+                    logger.debug("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
+                    gossip.msgManager.clusterSendUpdate(sender.link, server.cluster.slots[i]);
+                    break;
                 }
             }
         }
 
-        if (nodeIsMaster(myself) && nodeIsMaster(sender) && hdr.configEpoch == myself.configEpoch) {
+        if (nodeIsMaster(server.myself) && nodeIsMaster(sender) && hdr.configEpoch == server.myself.configEpoch) {
             gossip.clusterHandleConfigEpochCollision(sender);
         }
 

@@ -23,15 +23,9 @@ package com.moilioncircle.replicator.cluster.gossip;
 public class ReplicationManager {
 
     public void replicationSetMaster(String ip, int port) {
-        //TODO
-    }
-
-    public void replicationUnsetMaster() {
-        //TODO
     }
 
     public long replicationGetSlaveOffset() {
-        //TOOD
         return 0;
     }
 }

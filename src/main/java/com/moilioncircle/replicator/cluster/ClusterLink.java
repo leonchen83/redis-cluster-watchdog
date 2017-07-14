@@ -8,6 +8,6 @@ import com.moilioncircle.replicator.cluster.util.net.session.Session;
  */
 public class ClusterLink {
     public long ctime;
-    public Session<Message> fd;
     public ClusterNode node;
+    public Session<Message> fd;
 }

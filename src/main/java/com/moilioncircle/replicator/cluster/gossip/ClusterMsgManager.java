@@ -25,7 +25,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 
@@ -38,12 +38,10 @@ public class ClusterMsgManager {
     private static final Log logger = LogFactory.getLog(ClusterMsgManager.class);
     private Server server;
     private ThinGossip gossip;
-    private ClusterNode myself;
 
     public ClusterMsgManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
-        this.myself = gossip.myself;
     }
 
     public void clusterSendMessage(ClusterLink link, ClusterMsg hdr) {
@@ -63,27 +61,27 @@ public class ClusterMsgManager {
 
     public ClusterMsg clusterBuildMessageHdr(int type) {
         ClusterMsg hdr = new ClusterMsg();
-        ClusterNode master = (nodeIsSlave(myself) && myself.slaveof != null) ? myself.slaveof : myself;
+        ClusterNode master = (nodeIsSlave(server.myself) && server.myself.slaveof != null) ? server.myself.slaveof : server.myself;
         hdr.ver = CLUSTER_PROTO_VER;
         hdr.sig = "RCmb";
         hdr.type = type;
-        hdr.sender = myself.name;
-        hdr.myip = server.clusterAnnounceIp;
+        hdr.sender = server.myself.name;
+        hdr.myip = gossip.configuration.getClusterAnnounceIp();
 
         hdr.myslots = master.slots;
         if (master.slaveof != null) {
-            hdr.slaveof = myself.slaveof.name;
+            hdr.slaveof = server.myself.slaveof.name;
         }
 
-        hdr.flags = myself.flags;
-        hdr.port = server.clusterAnnouncePort;
-        hdr.cport = server.clusterAnnounceBusPort;
+        hdr.flags = server.myself.flags;
+        hdr.port = gossip.configuration.getClusterAnnouncePort();
+        hdr.cport = gossip.configuration.getClusterAnnounceBusPort();
         hdr.state = server.cluster.state;
 
         hdr.currentEpoch = server.cluster.currentEpoch;
         hdr.configEpoch = master.configEpoch;
 
-        if (nodeIsSlave(myself))
+        if (nodeIsSlave(server.myself))
             hdr.offset = gossip.replicationManager.replicationGetSlaveOffset();
         else
             logger.warn("myself must be a slave");
@@ -129,10 +127,10 @@ public class ClusterMsgManager {
         //选取<=wanted个节点加到gossip消息体里
         while (freshnodes > 0 && gossipcount < wanted && maxiterations-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
-            int idx = new Random().nextInt(list.size());
+            int idx = ThreadLocalRandom.current().nextInt(list.size());
             ClusterNode t = list.get(idx);
 
-            if (t.equals(myself)) continue;
+            if (t.equals(server.myself)) continue;
 
             if ((t.flags & CLUSTER_NODE_PFAIL) != 0) continue;
 
@@ -167,10 +165,10 @@ public class ClusterMsgManager {
     public void clusterBroadcastPong(int target) {
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (node.link == null) continue;
-            if (node.equals(myself) || nodeInHandshake(node)) continue;
+            if (node.equals(server.myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
                 //node.slaveof.equals(myself)这个条件有点问题
-                boolean localSlave = nodeIsSlave(node) && node.slaveof != null && (node.slaveof.equals(myself) || node.slaveof.equals(myself.slaveof));
+                boolean localSlave = nodeIsSlave(node) && node.slaveof != null && (node.slaveof.equals(server.myself) || node.slaveof.equals(server.myself.slaveof));
                 if (!localSlave) continue;
             }
             clusterSendPing(node.link, CLUSTERMSG_TYPE_PONG);

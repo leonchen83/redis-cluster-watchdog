@@ -8,7 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 
@@ -19,12 +19,10 @@ public class ClusterNodeManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
     private Server server;
     private ThinGossip gossip;
-    private ClusterNode myself;
 
     public ClusterNodeManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
-        this.myself = gossip.myself;
     }
 
     public void freeClusterNode(ClusterNode n) {
@@ -92,9 +90,7 @@ public class ClusterNodeManager {
         node.port = 0;
         node.cport = 0;
         node.failReports = new ArrayList<>();
-        node.votedTime = 0;
         node.orphanedTime = 0;
-        node.replOffsetTime = 0;
         node.replOffset = 0;
         return node;
     }
@@ -115,7 +111,7 @@ public class ClusterNodeManager {
 
     public void clusterNodeCleanupFailureReports(ClusterNode node) {
         List<ClusterNodeFailReport> l = node.failReports;
-        long max = server.clusterNodeTimeout * CLUSTER_FAIL_REPORT_VALIDITY_MULT;
+        long max = gossip.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_REPORT_VALIDITY_MULT;
         long now = System.currentTimeMillis();
         Iterator<ClusterNodeFailReport> it = l.iterator();
         while (it.hasNext()) {
@@ -175,11 +171,11 @@ public class ClusterNodeManager {
 
     public int clusterGetSlaveRank() {
         int rank = 0;
-        ClusterNode master = myself.slaveof;
+        ClusterNode master = server.myself.slaveof;
         if (master == null) return rank;
         long myoffset = gossip.replicationManager.replicationGetSlaveOffset();
         for (int i = 0; i < master.numslaves; i++)
-            if (!master.slaves.get(i).equals(myself) && master.slaves.get(i).replOffset > myoffset)
+            if (!master.slaves.get(i).equals(server.myself) && master.slaves.get(i).replOffset > myoffset)
                 rank++;
         return rank;
     }
@@ -189,7 +185,7 @@ public class ClusterNodeManager {
     public String getRandomHexChars() {
         StringBuilder r = new StringBuilder();
         for (int i = 0; i < CLUSTER_NAMELEN; i++) {
-            r.append(chars[new Random().nextInt(chars.length)]);
+            r.append(chars[ThreadLocalRandom.current().nextInt(chars.length)]);
         }
         return r.toString();
     }

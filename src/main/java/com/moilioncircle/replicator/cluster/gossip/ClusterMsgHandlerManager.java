@@ -1,9 +1,6 @@
 package com.moilioncircle.replicator.cluster.gossip;
 
-import com.moilioncircle.replicator.cluster.ClusterNode;
 import com.moilioncircle.replicator.cluster.message.handler.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,16 +12,9 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
  */
 public class ClusterMsgHandlerManager {
 
-    private static final Log logger = LogFactory.getLog(ClusterMsgHandlerManager.class);
-    private Server server;
-    private ThinGossip gossip;
-    private ClusterNode myself;
     private Map<Integer, ClusterMsgHandler> handlerMap = new HashMap<>();
 
     public ClusterMsgHandlerManager(ThinGossip gossip) {
-        this.gossip = gossip;
-        this.server = gossip.server;
-        this.myself = gossip.myself;
         register(CLUSTERMSG_TYPE_PING, new ClusterMsgPingHandler(gossip));
         register(CLUSTERMSG_TYPE_PONG, new ClusterMsgPongHandler(gossip));
         register(CLUSTERMSG_TYPE_MEET, new ClusterMsgMeetHandler(gossip));

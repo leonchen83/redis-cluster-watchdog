@@ -20,12 +20,10 @@ public class ClusterConfigManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
     private Server server;
     private ThinGossip gossip;
-    private ClusterNode myself;
 
     public ClusterConfigManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
-        this.myself = gossip.myself;
     }
 
     public boolean clusterLoadConfig(String fileName) {
@@ -66,7 +64,7 @@ public class ClusterConfigManager {
                     String[] roles = list.get(2).split(",");
                     for (String role : roles) {
                         if (role.equals("myself")) {
-                            myself = server.cluster.myself = n;
+                            server.myself = server.cluster.myself = n;
                             n.flags |= CLUSTER_NODE_MYSELF;
                         } else if (role.equals("master")) {
                             n.flags |= CLUSTER_NODE_MASTER;
@@ -120,7 +118,7 @@ public class ClusterConfigManager {
             if (server.cluster.myself == null) {
                 throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
             }
-            logger.info("Node configuration loaded, I'm " + myself.name);
+            logger.info("Node configuration loaded, I'm " + server.myself.name);
 
             if (gossip.clusterGetMaxEpoch() > server.cluster.currentEpoch) {
                 server.cluster.currentEpoch = gossip.clusterGetMaxEpoch();
@@ -136,7 +134,7 @@ public class ClusterConfigManager {
 
         BufferedWriter r = null;
         try {
-            File file = new File(server.clusterConfigfile);
+            File file = new File(gossip.configuration.getClusterConfigfile());
             if (!file.exists()) file.createNewFile();
             r = new BufferedWriter(new FileWriter(file));
             StringBuilder ci = new StringBuilder();
