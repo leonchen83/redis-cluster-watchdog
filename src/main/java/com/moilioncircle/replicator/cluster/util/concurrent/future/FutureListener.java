@@ -16,13 +16,11 @@
 
 package com.moilioncircle.replicator.cluster.util.concurrent.future;
 
-import java.util.concurrent.Future;
-
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
 @FunctionalInterface
 public interface FutureListener<T> {
-    void onComplete(Future<T> future);
+    void onComplete(CompletableFuture<T> future);
 }

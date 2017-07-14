@@ -435,9 +435,8 @@ public class ThinGossip {
         if (nodeIsMaster(server.myself)) {
             server.myself.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
             server.myself.flags |= CLUSTER_NODE_SLAVE;
-        } else {
-            if (server.myself.slaveof != null)
-                nodeManager.clusterNodeRemoveSlave(server.myself.slaveof, server.myself);
+        } else if (server.myself.slaveof != null) {
+            nodeManager.clusterNodeRemoveSlave(server.myself.slaveof, server.myself);
         }
         server.myself.slaveof = n;
         nodeManager.clusterNodeAddSlave(n, server.myself);
@@ -506,14 +505,20 @@ public class ThinGossip {
                         fd.shutdown();
                     }
                 });
-                fd.connect(node.ip, node.cport);
+                try {
+                    fd.connect(node.ip, node.cport).get(); //TODO blocking operation
+                } catch (InterruptedException | ExecutionException e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
+                    logger.debug("Unable to connect to Cluster Node [" + node.ip + "]:" + node.cport + " -> " + e.getCause().getMessage());
+                }
 
                 long oldPingSent = node.pingSent;
                 msgManager.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
                 if (oldPingSent != 0) node.pingSent = oldPingSent;
-
                 node.flags &= ~CLUSTER_NODE_MEET;
-
                 logger.debug("Connecting with Node " + node.name + " at " + node.ip + ":" + node.cport);
             }
         }

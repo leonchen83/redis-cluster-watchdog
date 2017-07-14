@@ -40,6 +40,19 @@ public interface CompletableFuture<T> extends Future<T> {
         }
     }
 
+    default Throwable cause() {
+        if (!isDone()) return null;
+        try {
+            get();
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (ExecutionException e) {
+            return e.getCause();
+        }
+    }
+
     default boolean success(T value) {
         throw new UnsupportedOperationException();
     }
