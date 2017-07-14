@@ -379,14 +379,11 @@ public class ThinGossip {
         server.cluster.todoBeforeSleep |= flags;
     }
 
-    public long amongMinorityTime = 0;
-    public long firstCallTime = 0;
-
     public void clusterUpdateState() {
         server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_UPDATE_STATE;
 
-        if (firstCallTime == 0) firstCallTime = System.currentTimeMillis();
-        if (nodeIsMaster(server.myself) && server.cluster.state == CLUSTER_FAIL && System.currentTimeMillis() - firstCallTime < CLUSTER_WRITABLE_DELAY)
+        if (server.firstCallTime == 0) server.firstCallTime = System.currentTimeMillis();
+        if (nodeIsMaster(server.myself) && server.cluster.state == CLUSTER_FAIL && System.currentTimeMillis() - server.firstCallTime < CLUSTER_WRITABLE_DELAY)
             return;
 
         int newState = CLUSTER_OK;
@@ -414,7 +411,7 @@ public class ThinGossip {
 
         if (reachableMasters < neededQuorum) {
             newState = CLUSTER_FAIL;
-            amongMinorityTime = System.currentTimeMillis();
+            server.amongMinorityTime = System.currentTimeMillis();
         }
 
         if (newState != server.cluster.state) {
@@ -425,7 +422,7 @@ public class ThinGossip {
             if (rejoinDelay < CLUSTER_MIN_REJOIN_DELAY)
                 rejoinDelay = CLUSTER_MIN_REJOIN_DELAY;
 
-            if (newState == CLUSTER_OK && nodeIsMaster(server.myself) && System.currentTimeMillis() - amongMinorityTime < rejoinDelay) {
+            if (newState == CLUSTER_OK && nodeIsMaster(server.myself) && System.currentTimeMillis() - server.amongMinorityTime < rejoinDelay) {
                 return;
             }
 
@@ -447,23 +444,22 @@ public class ThinGossip {
         replicationManager.replicationSetMaster(n.ip, n.port);
     }
 
-    public long iteration = 0;
-    public String prevIp = null;
-
     public void clusterCron() {
+        if (server.cluster.todoBeforeSleep != 0) clusterBeforeSleep();
+
         long minPong = 0, now = System.currentTimeMillis();
         ClusterNode minPongNode = null;
-        iteration++;
+        server.iteration++;
 
         String currIp = configuration.getClusterAnnounceIp();
         boolean changed = false;
 
-        if (prevIp == null && currIp != null) changed = true;
-        if (prevIp != null && currIp == null) changed = true;
-        if (prevIp != null && currIp != null && !prevIp.equals(currIp)) changed = true;
+        if (server.prevIp == null && currIp != null) changed = true;
+        if (server.prevIp != null && currIp == null) changed = true;
+        if (server.prevIp != null && currIp != null && !server.prevIp.equals(currIp)) changed = true;
 
         if (changed) {
-            prevIp = currIp;
+            server.prevIp = currIp;
             if (currIp != null) {
                 server.myself.ip = currIp;
             } else {
@@ -522,7 +518,7 @@ public class ThinGossip {
             }
         }
 
-        if (iteration % 10 == 0) {
+        if (server.iteration % 10 == 0) {
             for (int i = 0; i < 5; i++) {
                 List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
                 int idx = ThreadLocalRandom.current().nextInt(list.size());

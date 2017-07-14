@@ -40,11 +40,6 @@ public class Client {
     }
 
     public void clusterCommand(Transport t, String[] argv) {
-        if (!gossip.configuration.isClusterEnabled()) {
-            reply(t, "This instance has cluster support disabled");
-            return;
-        }
-
         if (argv[1].equalsIgnoreCase("meet") && (argv.length == 4 || argv.length == 5)) {
             /* CLUSTER MEET <ip> <port> [cport] */
             int cport = 0;

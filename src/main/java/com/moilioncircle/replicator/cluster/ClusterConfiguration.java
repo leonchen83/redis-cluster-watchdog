@@ -5,22 +5,13 @@ package com.moilioncircle.replicator.cluster;
  */
 public class ClusterConfiguration {
 
-    private boolean clusterEnabled;
-    private long clusterNodeTimeout;
-    private int clusterAnnouncePort;
-    private String clusterConfigfile;
+    private long clusterNodeTimeout = 15000;
+    private int clusterAnnouncePort = 6379;
+    private String clusterConfigfile = "nodes-6379.conf";
     private String clusterAnnounceIp;
-    private int clusterAnnounceBusPort;
-    private int clusterMigrationBarrier;
-    private boolean clusterRequireFullCoverage;
-
-    public boolean isClusterEnabled() {
-        return clusterEnabled;
-    }
-
-    public void setClusterEnabled(boolean clusterEnabled) {
-        this.clusterEnabled = clusterEnabled;
-    }
+    private int clusterAnnounceBusPort = 6380;
+    private int clusterMigrationBarrier = 1;
+    private boolean clusterRequireFullCoverage = true;
 
     public long getClusterNodeTimeout() {
         return clusterNodeTimeout;

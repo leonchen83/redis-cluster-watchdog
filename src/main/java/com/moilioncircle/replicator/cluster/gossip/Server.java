@@ -17,4 +17,9 @@ public class Server {
     public ClusterNode myself;
     public ClusterState cluster;
     public Map<Transport<Message>, ClusterLink> cfd = new ConcurrentHashMap<>();
+
+    public String prevIp;
+    public long iteration = 0;
+    public long firstCallTime = 0;
+    public long amongMinorityTime = 0;
 }
