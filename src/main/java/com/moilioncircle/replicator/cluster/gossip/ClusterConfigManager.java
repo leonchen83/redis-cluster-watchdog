@@ -59,8 +59,8 @@ public class ClusterConfigManager {
                     int colonIdx = hostAndPort.indexOf(":");
                     int atIdx = hostAndPort.indexOf("@");
                     n.ip = hostAndPort.substring(0, colonIdx);
-                    n.port = parseInt(hostAndPort.substring(colonIdx, atIdx == -1 ? hostAndPort.length() : atIdx));
-                    n.cport = atIdx == -1 ? n.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx));
+                    n.port = parseInt(hostAndPort.substring(colonIdx + 1, atIdx == -1 ? hostAndPort.length() : atIdx));
+                    n.cport = atIdx == -1 ? n.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx + 1));
                     String[] roles = list.get(2).split(",");
                     for (String role : roles) {
                         if (role.equals("myself")) {
@@ -107,7 +107,7 @@ public class ClusterConfigManager {
                         if (argi.contains("-")) {
                             int idx = argi.indexOf("-");
                             start = parseInt(argi.substring(0, idx));
-                            stop = parseInt(argi.substring(idx));
+                            stop = parseInt(argi.substring(idx + 1));
                         } else {
                             start = stop = parseInt(argi);
                         }
@@ -185,7 +185,7 @@ public class ClusterConfigManager {
     public String clusterGenNodeDescription(ClusterNode node) {
         StringBuilder ci = new StringBuilder();
 
-        ci.append(node.name).append(" ").append(node.ip).append(":").append(node.port).append("@").append(node.cport);
+        ci.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip).append(":").append(node.port).append("@").append(node.cport).append(" ");
         ci.append(representClusterNodeFlags(node.flags));
         if (node.slaveof != null)
             ci.append(" ").append(node.slaveof.name).append(" ");

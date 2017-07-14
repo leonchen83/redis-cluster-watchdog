@@ -26,6 +26,7 @@ import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 import com.moilioncircle.replicator.cluster.message.ClusterMsgDataGossip;
 import com.moilioncircle.replicator.cluster.message.Message;
 import com.moilioncircle.replicator.cluster.message.handler.ClusterMsgHandler;
+import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapConfiguration;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapImpl;
 import com.moilioncircle.replicator.cluster.util.net.session.SessionImpl;
@@ -38,7 +39,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 
@@ -48,6 +51,8 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
  */
 public class ThinGossip {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
+
+    public ScheduledExecutorService executor;
 
     public Server server = new Server();
 
@@ -62,7 +67,8 @@ public class ThinGossip {
     public ClusterConnectionManager connectionManager;
     public ClusterMsgHandlerManager msgHandlerManager;
 
-    public ThinGossip(ClusterConfiguration configuration) {
+    public ThinGossip(ClusterConfiguration configuration, ScheduledExecutorService executor) {
+        this.executor = executor;
         this.client = new Client(this);
         this.msgManager = new ClusterMsgManager(this);
         this.slotManger = new ClusterSlotManger(this);
@@ -75,7 +81,12 @@ public class ThinGossip {
         this.msgHandlerManager = new ClusterMsgHandlerManager(this);
     }
 
-    public void clusterInit() throws ExecutionException, InterruptedException {
+    public void start() {
+        clusterInit();
+        executor.scheduleAtFixedRate(() -> clusterCron(), 0, 100, TimeUnit.MILLISECONDS);
+    }
+
+    public void clusterInit() {
         server.cluster = new ClusterState();
         server.cluster.myself = null;
         server.cluster.currentEpoch = 0;
@@ -112,7 +123,7 @@ public class ThinGossip {
 
             @Override
             public void onMessage(Transport<Message> transport, Message message) {
-                clusterProcessPacket(server.cfd.get(transport), message);
+                executor.execute(() -> clusterProcessPacket(server.cfd.get(transport), message));
             }
 
             @Override
@@ -122,7 +133,15 @@ public class ThinGossip {
                 connectionManager.freeClusterLink(link);
             }
         });
-        cfd.connect(null, configuration.getClusterAnnounceBusPort()).get();
+        try {
+            cfd.connect(null, configuration.getClusterAnnounceBusPort()).get();
+        } catch (InterruptedException | ExecutionException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            } else {
+                throw new UnsupportedOperationException(e.getCause());
+            }
+        }
 
         server.myself.port = configuration.getClusterAnnouncePort();
         server.myself.cport = configuration.getClusterAnnounceBusPort();
@@ -468,6 +487,7 @@ public class ThinGossip {
         long handshakeTimeout = configuration.getClusterNodeTimeout();
         if (handshakeTimeout < 1000) handshakeTimeout = 1000;
 
+        List<Object[]> connections = new ArrayList<>();
         server.cluster.statsPfailNodes = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0) continue;
@@ -481,7 +501,7 @@ public class ThinGossip {
             }
 
             if (node.link == null) {
-                final ClusterLink link = connectionManager.createClusterLink(node);
+                final ClusterLink link = connectionManager.createClusterLink(null);
                 NioBootstrapImpl<Message> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration()); //client
                 fd.setEncoder(ClusterMsgEncoder::new);
                 fd.setDecoder(ClusterMsgDecoder::new);
@@ -495,7 +515,7 @@ public class ThinGossip {
 
                     @Override
                     public void onMessage(Transport<Message> transport, Message message) {
-                        clusterProcessPacket(link, message);
+                        executor.execute(() -> clusterProcessPacket(link, message));
                     }
 
                     @Override
@@ -505,22 +525,31 @@ public class ThinGossip {
                         fd.shutdown();
                     }
                 });
-                try {
-                    fd.connect(node.ip, node.cport).get(); //TODO blocking operation
-                } catch (InterruptedException | ExecutionException e) {
-                    if (e instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                    }
-                    if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
-                    logger.debug("Unable to connect to Cluster Node [" + node.ip + "]:" + node.cport + " -> " + e.getCause().getMessage());
-                }
-
-                long oldPingSent = node.pingSent;
-                msgManager.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
-                if (oldPingSent != 0) node.pingSent = oldPingSent;
-                node.flags &= ~CLUSTER_NODE_MEET;
-                logger.debug("Connecting with Node " + node.name + " at " + node.ip + ":" + node.cport);
+                connections.add(new Object[]{fd.connect(node.ip, node.cport), link, node});
             }
+        }
+
+        for (Object[] connection : connections) {
+            CompletableFuture<Void> future = (CompletableFuture<Void>) connection[0];
+            ClusterLink link = (ClusterLink) connection[1];
+            ClusterNode node = (ClusterNode) connection[2];
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
+                logger.debug("Unable to connect to Cluster Node [" + node.ip + "]:" + node.cport + " -> " + e.getCause().getMessage());
+                continue;
+            }
+            link.node = node;
+            link.ctime = System.currentTimeMillis();
+            long oldPingSent = node.pingSent;
+            msgManager.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
+            if (oldPingSent != 0) node.pingSent = oldPingSent;
+            node.flags &= ~CLUSTER_NODE_MEET;
+            logger.debug("Connecting with Node " + node.name + " at " + node.ip + ":" + node.cport);
         }
 
         if (server.iteration % 10 == 0) {
