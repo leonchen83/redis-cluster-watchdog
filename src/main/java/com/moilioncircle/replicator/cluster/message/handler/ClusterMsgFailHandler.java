@@ -30,7 +30,6 @@ public class ClusterMsgFailHandler extends AbstractClusterMsgHandler {
             failing.flags |= CLUSTER_NODE_FAIL;
             failing.failTime = System.currentTimeMillis();
             failing.flags &= ~CLUSTER_NODE_PFAIL;
-            gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
         }
         return true;
     }

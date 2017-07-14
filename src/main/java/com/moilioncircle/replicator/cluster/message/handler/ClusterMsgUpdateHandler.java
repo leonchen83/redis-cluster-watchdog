@@ -5,7 +5,6 @@ import com.moilioncircle.replicator.cluster.ClusterNode;
 import com.moilioncircle.replicator.cluster.gossip.ThinGossip;
 import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 
-import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_TODO_SAVE_CONFIG;
 import static com.moilioncircle.replicator.cluster.ClusterConstants.nodeIsSlave;
 
 /**
@@ -28,7 +27,6 @@ public class ClusterMsgUpdateHandler extends AbstractClusterMsgHandler {
         if (nodeIsSlave(n)) gossip.clusterSetNodeAsMaster(n);
 
         n.configEpoch = reportedConfigEpoch;
-        gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
 
         gossip.clusterUpdateSlotsConfigWith(n, reportedConfigEpoch, hdr.data.nodecfg.slots);
         return true;

@@ -42,9 +42,9 @@ public class NioBootstrapConfiguration {
 
     protected boolean autoReconnect = false;
 
-    protected volatile long connectTimeout = TimeUnit.SECONDS.toMillis(10);
+    protected volatile long connectTimeout = TimeUnit.SECONDS.toMillis(5);
 
-    protected volatile long reconnectInterval = TimeUnit.SECONDS.toMillis(15);
+    protected volatile long reconnectInterval = TimeUnit.SECONDS.toMillis(5);
 
     public int getSoLinger() {
         return soLinger;

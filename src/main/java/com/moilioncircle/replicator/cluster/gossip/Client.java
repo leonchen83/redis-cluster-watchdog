@@ -17,6 +17,7 @@
 package com.moilioncircle.replicator.cluster.gossip;
 
 import com.moilioncircle.replicator.cluster.ClusterNode;
+import com.moilioncircle.replicator.cluster.codec.RedisDecoder;
 import com.moilioncircle.replicator.cluster.codec.RedisEncoder;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapConfiguration;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapImpl;
@@ -25,6 +26,7 @@ import com.moilioncircle.replicator.cluster.util.net.transport.TransportListener
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
@@ -48,23 +50,25 @@ public class Client {
     public void clientInit() {
         NioBootstrapImpl<String> cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
         cfd.setEncoder(RedisEncoder::new);
-        cfd.setDecoder(RedisEncoder::new);
+        cfd.setDecoder(RedisDecoder::new);
         cfd.setup();
         cfd.setTransportListener(new TransportListener<String>() {
             @Override
             public void onConnected(Transport<String> transport) {
-                logger.info("> " + transport.toString());
+                logger.info("[acceptor] > " + transport.toString());
             }
 
             @Override
             public void onMessage(Transport<String> transport, String message) {
+                System.out.println(message);
                 String[] argv = toArray(message);
+                System.out.println(Arrays.toString(argv));
                 gossip.executor.execute(() -> clusterCommand(transport, argv));
             }
 
             @Override
             public void onDisconnected(Transport<String> transport, Throwable cause) {
-                logger.info("< " + transport.toString());
+                logger.info("[acceptor] < " + transport.toString());
             }
         });
         try {
@@ -78,11 +82,87 @@ public class Client {
         }
     }
 
-    private String[] toArray(String message) {
-        return null; //TODO
+    private static String[] toArray(String message) {
+        Object[] arg = new Object[]{message.toCharArray(), 0};
+        Object o = decode(arg);
+        if (o instanceof String) {
+            return new String[]{(String) o};
+        } else if (o instanceof String[]) {
+            return (String[]) o;
+        } else {
+            return new String[]{};
+        }
+    }
+
+    protected static Object decode(Object[] arg) {
+        char[] ary = (char[]) arg[0];
+        int idx = (int) arg[1];
+        int c = ary[idx++], mark, len;
+        switch (c) {
+            case '$':
+                //RESP Bulk Strings
+                for (len = 0, mark = idx; ; ) {
+                    while (ary[idx++] != '\r') len++;
+                    if (ary[idx++] != '\n') len++;
+                    else break;
+                }
+                len = parseInt((String) new String(ary, mark, len));
+                if (len == -1) return null;
+                String rs = new String(ary, idx, len);
+                idx += len;
+                idx++;
+                idx++;
+                arg[1] = idx;
+                return rs;
+            case ':':
+                // RESP Integers
+                for (len = 0, mark = idx; ; ) {
+                    while (ary[idx++] != '\r') len++;
+                    if (ary[idx++] != '\n') len++;
+                    else break;
+                }
+                arg[1] = idx;
+                return new String(ary, mark, len);
+            case '*':
+                // RESP Arrays
+                for (len = 0, mark = idx; ; ) {
+                    while (ary[idx++] != '\r') len++;
+                    if (ary[idx++] != '\n') len++;
+                    else break;
+                }
+                len = parseInt((String) new String(ary, mark, len));
+                if (len == -1)
+                    return null;
+                String[] r = new String[len];
+                arg[1] = idx;
+                for (int i = 0; i < len; i++) r[i] = (String) decode(arg);
+                return r;
+            case '+':
+                // RESP Simple Strings
+                for (len = 0, mark = idx; ; ) {
+                    while (ary[idx++] != '\r') len++;
+                    if (ary[idx++] != '\n') len++;
+                    else break;
+                }
+                arg[1] = idx;
+                return new String(ary, mark, len);
+            case '-':
+                // RESP Errors
+                for (len = 0, mark = idx; ; ) {
+                    while (ary[idx++] != '\r') len++;
+                    if (ary[idx++] != '\n') len++;
+                    else break;
+                }
+                arg[1] = idx;
+                return new String(ary, mark, len);
+            default:
+                return null;
+        }
     }
 
     public void clusterCommand(Transport<String> t, String[] argv) {
+        if (!argv[0].equalsIgnoreCase("cluster"))
+            t.write("-ERR Unsupported operation [" + Arrays.toString(argv) + "]\r\n", true);
         if (argv[1].equalsIgnoreCase("meet") && (argv.length == 4 || argv.length == 5)) {
             int cport = 0;
             int port = parseInt(argv[3]);
@@ -93,27 +173,27 @@ public class Client {
             }
 
             if (gossip.clusterStartHandshake(argv[2], port, cport)) {
-                replyString(t, "+OK\r\n");
+                t.write("+OK\r\n", true);
             } else {
-                replyString(t, "-ERR Invalid node address specified:" + argv[2] + ":" + argv[3] + "\r\n");
+                t.write("-ERR Invalid node address specified:" + argv[2] + ":" + argv[3] + "\r\n", true);
             }
         } else if (argv[1].equalsIgnoreCase("nodes") && argv.length == 2) {
             /* CLUSTER NODES */
             String ci = gossip.configManager.clusterGenNodesDescription(0);
-            replyString(t, "$" + ci.length() + "\r\n" + ci + "\r\n");
+            t.write("$" + ci.length() + "\r\n" + ci + "\r\n", true);
         } else if (argv[1].equalsIgnoreCase("myid") && argv.length == 2) {
             /* CLUSTER MYID */
-            replyString(t, "+" + server.myself.name + "\r\n");
+            t.write("+" + server.myself.name + "\r\n", true);
         } else if (argv[1].equalsIgnoreCase("flushslots") && argv.length == 2) {
-            replyString(t, "-ERR Unsupported operation [cluster " + argv[1] + "]\r\n");
+            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n", true);
         } else if ((argv[1].equalsIgnoreCase("addslots") || argv[1].equalsIgnoreCase("delslots")) && argv.length >= 3) {
-            replyString(t, "-ERR Unsupported operation [cluster " + argv[1] + "]\r\n");
+            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n", true);
         } else if (argv[1].equalsIgnoreCase("setslot") && argv.length >= 4) {
-            replyString(t, "-ERR Unsupported operation [cluster " + argv[1] + "]\r\n");
+            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n", true);
         } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
             boolean retval = clusterBumpConfigEpochWithoutConsensus();
             String reply = new StringBuilder("+").append(retval ? "BUMPED" : "STILL").append(" ").append(server.myself.configEpoch).append("\r\n").toString();
-            replyString(t, reply);
+            t.write(reply, true);
         } else if (argv[1].equalsIgnoreCase("info") && argv.length == 2) {
             String[] statestr = {"ok", "fail", "needhelp"};
             int slotsAssigned = 0, slotsOk = 0, slotsFail = 0, slotsPfail = 0;
@@ -163,73 +243,66 @@ public class Client {
             }
 
             info.append("cluster_stats_messages_received:").append(totMsgReceived).append("\r\n");
-
-            String s = "$" + info.length() + "\r\n" + info.toString() + "\r\n";
-            replyString(t, s);
+            t.write("$" + info.length() + "\r\n" + info.toString() + "\r\n", true);
         } else if (argv[1].equalsIgnoreCase("saveconfig") && argv.length == 2) {
-            if (gossip.configManager.clusterSaveConfig())
-                replyString(t, "+OK\r\n");
-            else
-                replyString(t, "-ERR error saving the cluster node config.\r\n");
+            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n", true);
         } else if (argv[1].equalsIgnoreCase("keyslot") && argv.length == 3) {
-            replyString(t, ":" + String.valueOf(gossip.slotManger.keyHashSlot(argv[2])) + "\r\n");
+            t.write(":" + String.valueOf(gossip.slotManger.keyHashSlot(argv[2])) + "\r\n", true);
         } else if (argv[1].equalsIgnoreCase("countkeysinslot") && argv.length == 3) {
-            replyString(t, "-ERR Unsupported operation [cluster " + argv[1] + "]\r\n");
+            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n", true);
         } else if (argv[1].equalsIgnoreCase("forget") && argv.length == 3) {
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                replyString(t, "-ERR Unknown node " + argv[2] + "\r\n");
+                t.write("-ERR Unknown node " + argv[2] + "\r\n", true);
                 return;
             } else if (n.equals(server.myself)) {
-                replyString(t, "-ERR I tried hard but I can't forget myself...\r\n");
+                t.write("-ERR I tried hard but I can't forget myself...\r\n", true);
                 return;
             } else if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(n)) {
-                replyString(t, "-ERR Can't forget my master!\r\n");
+                t.write("-ERR Can't forget my master!\r\n", true);
                 return;
             }
             gossip.blacklistManager.clusterBlacklistAddNode(n);
             gossip.nodeManager.clusterDelNode(n);
-            gossip.clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
-            gossip.clusterBeforeSleep();
-            replyString(t, "+OK\r\n");
+            gossip.clusterUpdateState();
+            t.write("+OK\r\n", true);
         } else if (argv[1].equalsIgnoreCase("replicate") && argv.length == 3) {
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                replyString(t, "-ERR Unknown node " + argv[2] + "\r\n");
+                t.write("-ERR Unknown node " + argv[2] + "\r\n", true);
                 return;
             }
 
             if (n.equals(server.myself)) {
-                replyString(t, "-ERR Can't replicate myself\r\n");
+                t.write("-ERR Can't replicate myself\r\n", true);
                 return;
             }
 
             if (nodeIsSlave(n)) {
-                replyString(t, "-ERR I can only replicate a master, not a slave.\r\n");
+                t.write("-ERR I can only replicate a master, not a slave.\r\n", true);
                 return;
             }
 
             if (nodeIsMaster(server.myself) && (server.myself.numslots != 0)) {
-                replyString(t, "-ERR To set a master the node must be empty and without assigned slots.\r\n");
+                t.write("-ERR To set a master the node must be empty and without assigned slots.\r\n", true);
                 return;
             }
 
             gossip.clusterSetMaster(n);
-            gossip.clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
-            gossip.clusterBeforeSleep();
-            replyString(t, "+OK\r\n");
+            gossip.clusterUpdateState();
+            t.write("+OK\r\n", true);
         } else if (argv[1].equalsIgnoreCase("slaves") && argv.length == 3) {
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                replyString(t, "-ERR Unknown node " + argv[2] + "\r\n");
+                t.write("-ERR Unknown node " + argv[2] + "\r\n", true);
                 return;
             }
 
             if (nodeIsSlave(n)) {
-                replyString(t, "-ERR The specified node is not a master\r\n");
+                t.write("-ERR The specified node is not a master\r\n", true);
                 return;
             }
 
@@ -237,58 +310,49 @@ public class Client {
             for (int j = 0; j < n.numslaves; j++) {
                 ci.append(gossip.configManager.clusterGenNodeDescription(n.slaves.get(j)));
             }
-            String r = "$" + ci.length() + "\r\n" + ci.toString() + "\r\n";
-            replyString(t, r);
+            t.write("$" + ci.length() + "\r\n" + ci.toString() + "\r\n", true);
         } else if (argv[1].equalsIgnoreCase("count-failure-reports") && argv.length == 3) {
             /* CLUSTER COUNT-FAILURE-REPORTS <NODE ID> */
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                replyString(t, "-ERR Unknown node " + argv[2] + "\r\n");
+                t.write("-ERR Unknown node " + argv[2] + "\r\n", true);
                 return;
             } else {
-                replyString(t, ":" + String.valueOf(gossip.nodeManager.clusterNodeFailureReportsCount(n)) + "\r\n");
+                t.write(":" + String.valueOf(gossip.nodeManager.clusterNodeFailureReportsCount(n)) + "\r\n", true);
             }
         } else if (argv[1].equalsIgnoreCase("set-config-epoch") && argv.length == 3) {
             long epoch = parseLong(argv[2]);
 
             if (epoch < 0) {
-                replyString(t, "-ERR Invalid config epoch specified: " + epoch + "\r\n");
+                t.write("-ERR Invalid config epoch specified: " + epoch + "\r\n", true);
             } else if (server.cluster.nodes.size() > 1) {
-                replyString(t, "-ERR The user can assign a config epoch only when the node does not know any other node.\r\n");
+                t.write("-ERR The user can assign a config epoch only when the node does not know any other node.\r\n", true);
             } else if (server.myself.configEpoch != 0) {
-                replyString(t, "-ERR Node config epoch is already non-zero\r\n");
+                t.write("-ERR Node config epoch is already non-zero\r\n", true);
             } else {
                 server.myself.configEpoch = epoch;
                 logger.warn("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
                 if (server.cluster.currentEpoch < epoch)
                     server.cluster.currentEpoch = epoch;
-                gossip.clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
-                gossip.clusterBeforeSleep();
-                replyString(t, "+OK\r\n");
+                gossip.clusterUpdateState();
+                t.write("+OK\r\n", true);
             }
         } else if (argv[1].equalsIgnoreCase("reset") && (argv.length == 2 || argv.length == 3)) {
-            replyString(t, "-ERR Unsupported operation [cluster " + argv[1] + "]\r\n");
+            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n", true);
         } else {
-            replyString(t, "-ERR Wrong CLUSTER subcommand or number of arguments\r\n");
+            t.write("-ERR Wrong CLUSTER subcommand or number of arguments\r\n", true);
         }
     }
 
     public boolean clusterBumpConfigEpochWithoutConsensus() {
         long maxEpoch = gossip.clusterGetMaxEpoch();
-
         if (server.myself.configEpoch == 0 || server.myself.configEpoch != maxEpoch) {
             server.cluster.currentEpoch++;
             server.myself.configEpoch = server.cluster.currentEpoch;
-            gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
-            gossip.clusterBeforeSleep();
             logger.warn("New configEpoch set to " + server.myself.configEpoch);
             return true;
         }
         return false;
-    }
-
-    private void replyString(Transport<String> t, String s) {
-        t.write(s, true);
     }
 }

@@ -15,6 +15,7 @@ public class ClusterMsgFailoverAuthRequestHandler extends AbstractClusterMsgHand
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMsg hdr) {
+        logger.debug("Failover auth request packet received: " + link.node);
         return true;
     }
 }

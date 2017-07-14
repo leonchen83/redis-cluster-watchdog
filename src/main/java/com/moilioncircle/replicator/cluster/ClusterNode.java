@@ -19,12 +19,12 @@ public class ClusterNode {
     public long pingSent;
     public long failTime;
     public long replOffset;
-    public ClusterLink link;
     public long configEpoch;
     public long pongReceived;
     public long orphanedTime;
     public ClusterNode slaveof;
     public List<ClusterNode> slaves;
+    public volatile ClusterLink link;
     public List<ClusterNodeFailReport> failReports;
     public byte[] slots = new byte[CLUSTER_SLOTS / 8];
 }

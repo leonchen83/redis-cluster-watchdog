@@ -75,8 +75,6 @@ public class ClusterConstants {
 
     public static final int CLUSTER_TODO_UPDATE_STATE = (1 << 1);
 
-    public static final int CLUSTER_TODO_SAVE_CONFIG = (1 << 2);
-
     public static final int CLUSTERMSG_TYPE_PING = 0;
 
     public static final int CLUSTERMSG_TYPE_PONG = 1;

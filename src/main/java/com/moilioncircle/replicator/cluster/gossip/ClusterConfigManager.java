@@ -4,14 +4,10 @@ import com.moilioncircle.replicator.cluster.ClusterNode;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.*;
 import java.util.AbstractMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
-import static com.moilioncircle.replicator.cluster.config.ConfigFileParser.parseLine;
-import static java.lang.Integer.parseInt;
 
 /**
  * Created by Baoyi Chen on 2017/7/12.
@@ -24,139 +20,6 @@ public class ClusterConfigManager {
     public ClusterConfigManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
-    }
-
-    public boolean clusterLoadConfig(String fileName) {
-        try (BufferedReader r = new BufferedReader(new FileReader(new File(fileName)))) {
-            String line;
-            while ((line = r.readLine()) != null) {
-                if (line.length() == 0 || line.equals("\n")) continue;
-                List<String> list = parseLine(line);
-                if (list.isEmpty()) continue;
-                if (list.get(0).equals("vars")) {
-                    for (int i = 1; i < list.size(); i += 2) {
-                        if (list.get(i).equals("currentEpoch")) {
-                            server.cluster.currentEpoch = parseInt(list.get(i + 1));
-                        } else if (list.get(i).equals("lastVoteEpoch")) {
-                            //skip
-                        } else {
-                            logger.warn("Skipping unknown cluster config variable '" + list.get(i) + "'");
-                        }
-                    }
-                    continue;
-                } else if (list.size() < 8) {
-                    throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
-                } else {
-                    ClusterNode n = gossip.nodeManager.clusterLookupNode(list.get(0));
-                    if (n == null) {
-                        n = gossip.nodeManager.createClusterNode(list.get(0), 0);
-                        gossip.nodeManager.clusterAddNode(n);
-                    }
-                    String hostAndPort = list.get(1);
-                    if (!hostAndPort.contains(":")) {
-                        throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
-                    }
-                    int colonIdx = hostAndPort.indexOf(":");
-                    int atIdx = hostAndPort.indexOf("@");
-                    n.ip = hostAndPort.substring(0, colonIdx);
-                    n.port = parseInt(hostAndPort.substring(colonIdx + 1, atIdx == -1 ? hostAndPort.length() : atIdx));
-                    n.cport = atIdx == -1 ? n.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx + 1));
-                    String[] roles = list.get(2).split(",");
-                    for (String role : roles) {
-                        if (role.equals("myself")) {
-                            server.myself = server.cluster.myself = n;
-                            n.flags |= CLUSTER_NODE_MYSELF;
-                        } else if (role.equals("master")) {
-                            n.flags |= CLUSTER_NODE_MASTER;
-                        } else if (role.equals("slave")) {
-                            n.flags |= CLUSTER_NODE_SLAVE;
-                        } else if (role.equals("fail?")) {
-                            n.flags |= CLUSTER_NODE_PFAIL;
-                        } else if (role.equals("fail")) {
-                            n.flags |= CLUSTER_NODE_FAIL;
-                            n.failTime = System.currentTimeMillis();
-                        } else if (role.equals("handshake")) {
-                            n.flags |= CLUSTER_NODE_HANDSHAKE;
-                        } else if (role.equals("noaddr")) {
-                            n.flags |= CLUSTER_NODE_NOADDR;
-                        } else if (role.equals("noflags")) {
-                            // NOP
-                        } else {
-                            throw new UnsupportedOperationException("Unknown flag in redis cluster config file");
-                        }
-                    }
-
-                    ClusterNode master;
-                    if (!list.get(3).equals("-")) {
-                        master = gossip.nodeManager.clusterLookupNode(list.get(3));
-                        if (master == null) {
-                            master = gossip.nodeManager.createClusterNode(list.get(3), 0);
-                            gossip.nodeManager.clusterAddNode(master);
-                        }
-                        n.slaveof = master;
-                        gossip.nodeManager.clusterNodeAddSlave(master, n);
-                    }
-
-                    if (parseInt(list.get(4)) > 0) n.pingSent = System.currentTimeMillis();
-                    if (parseInt(list.get(5)) > 0) n.pongReceived = System.currentTimeMillis();
-                    n.configEpoch = parseInt(list.get(6));
-
-                    for (int i = 8; i < list.size(); i++) {
-                        int start = 0, stop = 0;
-                        String argi = list.get(i);
-                        if (argi.contains("-")) {
-                            int idx = argi.indexOf("-");
-                            start = parseInt(argi.substring(0, idx));
-                            stop = parseInt(argi.substring(idx + 1));
-                        } else {
-                            start = stop = parseInt(argi);
-                        }
-                        while (start <= stop) gossip.slotManger.clusterAddSlot(n, start++);
-                    }
-                }
-            }
-            if (server.cluster.myself == null) {
-                throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
-            }
-            logger.info("Node configuration loaded, I'm " + server.myself.name);
-
-            if (gossip.clusterGetMaxEpoch() > server.cluster.currentEpoch) {
-                server.cluster.currentEpoch = gossip.clusterGetMaxEpoch();
-            }
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    public boolean clusterSaveConfig() {
-        server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_SAVE_CONFIG;
-
-        BufferedWriter r = null;
-        try {
-            File file = new File(gossip.configuration.getClusterConfigfile());
-            if (!file.exists()) file.createNewFile();
-            r = new BufferedWriter(new FileWriter(file));
-            StringBuilder ci = new StringBuilder();
-            ci.append(clusterGenNodesDescription(CLUSTER_NODE_HANDSHAKE));
-            ci.append("vars currentEpoch ").append(server.cluster.currentEpoch);
-            ci.append(" lastVoteEpoch ").append(0); //always 0
-            r.write(ci.toString());
-            r.flush();
-            return true;
-        } catch (IOException e) {
-            return false;
-        } finally {
-            if (r != null) try {
-                r.close();
-            } catch (IOException e) {
-            }
-        }
-    }
-
-    public void clusterSaveConfigOrDie() {
-        if (clusterSaveConfig()) return;
-        throw new UnsupportedOperationException("Fatal: can't update cluster config file.");
     }
 
     public static Map.Entry<Integer, String>[] redisNodeFlags = new Map.Entry[]{

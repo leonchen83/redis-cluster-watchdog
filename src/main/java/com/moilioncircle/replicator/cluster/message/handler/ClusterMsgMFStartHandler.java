@@ -15,6 +15,7 @@ public class ClusterMsgMFStartHandler extends AbstractClusterMsgHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMsg hdr) {
+        logger.debug("MFStart packet received: " + link.node);
         return true;
     }
 }

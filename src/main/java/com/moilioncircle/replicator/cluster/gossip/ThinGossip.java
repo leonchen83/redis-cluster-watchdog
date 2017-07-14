@@ -82,7 +82,8 @@ public class ThinGossip {
     }
 
     public void start() {
-        clusterInit();
+        this.clusterInit();
+        client.clientInit();
         executor.scheduleAtFixedRate(() -> clusterCron(), 0, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -101,12 +102,9 @@ public class ThinGossip {
         }
         server.cluster.statsPfailNodes = 0;
 
-        if (!configManager.clusterLoadConfig(configuration.getClusterConfigfile())) {
-            server.myself = server.cluster.myself = nodeManager.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
-            logger.info("No cluster configuration found, I'm " + server.myself.name);
-            nodeManager.clusterAddNode(server.myself);
-            configManager.clusterSaveConfigOrDie();
-        }
+        server.myself = server.cluster.myself = nodeManager.createClusterNode(configuration.getSelfName(), CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
+        logger.info("No cluster configuration found, I'm " + server.myself.name);
+        nodeManager.clusterAddNode(server.myself);
 
         NioBootstrapImpl<Message> cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
         cfd.setEncoder(ClusterMsgEncoder::new);
@@ -115,7 +113,7 @@ public class ThinGossip {
         cfd.setTransportListener(new TransportListener<Message>() {
             @Override
             public void onConnected(Transport<Message> transport) {
-                logger.info("> " + transport.toString());
+                logger.info("[acceptor] > " + transport.toString());
                 ClusterLink link = connectionManager.createClusterLink(null);
                 link.fd = new SessionImpl<>(transport);
                 server.cfd.put(transport, link);
@@ -128,7 +126,7 @@ public class ThinGossip {
 
             @Override
             public void onDisconnected(Transport<Message> transport, Throwable cause) {
-                logger.info("< " + transport.toString());
+                logger.info("[acceptor] < " + transport.toString());
                 ClusterLink link = server.cfd.remove(transport);
                 connectionManager.freeClusterLink(link);
             }
@@ -162,7 +160,6 @@ public class ThinGossip {
         if (sender.name.compareTo(server.myself.name) <= 0) return;
         server.cluster.currentEpoch++;
         server.myself.configEpoch = server.cluster.currentEpoch;
-        configManager.clusterSaveConfigOrDie();
         logger.debug("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + server.myself.configEpoch);
     }
 
@@ -183,7 +180,6 @@ public class ThinGossip {
         node.failTime = System.currentTimeMillis();
 
         if (nodeIsMaster(server.myself)) msgManager.clusterSendFail(node.name);
-        clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
     }
 
     public void clearNodeFailureIfNeeded(ClusterNode node) {
@@ -192,13 +188,11 @@ public class ThinGossip {
         if (nodeIsSlave(node) || node.numslots == 0) {
             logger.info("Clear FAIL state for node " + node.name + ": " + (nodeIsSlave(node) ? "slave" : "master without slots") + " is reachable again.");
             node.flags &= ~CLUSTER_NODE_FAIL;
-            clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
         }
 
         if (nodeIsMaster(node) && node.numslots > 0 && now - node.failTime > configuration.getClusterNodeTimeout() * CLUSTER_FAIL_UNDO_TIME_MULT) {
             logger.info("Clear FAIL state for node " + node.name + ": is reachable again and nobody is serving its slots after some time.");
             node.flags &= ~CLUSTER_NODE_FAIL;
-            clusterDoBeforeSleep(CLUSTER_TODO_UPDATE_STATE | CLUSTER_TODO_SAVE_CONFIG);
         }
     }
 
@@ -306,8 +300,6 @@ public class ThinGossip {
         n.flags &= ~CLUSTER_NODE_SLAVE;
         n.flags |= CLUSTER_NODE_MASTER;
         n.slaveof = null;
-
-        clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
     }
 
     public void clusterUpdateSlotsConfigWith(ClusterNode sender, long senderConfigEpoch, byte[] slots) {
@@ -335,7 +327,6 @@ public class ThinGossip {
                         newmaster = sender;
                     slotManger.clusterDelSlot(i);
                     slotManger.clusterAddSlot(sender, i);
-                    clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
                 }
             }
         }
@@ -343,7 +334,6 @@ public class ThinGossip {
         if (newmaster != null && curmaster.numslots == 0) {
             logger.warn("Configuration change detected. Reconfiguring myself as a replica of " + sender.name);
             clusterSetMaster(sender);
-            clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
         } else if (dirtySlotsCount != 0) {
             for (int i = 0; i < dirtySlotsCount; i++)
                 slotManger.delKeysInSlot(dirtySlots[i]);
@@ -369,7 +359,6 @@ public class ThinGossip {
             }
             if (hdr.configEpoch > sender.configEpoch) {
                 sender.configEpoch = hdr.configEpoch;
-                clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
             }
         }
 
@@ -379,30 +368,17 @@ public class ThinGossip {
         } else {
             handler.handle(sender, link, hdr);
         }
-        if (server.cluster.todoBeforeSleep != 0) {
-            clusterBeforeSleep();
-        }
+        clusterUpdateState();
         return true;
-    }
-
-    public void clusterBeforeSleep() {
-        if ((server.cluster.todoBeforeSleep & CLUSTER_TODO_UPDATE_STATE) != 0)
-            clusterUpdateState();
-        if ((server.cluster.todoBeforeSleep & CLUSTER_TODO_SAVE_CONFIG) != 0) {
-            configManager.clusterSaveConfigOrDie();
-        }
-        server.cluster.todoBeforeSleep = 0;
-    }
-
-    public void clusterDoBeforeSleep(int flags) {
-        server.cluster.todoBeforeSleep |= flags;
     }
 
     public void clusterUpdateState() {
         server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_UPDATE_STATE;
 
         if (server.firstCallTime == 0) server.firstCallTime = System.currentTimeMillis();
-        if (nodeIsMaster(server.myself) && server.cluster.state == CLUSTER_FAIL && System.currentTimeMillis() - server.firstCallTime < CLUSTER_WRITABLE_DELAY)
+        if (nodeIsMaster(server.myself)
+                && server.cluster.state == CLUSTER_FAIL
+                && System.currentTimeMillis() - server.firstCallTime < CLUSTER_WRITABLE_DELAY)
             return;
 
         int newState = CLUSTER_OK;
@@ -441,7 +417,9 @@ public class ThinGossip {
             if (rejoinDelay < CLUSTER_MIN_REJOIN_DELAY)
                 rejoinDelay = CLUSTER_MIN_REJOIN_DELAY;
 
-            if (newState == CLUSTER_OK && nodeIsMaster(server.myself) && System.currentTimeMillis() - server.amongMinorityTime < rejoinDelay) {
+            if (newState == CLUSTER_OK
+                    && nodeIsMaster(server.myself)
+                    && System.currentTimeMillis() - server.amongMinorityTime < rejoinDelay) {
                 return;
             }
 
@@ -463,8 +441,6 @@ public class ThinGossip {
     }
 
     public void clusterCron() {
-        if (server.cluster.todoBeforeSleep != 0) clusterBeforeSleep();
-
         long minPong = 0, now = System.currentTimeMillis();
         ClusterNode minPongNode = null;
         server.iteration++;
@@ -509,7 +485,7 @@ public class ThinGossip {
                 fd.setTransportListener(new TransportListener<Message>() {
                     @Override
                     public void onConnected(Transport<Message> transport) {
-                        logger.info("> " + transport.toString());
+                        logger.info("[initiator] > " + transport.toString());
                         link.fd = new SessionImpl<>(transport);
                     }
 
@@ -520,7 +496,7 @@ public class ThinGossip {
 
                     @Override
                     public void onDisconnected(Transport<Message> transport, Throwable cause) {
-                        logger.info("< " + transport.toString());
+                        logger.info("[initiator] < " + transport.toString());
                         connectionManager.freeClusterLink(link);
                         fd.shutdown();
                     }
