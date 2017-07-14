@@ -15,9 +15,8 @@ public class ClusterConnectionManager {
     }
 
     public void freeClusterLink(ClusterLink link) {
-        if (link.node != null) {
-            link.node.link = null;
-        }
-        link.fd.disconnect(null);
+        if (link == null) return;
+        if (link.node != null) link.node.link = null;
+        if (link.fd != null) link.fd.disconnect(null);
     }
 }

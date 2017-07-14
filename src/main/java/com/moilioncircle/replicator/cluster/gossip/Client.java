@@ -32,10 +32,10 @@ import static java.lang.Long.parseLong;
 public class Client {
     private static final Log logger = LogFactory.getLog(Client.class);
     private Server server;
-    private ThinGossip1 gossip;
+    private ThinGossip gossip;
     private ClusterNode myself;
 
-    public Client(ThinGossip1 gossip) {
+    public Client(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;

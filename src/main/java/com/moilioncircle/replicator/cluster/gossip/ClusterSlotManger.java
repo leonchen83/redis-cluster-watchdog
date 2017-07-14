@@ -13,10 +13,10 @@ import static com.moilioncircle.replicator.cluster.util.Crc16.crc16;
 public class ClusterSlotManger {
     private static final Log logger = LogFactory.getLog(ClusterSlotManger.class);
     private Server server;
-    private ThinGossip1 gossip;
+    private ThinGossip gossip;
     private ClusterNode myself;
 
-    public ClusterSlotManger(ThinGossip1 gossip) {
+    public ClusterSlotManger(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;

@@ -8,9 +8,9 @@ import com.moilioncircle.replicator.cluster.util.net.ConnectionStatus;
  */
 public interface Session<T> {
 
-    String getLocalAddress();
+    String getLocalAddress(String value);
 
-    String getRemoteAddress();
+    String getRemoteAddress(String value);
 
     long getId();
 

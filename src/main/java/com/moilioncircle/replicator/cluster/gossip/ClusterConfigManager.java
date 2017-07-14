@@ -19,10 +19,10 @@ import static java.lang.Integer.parseInt;
 public class ClusterConfigManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
     private Server server;
-    private ThinGossip1 gossip;
+    private ThinGossip gossip;
     private ClusterNode myself;
 
-    public ClusterConfigManager(ThinGossip1 gossip) {
+    public ClusterConfigManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;

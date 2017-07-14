@@ -37,10 +37,10 @@ public class ClusterMsgManager {
 
     private static final Log logger = LogFactory.getLog(ClusterMsgManager.class);
     private Server server;
-    private ThinGossip1 gossip;
+    private ThinGossip gossip;
     private ClusterNode myself;
 
-    public ClusterMsgManager(ThinGossip1 gossip) {
+    public ClusterMsgManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;
@@ -68,31 +68,25 @@ public class ClusterMsgManager {
         hdr.sig = "RCmb";
         hdr.type = type;
         hdr.sender = myself.name;
-        if (server.clusterAnnounceIp != null) {
-            hdr.myip = server.clusterAnnounceIp;
-        }
+        hdr.myip = server.clusterAnnounceIp;
 
-        int announcedPort = server.clusterAnnouncePort != 0 ? server.clusterAnnouncePort : server.port;
-        int announcedCport = server.clusterAnnounceBusPort != 0 ? server.clusterAnnounceBusPort : (server.port + CLUSTER_PORT_INCR);
         hdr.myslots = master.slots;
         if (master.slaveof != null) {
             hdr.slaveof = myself.slaveof.name;
         }
 
-        hdr.port = announcedPort;
-        hdr.cport = announcedCport;
         hdr.flags = myself.flags;
+        hdr.port = server.clusterAnnouncePort;
+        hdr.cport = server.clusterAnnounceBusPort;
         hdr.state = server.cluster.state;
 
         hdr.currentEpoch = server.cluster.currentEpoch;
         hdr.configEpoch = master.configEpoch;
 
-        long offset = 0;
         if (nodeIsSlave(myself))
-            offset = gossip.replicationManager.replicationGetSlaveOffset();
+            hdr.offset = gossip.replicationManager.replicationGetSlaveOffset();
         else
-            offset = server.masterReplOffset;
-        hdr.offset = offset;
+            logger.warn("myself must be a slave");
         hdr.totlen = 100;
         return hdr;
     }

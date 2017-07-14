@@ -45,8 +45,8 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
  * @author Leon Chen
  * @since 2.1.0
  */
-public class ThinGossip1 {
-    private static final Log logger = LogFactory.getLog(ThinGossip1.class);
+public class ThinGossip {
+    private static final Log logger = LogFactory.getLog(ThinGossip.class);
 
     public ClusterNode myself;
 
@@ -62,7 +62,7 @@ public class ThinGossip1 {
     public ClusterMsgHandlerManager msgHandlerManager;
     public Client client;
 
-    public ThinGossip1() {
+    public ThinGossip() {
         this.connectionManager = new ClusterConnectionManager();
         this.configManager = new ClusterConfigManager(this);
         this.nodeManager = new ClusterNodeManager(this);
@@ -90,7 +90,7 @@ public class ThinGossip1 {
         server.cluster.statsPfailNodes = 0;
 
         if (!configManager.clusterLoadConfig(server.clusterConfigfile)) {
-            myself = server.cluster.myself = nodeManager.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_SLAVE);
+            myself = server.cluster.myself = nodeManager.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
             logger.info("No cluster configuration found, I'm " + myself.name);
             nodeManager.clusterAddNode(myself);
             configManager.clusterSaveConfigOrDie();
@@ -104,41 +104,27 @@ public class ThinGossip1 {
             @Override
             public void onConnected(Transport<Message> transport) {
                 logger.info("> " + transport.toString());
-                server.cfd.add(new SessionImpl<>(transport));
+                ClusterLink link = connectionManager.createClusterLink(null);
+                link.fd = new SessionImpl<>(transport);
+                server.cfd.put(transport, link);
             }
 
             @Override
             public void onMessage(Transport<Message> transport, Message message) {
-                clusterAcceptHandler(transport, message);
-            }
-
-            @Override
-            public void onException(Transport<Message> transport, Throwable cause) {
-                logger.error(cause.getMessage());
+                clusterProcessPacket(server.cfd.get(transport), message);
             }
 
             @Override
             public void onDisconnected(Transport<Message> transport, Throwable cause) {
                 logger.info("< " + transport.toString());
-                //TODO
+                ClusterLink link = server.cfd.remove(transport);
+                connectionManager.freeClusterLink(link);
             }
         });
-        cfd.connect(null, server.port).get();
+        cfd.connect(null, server.clusterAnnounceBusPort).get();
 
-        myself.port = server.port;
-        myself.cport = server.port + CLUSTER_PORT_INCR;
-        if (server.clusterAnnouncePort != 0) {
-            myself.port = server.clusterAnnouncePort;
-        }
-        if (server.clusterAnnounceBusPort != 0) {
-            myself.cport = server.clusterAnnounceBusPort;
-        }
-    }
-
-    public void clusterAcceptHandler(Transport<Message> transport, Message message) {
-        ClusterLink link = connectionManager.createClusterLink(null);
-        link.fd = new SessionImpl<>(transport);
-        clusterProcessPacket(link, message);
+        myself.port = server.clusterAnnouncePort;
+        myself.cport = server.clusterAnnounceBusPort;
     }
 
     public long clusterGetMaxEpoch() {
@@ -265,17 +251,12 @@ public class ThinGossip1 {
         }
     }
 
-    public String nodeIp2String(ClusterLink link, String announcedIp) {
-        if (announcedIp != null) return announcedIp;
-        return link.fd.getRemoteAddress();
-    }
-
     public boolean nodeUpdateAddressIfNeeded(ClusterNode node, ClusterLink link, ClusterMsg hdr) {
         int port = hdr.port;
         int cport = hdr.cport;
         if (link.equals(node.link)) return false;
 
-        String ip = nodeIp2String(link, hdr.myip);
+        String ip = link.fd.getRemoteAddress(hdr.myip);
 
         if (node.port == port && node.cport == cport && ip.equals(node.ip)) return false;
 
@@ -508,6 +489,7 @@ public class ThinGossip1 {
                 fd.setTransportListener(new TransportListener<Message>() {
                     @Override
                     public void onConnected(Transport<Message> transport) {
+                        logger.info("> " + transport.toString());
                         link.fd = new SessionImpl<>(transport);
                     }
 
@@ -517,13 +499,10 @@ public class ThinGossip1 {
                     }
 
                     @Override
-                    public void onException(Transport<Message> transport, Throwable cause) {
-
-                    }
-
-                    @Override
                     public void onDisconnected(Transport<Message> transport, Throwable cause) {
-
+                        logger.info("< " + transport.toString());
+                        connectionManager.freeClusterLink(link);
+                        fd.shutdown();
                     }
                 });
                 fd.connect(node.ip, node.cport);
@@ -595,12 +574,10 @@ public class ThinGossip1 {
             if (node.pingSent == 0) continue;
 
             long delay = now - node.pingSent;
-            if (delay > server.clusterNodeTimeout) {
-                if ((node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
-                    logger.debug("*** NODE " + node.name + " possibly failing");
-                    node.flags |= CLUSTER_NODE_PFAIL;
-                    updateState = true;
-                }
+            if (delay > server.clusterNodeTimeout && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
+                logger.debug("*** NODE " + node.name + " possibly failing");
+                node.flags |= CLUSTER_NODE_PFAIL;
+                updateState = true;
             }
         }
 
@@ -617,12 +594,13 @@ public class ThinGossip1 {
     }
 
     public void clusterHandleSlaveMigration(int maxSlaves) {
-        int okslaves = 0;
-        ClusterNode mymaster = myself.slaveof;
 
         if (server.cluster.state != CLUSTER_OK) return;
 
+        ClusterNode mymaster = myself.slaveof;
         if (mymaster == null) return;
+
+        int okslaves = 0;
         for (int i = 0; i < mymaster.numslaves; i++)
             if (!nodeFailed(mymaster.slaves.get(i)) && !nodePFailed(mymaster.slaves.get(i))) okslaves++;
         if (okslaves <= server.clusterMigrationBarrier) return;

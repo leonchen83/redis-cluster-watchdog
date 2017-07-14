@@ -2,7 +2,7 @@ package com.moilioncircle.replicator.cluster.message.handler;
 
 import com.moilioncircle.replicator.cluster.ClusterLink;
 import com.moilioncircle.replicator.cluster.ClusterNode;
-import com.moilioncircle.replicator.cluster.gossip.ThinGossip1;
+import com.moilioncircle.replicator.cluster.gossip.ThinGossip;
 import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_TODO_SAVE_CONFIG;
@@ -12,7 +12,7 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.nodeIsSlave;
  * Created by Baoyi Chen on 2017/7/13.
  */
 public class ClusterMsgUpdateHandler extends AbstractClusterMsgHandler {
-    public ClusterMsgUpdateHandler(ThinGossip1 gossip) {
+    public ClusterMsgUpdateHandler(ThinGossip gossip) {
         super(gossip);
     }
 

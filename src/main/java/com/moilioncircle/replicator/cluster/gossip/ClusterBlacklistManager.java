@@ -17,10 +17,10 @@ public class ClusterBlacklistManager {
 
     private static final Log logger = LogFactory.getLog(ClusterBlacklistManager.class);
     private Server server;
-    private ThinGossip1 gossip;
+    private ThinGossip gossip;
     private ClusterNode myself;
 
-    public ClusterBlacklistManager(ThinGossip1 gossip) {
+    public ClusterBlacklistManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;

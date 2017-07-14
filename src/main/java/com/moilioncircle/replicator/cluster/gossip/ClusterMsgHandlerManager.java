@@ -17,11 +17,11 @@ public class ClusterMsgHandlerManager {
 
     private static final Log logger = LogFactory.getLog(ClusterMsgHandlerManager.class);
     private Server server;
-    private ThinGossip1 gossip;
+    private ThinGossip gossip;
     private ClusterNode myself;
     private Map<Integer, ClusterMsgHandler> handlerMap = new HashMap<>();
 
-    public ClusterMsgHandlerManager(ThinGossip1 gossip) {
+    public ClusterMsgHandlerManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;

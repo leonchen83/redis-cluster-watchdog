@@ -18,10 +18,10 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 public class ClusterNodeManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
     private Server server;
-    private ThinGossip1 gossip;
+    private ThinGossip gossip;
     private ClusterNode myself;
 
-    public ClusterNodeManager(ThinGossip1 gossip) {
+    public ClusterNodeManager(ThinGossip gossip) {
         this.gossip = gossip;
         this.server = gossip.server;
         this.myself = gossip.myself;

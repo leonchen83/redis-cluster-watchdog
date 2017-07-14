@@ -2,7 +2,7 @@ package com.moilioncircle.replicator.cluster.message.handler;
 
 import com.moilioncircle.replicator.cluster.ClusterLink;
 import com.moilioncircle.replicator.cluster.ClusterNode;
-import com.moilioncircle.replicator.cluster.gossip.ThinGossip1;
+import com.moilioncircle.replicator.cluster.gossip.ThinGossip;
 import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 
 import java.util.Arrays;
@@ -13,7 +13,7 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
  * Created by Baoyi Chen on 2017/7/13.
  */
 public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
-    public ClusterMsgPongHandler(ThinGossip1 gossip) {
+    public ClusterMsgPongHandler(ThinGossip gossip) {
         super(gossip);
     }
 
@@ -46,9 +46,7 @@ public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
                 gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
                 return false;
             }
-        }
 
-        if (link.node != null) {
             link.node.pongReceived = System.currentTimeMillis();
             link.node.pingSent = 0;
 
@@ -60,43 +58,40 @@ public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
             }
         }
 
-        if (sender != null) {
-            if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) { // hdr.slaveof == null
-                gossip.clusterSetNodeAsMaster(sender);
-            } else {
-                ClusterNode master = gossip.nodeManager.clusterLookupNode(hdr.slaveof);
+        if (sender == null) return true;
 
-                if (nodeIsMaster(sender)) {
-                    gossip.slotManger.clusterDelNodeSlots(sender);
-                    sender.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
-                    sender.flags |= CLUSTER_NODE_SLAVE;
+        if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) { // hdr.slaveof == null
+            gossip.clusterSetNodeAsMaster(sender);
+        } else {
+            ClusterNode master = gossip.nodeManager.clusterLookupNode(hdr.slaveof);
 
-                    gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
-                }
+            if (nodeIsMaster(sender)) {
+                gossip.slotManger.clusterDelNodeSlots(sender);
+                sender.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
+                sender.flags |= CLUSTER_NODE_SLAVE;
 
-                if (master != null && !sender.slaveof.equals(master)) {
-                    if (sender.slaveof != null) gossip.nodeManager.clusterNodeRemoveSlave(sender.slaveof, sender);
-                    gossip.nodeManager.clusterNodeAddSlave(master, sender);
-                    sender.slaveof = master;
-                    gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
-                }
+                gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG | CLUSTER_TODO_UPDATE_STATE);
+            }
+
+            if (master != null && !sender.slaveof.equals(master)) {
+                if (sender.slaveof != null) gossip.nodeManager.clusterNodeRemoveSlave(sender.slaveof, sender);
+                gossip.nodeManager.clusterNodeAddSlave(master, sender);
+                sender.slaveof = master;
+                gossip.clusterDoBeforeSleep(CLUSTER_TODO_SAVE_CONFIG);
             }
         }
 
-        ClusterNode senderMaster = null;
         boolean dirtySlots = false;
-
-        if (sender != null) {
-            senderMaster = nodeIsMaster(sender) ? sender : sender.slaveof;
-            if (senderMaster != null) {
-                dirtySlots = !Arrays.equals(senderMaster.slots, hdr.myslots);
-            }
+        ClusterNode senderMaster = nodeIsMaster(sender) ? sender : sender.slaveof;
+        if (senderMaster != null) {
+            dirtySlots = !Arrays.equals(senderMaster.slots, hdr.myslots);
         }
 
-        if (sender != null && nodeIsMaster(sender) && dirtySlots)
+        if (nodeIsMaster(sender) && dirtySlots) {
             gossip.clusterUpdateSlotsConfigWith(sender, hdr.configEpoch, hdr.myslots);
+        }
 
-        if (sender != null && dirtySlots) {
+        if (dirtySlots) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 if (gossip.slotManger.bitmapTestBit(hdr.myslots, i)) {
                     if (server.cluster.slots[i].equals(sender) || server.cluster.slots[i] == null) continue;
@@ -109,11 +104,11 @@ public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
             }
         }
 
-        if (sender != null && nodeIsMaster(myself) && nodeIsMaster(sender) && hdr.configEpoch == myself.configEpoch) {
+        if (nodeIsMaster(myself) && nodeIsMaster(sender) && hdr.configEpoch == myself.configEpoch) {
             gossip.clusterHandleConfigEpochCollision(sender);
         }
 
-        if (sender != null) gossip.clusterProcessGossipSection(hdr, link);
+        gossip.clusterProcessGossipSection(hdr, link);
         return true;
     }
 }
