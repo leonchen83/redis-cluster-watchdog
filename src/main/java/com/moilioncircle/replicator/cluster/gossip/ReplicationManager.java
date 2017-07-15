@@ -16,13 +16,18 @@
 
 package com.moilioncircle.replicator.cluster.gossip;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * @author Leon Chen
  * @since 2.1.0
  */
 public class ReplicationManager {
+    private static final Log logger = LogFactory.getLog(ReplicationManager.class);
 
     public void replicationSetMaster(String ip, int port) {
+        logger.info("replicate to " + ip + ":" + port);
     }
 
     public long replicationGetSlaveOffset() {

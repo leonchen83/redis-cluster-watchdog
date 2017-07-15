@@ -85,7 +85,6 @@ public class ClusterMsgManager {
             hdr.offset = gossip.replicationManager.replicationGetSlaveOffset();
         else
             logger.warn("myself must be a slave");
-        hdr.totlen = 100;
         return hdr;
     }
 
@@ -105,7 +104,7 @@ public class ClusterMsgManager {
         gossip.port = n.port;
         gossip.cport = n.cport;
         gossip.flags = n.flags;
-        gossip.notused1 = new byte[34];
+        gossip.notused1 = new byte[4];
     }
 
     public void clusterSendPing(ClusterLink link, int type) {
@@ -158,7 +157,6 @@ public class ClusterMsgManager {
         }
 
         hdr.count = gossipcount;
-        hdr.totlen = 100;
         clusterSendMessage(link, hdr);
     }
 

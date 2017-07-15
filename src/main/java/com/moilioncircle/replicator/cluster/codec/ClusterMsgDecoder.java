@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
@@ -29,62 +30,69 @@ public class ClusterMsgDecoder extends ByteToMessageDecoder {
             ClusterMsg msg = new ClusterMsg();
             msg.sig = (String) in.readCharSequence(4, Charset.forName("UTF-8"));
             msg.totlen = in.readInt();
-            msg.ver = in.readShort();
-            msg.port = in.readShort();
-            msg.type = in.readShort();
-            msg.count = in.readShort();
+            if (in.readableBytes() < msg.totlen - 8) {
+                in.resetReaderIndex();
+                return null;
+            }
+            msg.ver = in.readShort() & 0xFFFF;
+            msg.port = in.readShort() & 0xFFFF;
+            msg.type = in.readShort() & 0xFFFF;
+            msg.count = in.readShort() & 0xFFFF;
             msg.currentEpoch = in.readLong();
             msg.configEpoch = in.readLong();
             msg.offset = in.readLong();
-            String sender = (String) in.readCharSequence(40, Charset.forName("UTF-8"));
-            if (!sender.equals(CLUSTER_NODE_NULL_NAME)) {
-                msg.sender = sender;
+            byte[] sender = new byte[40];
+            in.readBytes(sender);
+            if (!Arrays.equals(sender, CLUSTER_NODE_NULL_NAME)) {
+                msg.sender = new String(sender);
             }
-            byte[] slots = new byte[CLUSTER_SLOTS / 8];
-            in.readBytes(slots);
-            msg.myslots = slots;
-            String slaveof = (String) in.readCharSequence(40, Charset.forName("UTF-8"));
-            if (!sender.equals(CLUSTER_NODE_NULL_NAME)) {
-                msg.slaveof = slaveof;
+            in.readBytes(msg.myslots);
+
+            byte[] slaveof = new byte[40];
+            in.readBytes(slaveof);
+            if (!Arrays.equals(slaveof, CLUSTER_NODE_NULL_NAME)) {
+                msg.slaveof = new String(slaveof);
             }
-            msg.myip = (String) in.readCharSequence(46, Charset.forName("UTF-8"));
-            byte[] notused = new byte[34];
-            in.readBytes(notused);
-            msg.notused = notused;
-            msg.cport = in.readShort();
-            msg.flags = in.readShort();
+            byte[] myip = new byte[46];
+            in.readBytes(myip);
+            if (!Arrays.equals(myip, CLUSTER_NODE_NULL_IP)) {
+                msg.myip = getMyIP(myip);
+            }
+            in.readBytes(msg.notused);
+            msg.cport = in.readShort() & 0xFFFF;
+            msg.flags = in.readShort() & 0xFFFF;
             msg.state = in.readByte();
-            byte[] mflags = new byte[3];
-            in.readBytes(mflags);
-            msg.mflags = mflags;
+            in.readBytes(msg.mflags);
             if (msg.type == CLUSTERMSG_TYPE_PING || msg.type == CLUSTERMSG_TYPE_PONG || msg.type == CLUSTERMSG_TYPE_MEET) {
                 msg.data = new ClusterMsgData();
                 msg.data.gossip = new ClusterMsgDataGossip[msg.count];
                 for (int i = 0; i < msg.data.gossip.length; i++) {
                     msg.data.gossip[i] = new ClusterMsgDataGossip();
-                    String nodename = (String) in.readCharSequence(40, Charset.forName("UTF-8"));
-                    if (!nodename.equals(CLUSTER_NODE_NULL_NAME)) {
-                        msg.data.gossip[i].nodename = nodename;
+                    byte[] nodename = new byte[40];
+                    in.readBytes(nodename);
+                    if (!Arrays.equals(nodename, CLUSTER_NODE_NULL_NAME)) {
+                        msg.data.gossip[i].nodename = new String(nodename);
                     }
-
                     msg.data.gossip[i].pingSent = in.readInt() * 1000;
                     msg.data.gossip[i].pongReceived = in.readInt() * 1000;
-                    msg.data.gossip[i].ip = (String) in.readCharSequence(46, Charset.forName("UTF-8"));
-                    msg.data.gossip[i].port = in.readShort();
-                    msg.data.gossip[i].cport = in.readShort();
-                    msg.data.gossip[i].flags = in.readShort();
-                    byte[] notused1 = new byte[32];
-                    in.readBytes(notused1);
-                    msg.data.gossip[i].notused1 = notused1;
+                    byte[] ip = new byte[46];
+                    in.readBytes(ip);
+                    if (!Arrays.equals(ip, CLUSTER_NODE_NULL_IP)) {
+                        msg.data.gossip[i].ip = getMyIP(ip);
+                    }
+                    msg.data.gossip[i].port = in.readShort() & 0xFFFF;
+                    msg.data.gossip[i].cport = in.readShort() & 0xFFFF;
+                    msg.data.gossip[i].flags = in.readShort() & 0xFFFF;
+                    in.readBytes(msg.data.gossip[i].notused1);
                 }
             } else if (msg.type == CLUSTERMSG_TYPE_FAIL) {
                 msg.data = new ClusterMsgData();
                 msg.data.about = new ClusterMsgDataFail();
-                String nodename = (String) in.readCharSequence(40, Charset.forName("UTF-8"));
-                if (!nodename.equals(CLUSTER_NODE_NULL_NAME)) {
-                    msg.data.about.nodename = nodename;
+                byte[] nodename = new byte[40];
+                in.readBytes(nodename);
+                if (!Arrays.equals(nodename, CLUSTER_NODE_NULL_NAME)) {
+                    msg.data.about.nodename = new String(nodename);
                 }
-
             } else if (msg.type == CLUSTERMSG_TYPE_PUBLISH) {
                 msg.data = new ClusterMsgData();
                 msg.data.msg = new ClusterMsgDataPublish();
@@ -97,18 +105,26 @@ public class ClusterMsgDecoder extends ByteToMessageDecoder {
                 msg.data = new ClusterMsgData();
                 msg.data.nodecfg = new ClusterMsgDataUpdate();
                 msg.data.nodecfg.configEpoch = in.readLong();
-                String nodename = (String) in.readCharSequence(40, Charset.forName("UTF-8"));
-                if (!nodename.equals(CLUSTER_NODE_NULL_NAME)) {
-                    msg.data.nodecfg.nodename = nodename;
+                byte[] nodename = new byte[40];
+                in.readBytes(nodename);
+                if (!Arrays.equals(nodename, CLUSTER_NODE_NULL_NAME)) {
+                    msg.data.nodecfg.nodename = new String(nodename);
                 }
-                slots = new byte[CLUSTER_SLOTS / 8];
-                in.readBytes(slots);
-                msg.data.nodecfg.slots = slots;
+                in.readBytes(msg.data.nodecfg.slots);
             }
             return msg;
         } catch (Exception e) {
             in.resetReaderIndex();
             return null;
         }
+    }
+
+    public String getMyIP(byte[] bytes) {
+        for (int i = 0; i < bytes.length; i++) {
+            if (bytes[i] == 0) {
+                return new String(bytes, 0, i);
+            }
+        }
+        return new String(bytes);
     }
 }

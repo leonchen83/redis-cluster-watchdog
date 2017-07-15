@@ -13,7 +13,7 @@ public class ClusterMsgDataGossip {
     public int port;
     public int cport;
     public int flags;
-    public byte[] notused1 = new byte[32];
+    public byte[] notused1 = new byte[4];
 
     @Override
     public String toString() {

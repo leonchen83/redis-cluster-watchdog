@@ -71,9 +71,9 @@ public class ClusterConstants {
 
     public static final int CLUSTER_NODE_MIGRATE_TO = 256;
 
-    public static final String CLUSTER_NODE_NULL_NAME = "0000000000000000000000000000000000000000";
+    public static final byte[] CLUSTER_NODE_NULL_NAME = new byte[40];
 
-    public static final String CLUSTER_NODE_NULL_IP = "0000000000000000000000000000000000000000000000";
+    public static final byte[] CLUSTER_NODE_NULL_IP = new byte[46];
 
     public static final int CLUSTER_TODO_UPDATE_STATE = (1 << 1);
 
