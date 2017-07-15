@@ -381,7 +381,7 @@ public class ThinGossip {
                 && System.currentTimeMillis() - server.firstCallTime < CLUSTER_WRITABLE_DELAY)
             return;
 
-        int newState = CLUSTER_OK;
+        byte newState = CLUSTER_OK;
 
         if (configuration.isClusterRequireFullCoverage()) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {

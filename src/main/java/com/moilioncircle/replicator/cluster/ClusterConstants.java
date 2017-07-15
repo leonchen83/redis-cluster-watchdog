@@ -35,9 +35,9 @@ public class ClusterConstants {
 
     public static final int CLUSTER_SLOTS = 16384;
 
-    public static final int CLUSTER_OK = 0;
+    public static final byte CLUSTER_OK = 0;
 
-    public static final int CLUSTER_FAIL = 1;
+    public static final byte CLUSTER_FAIL = 1;
 
     public static final int CLUSTER_NAMELEN = 40;
 
@@ -72,6 +72,8 @@ public class ClusterConstants {
     public static final int CLUSTER_NODE_MIGRATE_TO = 256;
 
     public static final String CLUSTER_NODE_NULL_NAME = "0000000000000000000000000000000000000000";
+
+    public static final String CLUSTER_NODE_NULL_IP = "0000000000000000000000000000000000000000000000";
 
     public static final int CLUSTER_TODO_UPDATE_STATE = (1 << 1);
 

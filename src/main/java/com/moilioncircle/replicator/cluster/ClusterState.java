@@ -10,7 +10,7 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_SLOT
  */
 public class ClusterState {
     public int size;
-    public int state;
+    public byte state;
     public long currentEpoch;
     public ClusterNode myself;
     public int todoBeforeSleep;

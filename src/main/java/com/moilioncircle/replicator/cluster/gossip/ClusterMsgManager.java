@@ -105,7 +105,7 @@ public class ClusterMsgManager {
         gossip.port = n.port;
         gossip.cport = n.cport;
         gossip.flags = n.flags;
-        gossip.notused1 = 0;
+        gossip.notused1 = new byte[34];
     }
 
     public void clusterSendPing(ClusterLink link, int type) {

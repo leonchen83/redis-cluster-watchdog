@@ -5,4 +5,11 @@ package com.moilioncircle.replicator.cluster.message;
  */
 public class ClusterMsgDataFail {
     public String nodename;
+
+    @Override
+    public String toString() {
+        return "ClusterMsgDataFail{" +
+                "nodename='" + nodename + '\'' +
+                '}';
+    }
 }
