@@ -486,7 +486,6 @@ public class ThinGossip {
                             Thread.currentThread().interrupt();
                         }
                         if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
-                        logger.debug("Unable to connect to Cluster Node [" + node.ip + "]:" + node.cport + " -> " + e.getCause().getMessage());
                         fd.shutdown();
                         continue;
                     }
@@ -494,14 +493,13 @@ public class ThinGossip {
                         TimeUnit.MILLISECONDS.sleep(10);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                    }
+                    } //TODO
                     node.link = link;
                     link.ctime = System.currentTimeMillis();
                     long oldPingSent = node.pingSent;
                     msgManager.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
                     if (oldPingSent != 0) node.pingSent = oldPingSent;
                     node.flags &= ~CLUSTER_NODE_MEET;
-                    logger.debug("Connected with Node " + node.name + " at " + node.ip + ":" + node.cport + ",link " + link);
                 }
             }
 
@@ -524,10 +522,8 @@ public class ThinGossip {
                 }
             }
 
-            boolean updateState = false;
-            int orphanedMasters = 0;
-            int maxSlaves = 0;
-            int thisSlaves = 0;
+            boolean update = false;
+            int maxSlaves = 0, thisSlaves = 0, orphanedMasters = 0;
             for (ClusterNode node : server.cluster.nodes.values()) {
                 now = System.currentTimeMillis();
 
@@ -535,14 +531,14 @@ public class ThinGossip {
                     continue;
 
                 if (nodeIsSlave(server.myself) && nodeIsMaster(node) && !nodeFailed(node)) {
-                    int okslaves = nodeManager.clusterCountNonFailingSlaves(node);
+                    int slaves = nodeManager.clusterCountNonFailingSlaves(node);
 
-                    if (okslaves == 0 && node.numslots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) {
+                    if (slaves == 0 && node.numslots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) {
                         orphanedMasters++;
                     }
-                    if (okslaves > maxSlaves) maxSlaves = okslaves;
+                    if (slaves > maxSlaves) maxSlaves = slaves;
                     if (server.myself.slaveof.equals(node))
-                        thisSlaves = okslaves;
+                        thisSlaves = slaves;
                 }
 
                 if (node.link != null
@@ -559,11 +555,10 @@ public class ThinGossip {
 
                 if (node.pingSent == 0) continue;
 
-                long delay = now - node.pingSent;
-                if (delay > configuration.getClusterNodeTimeout() && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
+                if (now - node.pingSent > configuration.getClusterNodeTimeout() && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
                     logger.debug("*** NODE " + node.name + " possibly failing");
                     node.flags |= CLUSTER_NODE_PFAIL;
-                    updateState = true;
+                    update = true;
                 }
             }
 
@@ -575,7 +570,7 @@ public class ThinGossip {
                 clusterHandleSlaveMigration(maxSlaves);
             }
 
-            if (updateState || server.cluster.state == CLUSTER_FAIL)
+            if (update || server.cluster.state == CLUSTER_FAIL)
                 clusterUpdateState();
         } catch (Throwable e) {
             logger.error("error", e);
@@ -588,22 +583,22 @@ public class ThinGossip {
         ClusterNode mymaster = server.myself.slaveof;
         if (mymaster == null) return;
 
-        int okslaves = 0;
+        int slaves = 0;
         for (int i = 0; i < mymaster.numslaves; i++)
-            if (!nodeFailed(mymaster.slaves.get(i)) && !nodePFailed(mymaster.slaves.get(i))) okslaves++;
-        if (okslaves <= configuration.getClusterMigrationBarrier()) return;
+            if (!nodeFailed(mymaster.slaves.get(i)) && !nodePFailed(mymaster.slaves.get(i))) slaves++;
+        if (slaves <= configuration.getClusterMigrationBarrier()) return;
 
         ClusterNode candidate = server.myself;
         ClusterNode target = null;
         for (ClusterNode node : server.cluster.nodes.values()) {
-            okslaves = 0;
+            slaves = 0;
             boolean isOrphaned = true;
 
             if (nodeIsSlave(node) || nodeFailed(node)) isOrphaned = false;
             if ((node.flags & CLUSTER_NODE_MIGRATE_TO) == 0) isOrphaned = false;
 
-            if (nodeIsMaster(node)) okslaves = nodeManager.clusterCountNonFailingSlaves(node);
-            if (okslaves > 0) isOrphaned = false;
+            if (nodeIsMaster(node)) slaves = nodeManager.clusterCountNonFailingSlaves(node);
+            if (slaves > 0) isOrphaned = false;
 
             if (isOrphaned) {
                 if (target == null && node.numslots > 0) target = node;
@@ -612,7 +607,7 @@ public class ThinGossip {
                 node.orphanedTime = 0;
             }
 
-            if (okslaves == maxSlaves) {
+            if (slaves == maxSlaves) {
                 for (int i = 0; i < node.numslaves; i++) {
                     if (node.slaves.get(i).name.compareTo(candidate.name) >= 0) continue;
                     candidate = node.slaves.get(i);

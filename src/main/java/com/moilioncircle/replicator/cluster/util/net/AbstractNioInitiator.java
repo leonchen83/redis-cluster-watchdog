@@ -109,7 +109,7 @@ public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
                 else future.failure(f.cause());
             } else {
                 future.success(null);
-//                logger.info("connected to host: " + host + ", port: " + port + ", elapsed time: " + toMillis(et) + " ms");
+                logger.info("connected to host: " + host + ", port: " + port + ", elapsed time: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
             }
         }
     }
