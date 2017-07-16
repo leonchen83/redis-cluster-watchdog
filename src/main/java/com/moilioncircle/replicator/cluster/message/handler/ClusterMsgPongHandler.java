@@ -19,7 +19,7 @@ public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMsg hdr) {
-        logger.debug("Pong packet received: " + link.node);
+        logger.debug("Pong packet received: " + link.node + ",sender:" + sender + ",message:" + hdr);
         if (link.node != null) {
             if (nodeInHandshake(link.node)) {
                 if (sender != null) {
@@ -55,7 +55,7 @@ public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
 
         if (sender == null) return true;
 
-        if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) { // hdr.slaveof == null
+        if (hdr.slaveof == null) { // hdr.slaveof == null
             gossip.clusterSetNodeAsMaster(sender);
         } else {
             ClusterNode master = gossip.nodeManager.clusterLookupNode(hdr.slaveof);

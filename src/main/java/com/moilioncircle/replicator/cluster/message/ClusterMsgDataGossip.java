@@ -1,7 +1,5 @@
 package com.moilioncircle.replicator.cluster.message;
 
-import java.util.Arrays;
-
 /**
  * Created by Baoyi Chen on 2017/7/6.
  */
@@ -25,7 +23,7 @@ public class ClusterMsgDataGossip {
                 ", port=" + port +
                 ", cport=" + cport +
                 ", flags=" + flags +
-                ", notused1=" + Arrays.toString(notused1) +
+//                ", notused1=" + Arrays.toString(notused1) +
                 '}';
     }
 }

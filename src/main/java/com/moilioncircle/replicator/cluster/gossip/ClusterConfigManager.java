@@ -78,14 +78,13 @@ public class ClusterConfigManager {
         return ci.toString();
     }
 
-    public String clusterGenNodesDescription(int filter) {
-        String ni = "";
+    public String clusterGenNodesDescription() {
+        StringBuilder ci = new StringBuilder();
         for (ClusterNode node : server.cluster.nodes.values()) {
-            if ((node.flags & filter) != 0) continue;
-            ni = clusterGenNodeDescription(node);
-            ni += "\n";
+            ci.append(clusterGenNodeDescription(node));
+            ci.append("\n");
         }
-        return ni;
+        return ci.toString();
     }
 
     public String clusterGetMessageTypeString(int type) {

@@ -19,6 +19,7 @@ package com.moilioncircle.replicator.cluster.gossip;
 import com.moilioncircle.replicator.cluster.ClusterLink;
 import com.moilioncircle.replicator.cluster.ClusterNode;
 import com.moilioncircle.replicator.cluster.message.ClusterMsg;
+import com.moilioncircle.replicator.cluster.message.ClusterMsgData;
 import com.moilioncircle.replicator.cluster.message.ClusterMsgDataGossip;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -83,20 +84,18 @@ public class ClusterMsgManager {
 
         if (nodeIsSlave(server.myself))
             hdr.offset = gossip.replicationManager.replicationGetSlaveOffset();
-        else
-            logger.warn("myself must be a slave");
         return hdr;
     }
 
     public boolean clusterNodeIsInGossipSection(ClusterMsg hdr, int count, ClusterNode n) {
         for (int i = 0; i < count; i++) {
-            if (hdr.data.gossip[i].nodename.equals(n.name)) return true;
+            if (hdr.data.gossip.get(i).nodename.equals(n.name)) return true;
         }
         return false;
     }
 
     public void clusterSetGossipEntry(ClusterMsg hdr, int i, ClusterNode n) {
-        ClusterMsgDataGossip gossip = hdr.data.gossip[i];
+        ClusterMsgDataGossip gossip = new ClusterMsgDataGossip();
         gossip.nodename = n.name;
         gossip.pingSent = n.pingSent / 1000;
         gossip.pongReceived = n.pongReceived / 1000;
@@ -105,12 +104,11 @@ public class ClusterMsgManager {
         gossip.cport = n.cport;
         gossip.flags = n.flags;
         gossip.notused1 = new byte[4];
+        hdr.data.gossip.add(gossip);
     }
 
     public void clusterSendPing(ClusterLink link, int type) {
-        int gossipcount = 0;
-
-        int freshnodes = server.cluster.nodes.size() - 2; //去掉当前节点和发送的目标节点
+        int freshnodes = server.cluster.nodes.size() - 2;
 
         int wanted = server.cluster.nodes.size() / 10;
         if (wanted < 3) wanted = 3;
@@ -121,9 +119,9 @@ public class ClusterMsgManager {
         if (link.node != null && type == CLUSTERMSG_TYPE_PING)
             link.node.pingSent = System.currentTimeMillis();
         ClusterMsg hdr = clusterBuildMessageHdr(type);
-
+        hdr.data = new ClusterMsgData();
         int maxiterations = wanted * 3;
-        //选取<=wanted个节点加到gossip消息体里
+        int gossipcount = 0;
         while (freshnodes > 0 && gossipcount < wanted && maxiterations-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             int idx = ThreadLocalRandom.current().nextInt(list.size());
@@ -187,8 +185,5 @@ public class ClusterMsgManager {
         hdr.data.nodecfg.slots = node.slots;
         clusterSendMessage(link, hdr);
     }
-
-    // 发送 failover request ,接收failover ack
-    // CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST -> CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK
 
 }

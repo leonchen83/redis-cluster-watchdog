@@ -36,12 +36,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 
@@ -52,8 +48,7 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 public class ThinGossip {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
 
-    public ScheduledExecutorService executor;
-
+    ScheduledExecutorService executor;
     public Server server = new Server();
 
     public Client client;
@@ -84,7 +79,7 @@ public class ThinGossip {
     public void start() {
         this.clusterInit();
         client.clientInit();
-        executor.scheduleAtFixedRate(() -> clusterCron(), 0, 100, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(() -> clusterCron(), 0, 100, TimeUnit.MILLISECONDS);
     }
 
     public void clusterInit() {
@@ -94,8 +89,8 @@ public class ThinGossip {
         server.cluster.state = CLUSTER_FAIL;
         server.cluster.size = 1;
         server.cluster.todoBeforeSleep = 0;
-        server.cluster.nodes = new LinkedHashMap<>();
-        server.cluster.nodesBlackList = new LinkedHashMap<>();
+        server.cluster.nodes = new ConcurrentHashMap<>();
+        server.cluster.nodesBlackList = new ConcurrentHashMap<>();
         for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
             server.cluster.statsBusMessagesSent[i] = 0;
             server.cluster.statsBusMessagesReceived[i] = 0;
@@ -121,7 +116,7 @@ public class ThinGossip {
 
             @Override
             public void onMessage(Transport<Message> transport, Message message) {
-                executor.execute(() -> clusterProcessPacket(server.cfd.get(transport), message));
+                clusterProcessPacket(server.cfd.get(transport), message);
             }
 
             @Override
@@ -216,7 +211,8 @@ public class ThinGossip {
     }
 
     public void clusterProcessGossipSection(ClusterMsg hdr, ClusterLink link) {
-        ClusterMsgDataGossip[] gs = hdr.data.gossip;
+        List<ClusterMsgDataGossip> gs = hdr.data.gossip;
+        logger.info("nodes:" + server.cluster.nodes);
         ClusterNode sender = link.node != null ? link.node : nodeManager.clusterLookupNode(hdr.sender);
         for (ClusterMsgDataGossip g : gs) {
             int flags = g.flags;
@@ -348,7 +344,6 @@ public class ThinGossip {
         if (type < CLUSTERMSG_TYPE_COUNT) {
             server.cluster.statsBusMessagesReceived[type]++;
         }
-        logger.debug("--- Processing packet of type " + type + ", " + totlen + " bytes");
 
         if (hdr.ver != CLUSTER_PROTO_VER) return true;
 
@@ -441,6 +436,7 @@ public class ThinGossip {
     }
 
     public void clusterCron() {
+        logger.info("cron:" + server.cluster.nodes);
         long minPong = 0, now = System.currentTimeMillis();
         ClusterNode minPongNode = null;
         server.iteration++;
@@ -462,7 +458,6 @@ public class ThinGossip {
         }
         long handshakeTimeout = configuration.getClusterNodeTimeout();
         if (handshakeTimeout < 1000) handshakeTimeout = 1000;
-
         List<Object[]> connections = new ArrayList<>();
         server.cluster.statsPfailNodes = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
@@ -491,7 +486,7 @@ public class ThinGossip {
 
                     @Override
                     public void onMessage(Transport<Message> transport, Message message) {
-                        executor.execute(() -> clusterProcessPacket(link, message));
+                        clusterProcessPacket(link, message);
                     }
 
                     @Override

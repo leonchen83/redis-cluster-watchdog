@@ -1,7 +1,5 @@
 package com.moilioncircle.replicator.cluster.message;
 
-import java.util.Arrays;
-
 import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_SLOTS;
 
 /**
@@ -17,7 +15,7 @@ public class ClusterMsgDataUpdate {
         return "ClusterMsgDataUpdate{" +
                 "configEpoch=" + configEpoch +
                 ", nodename='" + nodename + '\'' +
-                ", slots=" + Arrays.toString(slots) +
+//                ", slots=" + Arrays.toString(slots) +
                 '}';
     }
 }

@@ -6,4 +6,12 @@ package com.moilioncircle.replicator.cluster;
 public class ClusterNodeFailReport {
     public long time;
     public ClusterNode node;
+
+    @Override
+    public String toString() {
+        return "ClusterNodeFailReport{" +
+                "time=" + time +
+                ", node=" + node +
+                '}';
+    }
 }

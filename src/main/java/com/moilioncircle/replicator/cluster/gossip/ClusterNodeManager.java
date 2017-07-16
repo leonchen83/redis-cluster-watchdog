@@ -44,6 +44,7 @@ public class ClusterNodeManager {
     }
 
     public void clusterDelNode(ClusterNode delnode) {
+        String nodename = delnode.name;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (server.cluster.slots[i].equals(delnode)) {
                 gossip.slotManger.clusterDelSlot(i);
@@ -55,6 +56,7 @@ public class ClusterNodeManager {
             clusterNodeDelFailureReport(node, delnode);
         }
         freeClusterNode(delnode);
+        logger.info("del node " + nodename);
     }
 
     public ClusterNode clusterLookupNode(String name) {
@@ -62,7 +64,7 @@ public class ClusterNodeManager {
     }
 
     public void clusterRenameNode(ClusterNode node, String newname) {
-        logger.debug("Renaming node " + node.name + " into " + newname);
+        logger.info("Renaming node " + node.name + " into " + newname);
         server.cluster.nodes.remove(node.name);
         node.name = newname;
         clusterAddNode(node);

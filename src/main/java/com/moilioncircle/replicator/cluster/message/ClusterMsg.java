@@ -41,10 +41,10 @@ public class ClusterMsg implements Message {
                 ", configEpoch=" + configEpoch +
                 ", offset=" + offset +
                 ", sender='" + sender + '\'' +
-                ", myslots=" + Arrays.toString(myslots) +
+//                ", myslots=" + Arrays.toString(myslots) +
                 ", slaveof='" + slaveof + '\'' +
                 ", myip='" + myip + '\'' +
-                ", notused=" + Arrays.toString(notused) +
+//                ", notused=" + Arrays.toString(notused) +
                 ", cport=" + cport +
                 ", flags=" + flags +
                 ", state=" + state +

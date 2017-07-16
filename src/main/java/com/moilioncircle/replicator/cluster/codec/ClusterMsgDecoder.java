@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,7 +20,6 @@ public class ClusterMsgDecoder extends ByteToMessageDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         ClusterMsg msg = decode(in);
         if (msg != null) {
-            System.out.println("decode:" + msg);
             out.add(msg);
         }
     }
@@ -65,25 +65,26 @@ public class ClusterMsgDecoder extends ByteToMessageDecoder {
             in.readBytes(msg.mflags);
             if (msg.type == CLUSTERMSG_TYPE_PING || msg.type == CLUSTERMSG_TYPE_PONG || msg.type == CLUSTERMSG_TYPE_MEET) {
                 msg.data = new ClusterMsgData();
-                msg.data.gossip = new ClusterMsgDataGossip[msg.count];
-                for (int i = 0; i < msg.data.gossip.length; i++) {
-                    msg.data.gossip[i] = new ClusterMsgDataGossip();
+                msg.data.gossip = new ArrayList<>();
+                for (int i = 0; i < msg.count; i++) {
+                    ClusterMsgDataGossip gossip = new ClusterMsgDataGossip();
                     byte[] nodename = new byte[40];
                     in.readBytes(nodename);
                     if (!Arrays.equals(nodename, CLUSTER_NODE_NULL_NAME)) {
-                        msg.data.gossip[i].nodename = new String(nodename);
+                        gossip.nodename = new String(nodename);
                     }
-                    msg.data.gossip[i].pingSent = in.readInt() * 1000;
-                    msg.data.gossip[i].pongReceived = in.readInt() * 1000;
+                    gossip.pingSent = in.readInt() * 1000;
+                    gossip.pongReceived = in.readInt() * 1000;
                     byte[] ip = new byte[46];
                     in.readBytes(ip);
                     if (!Arrays.equals(ip, CLUSTER_NODE_NULL_IP)) {
-                        msg.data.gossip[i].ip = getMyIP(ip);
+                        gossip.ip = getMyIP(ip);
                     }
-                    msg.data.gossip[i].port = in.readShort() & 0xFFFF;
-                    msg.data.gossip[i].cport = in.readShort() & 0xFFFF;
-                    msg.data.gossip[i].flags = in.readShort() & 0xFFFF;
-                    in.readBytes(msg.data.gossip[i].notused1);
+                    gossip.port = in.readShort() & 0xFFFF;
+                    gossip.cport = in.readShort() & 0xFFFF;
+                    gossip.flags = in.readShort() & 0xFFFF;
+                    in.readBytes(gossip.notused1);
+                    msg.data.gossip.add(gossip);
                 }
             } else if (msg.type == CLUSTERMSG_TYPE_FAIL) {
                 msg.data = new ClusterMsgData();

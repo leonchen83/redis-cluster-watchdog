@@ -1,5 +1,6 @@
 package com.moilioncircle.replicator.cluster;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTERMSG_TYPE_COUNT;
@@ -20,4 +21,21 @@ public class ClusterState {
     public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList;
     public long[] statsBusMessagesSent = new long[CLUSTERMSG_TYPE_COUNT];
     public long[] statsBusMessagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
+
+    @Override
+    public String toString() {
+        return "ClusterState{" +
+                "size=" + size +
+                ", state=" + state +
+                ", currentEpoch=" + currentEpoch +
+                ", myself=" + myself +
+                ", todoBeforeSleep=" + todoBeforeSleep +
+                ", statsPfailNodes=" + statsPfailNodes +
+                ", nodes=" + nodes +
+                ", slots=" + Arrays.toString(slots) +
+                ", nodesBlackList=" + nodesBlackList +
+                ", statsBusMessagesSent=" + Arrays.toString(statsBusMessagesSent) +
+                ", statsBusMessagesReceived=" + Arrays.toString(statsBusMessagesReceived) +
+                '}';
+    }
 }

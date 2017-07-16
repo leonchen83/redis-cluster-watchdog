@@ -10,4 +10,13 @@ public class ClusterLink {
     public long ctime;
     public volatile ClusterNode node;
     public volatile Session<Message> fd;
+
+    @Override
+    public String toString() {
+        return "ClusterLink{" +
+                "ctime=" + ctime +
+                ", node=" + node +
+                ", fd=" + fd +
+                '}';
+    }
 }

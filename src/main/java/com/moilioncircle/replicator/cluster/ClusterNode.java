@@ -27,4 +27,29 @@ public class ClusterNode {
     public volatile ClusterLink link;
     public List<ClusterNodeFailReport> failReports;
     public byte[] slots = new byte[CLUSTER_SLOTS / 8];
+
+    @Override
+    public String toString() {
+        return "ClusterNode{" +
+                "port=" + port +
+                ", cport=" + cport +
+                ", ip='" + ip + '\'' +
+                ", flags=" + flags +
+                ", ctime=" + ctime +
+                ", name='" + name + '\'' +
+                ", numslots=" + numslots +
+                ", numslaves=" + numslaves +
+                ", pingSent=" + pingSent +
+                ", failTime=" + failTime +
+                ", replOffset=" + replOffset +
+                ", configEpoch=" + configEpoch +
+                ", pongReceived=" + pongReceived +
+                ", orphanedTime=" + orphanedTime +
+                ", slaveof=" + slaveof +
+                ", slaves=" + slaves +
+                ", link=" + link +
+                ", failReports=" + failReports +
+//                ", slots=" + Arrays.toString(slots) +
+                '}';
+    }
 }

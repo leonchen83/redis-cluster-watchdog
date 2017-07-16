@@ -19,7 +19,7 @@ public class ClusterMsgMeetHandler extends AbstractClusterMsgHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMsg hdr) {
-        logger.debug("Meet packet received: " + link.node);
+        logger.debug("Meet packet received: " + link.node + ",sender:" + sender + ",message:" + hdr);
         if (server.myself.ip == null && gossip.configuration.getClusterAnnounceIp() == null) {
             String ip = link.fd.getLocalAddress(null);
             if (ip != null && !ip.equals(server.myself.ip)) {
@@ -63,7 +63,7 @@ public class ClusterMsgMeetHandler extends AbstractClusterMsgHandler {
 
         if (sender == null) return true;
 
-        if (hdr.slaveof.equals(CLUSTER_NODE_NULL_NAME)) { // hdr.slaveof == null
+        if (hdr.slaveof == null) { // hdr.slaveof == null
             gossip.clusterSetNodeAsMaster(sender);
         } else {
             ClusterNode master = gossip.nodeManager.clusterLookupNode(hdr.slaveof);

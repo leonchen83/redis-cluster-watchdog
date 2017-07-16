@@ -17,7 +17,7 @@ public class ClusterMsgUpdateHandler extends AbstractClusterMsgHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMsg hdr) {
-        logger.debug("Update packet received: " + link.node);
+        logger.debug("Update packet received: " + link.node + ",sender:" + sender + ",message:" + hdr);
         long reportedConfigEpoch = hdr.data.nodecfg.configEpoch;
         if (sender == null) return true;
         ClusterNode n = gossip.nodeManager.clusterLookupNode(hdr.data.nodecfg.nodename);

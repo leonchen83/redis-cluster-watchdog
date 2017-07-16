@@ -6,6 +6,8 @@ import com.moilioncircle.replicator.cluster.util.net.ConnectionStatus;
 import com.moilioncircle.replicator.cluster.util.net.exceptions.TransportException;
 import com.moilioncircle.replicator.cluster.util.net.transport.Transport;
 
+import java.net.InetSocketAddress;
+
 /**
  * Created by Baoyi Chen on 2017/7/7.
  */
@@ -20,13 +22,15 @@ public class SessionImpl<T> implements Session<T> {
     @Override
     public String getLocalAddress(String value) {
         if (value != null) return value;
-        return transport.getLocalAddress().toString();
+        InetSocketAddress socketAddress = (InetSocketAddress) transport.getLocalAddress();
+        return socketAddress.getAddress().getHostAddress();
     }
 
     @Override
     public String getRemoteAddress(String value) {
         if (value != null) return value;
-        return transport.getRemoteAddress().toString();
+        InetSocketAddress socketAddress = (InetSocketAddress) transport.getRemoteAddress();
+        return socketAddress.getAddress().getHostAddress();
     }
 
     @Override

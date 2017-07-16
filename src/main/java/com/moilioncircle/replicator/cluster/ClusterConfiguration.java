@@ -11,7 +11,7 @@ public class ClusterConfiguration {
     private int clusterMigrationBarrier = 1;
     private int clusterAnnounceBusPort = 6380;
     private boolean clusterRequireFullCoverage = true;
-    private String selfName = "redis-cluster-watchdog-00000000000000001";
+    private String selfName = "6c3eb108780109b35aee009c435db482695b3d10";
 
     public String getClusterAnnounceIp() {
         return clusterAnnounceIp;

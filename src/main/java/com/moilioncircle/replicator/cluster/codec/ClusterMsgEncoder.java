@@ -19,7 +19,6 @@ public class ClusterMsgEncoder extends MessageToByteEncoder<Message> {
     protected void encode(ChannelHandlerContext ctx, Message msg, ByteBuf out) throws Exception {
         if (!(msg instanceof ClusterMsg)) return;
         ClusterMsg hdr = (ClusterMsg) msg;
-        System.out.println("encode:" + hdr);
         out.writeBytes(hdr.sig.getBytes());
         if (hdr.type == CLUSTERMSG_TYPE_PING || hdr.type == CLUSTERMSG_TYPE_PONG || hdr.type == CLUSTERMSG_TYPE_MEET) {
             int len = hdr.count * (40 + 4 + 4 + 46 + 2 + 2 + 2 + 4);
@@ -33,7 +32,6 @@ public class ClusterMsgEncoder extends MessageToByteEncoder<Message> {
         } else {
             out.writeInt(2256);
         }
-
         out.writeShort(hdr.ver);
         out.writeShort(hdr.port);
         out.writeShort(hdr.type);
@@ -52,14 +50,14 @@ public class ClusterMsgEncoder extends MessageToByteEncoder<Message> {
         out.writeBytes(hdr.mflags);
         if (hdr.type == CLUSTERMSG_TYPE_PING || hdr.type == CLUSTERMSG_TYPE_PONG || hdr.type == CLUSTERMSG_TYPE_MEET) {
             for (int i = 0; i < hdr.count; i++) {
-                out.writeBytes(hdr.data.gossip[i].nodename == null ? CLUSTER_NODE_NULL_NAME : hdr.data.gossip[i].nodename.getBytes());
-                out.writeInt((int) (hdr.data.gossip[i].pingSent / 1000));
-                out.writeInt((int) (hdr.data.gossip[i].pongReceived / 1000));
-                out.writeBytes(hdr.data.gossip[i].ip == null ? CLUSTER_NODE_NULL_IP : Arrays.copyOf(hdr.data.gossip[i].ip.getBytes(), 46));
-                out.writeShort(hdr.data.gossip[i].port);
-                out.writeShort(hdr.data.gossip[i].cport);
-                out.writeShort(hdr.data.gossip[i].flags);
-                out.writeBytes(hdr.data.gossip[i].notused1);
+                out.writeBytes(hdr.data.gossip.get(i).nodename == null ? CLUSTER_NODE_NULL_NAME : hdr.data.gossip.get(i).nodename.getBytes());
+                out.writeInt((int) (hdr.data.gossip.get(i).pingSent / 1000));
+                out.writeInt((int) (hdr.data.gossip.get(i).pongReceived / 1000));
+                out.writeBytes(hdr.data.gossip.get(i).ip == null ? CLUSTER_NODE_NULL_IP : Arrays.copyOf(hdr.data.gossip.get(i).ip.getBytes(), 46));
+                out.writeShort(hdr.data.gossip.get(i).port);
+                out.writeShort(hdr.data.gossip.get(i).cport);
+                out.writeShort(hdr.data.gossip.get(i).flags);
+                out.writeBytes(hdr.data.gossip.get(i).notused1);
             }
         } else if (hdr.type == CLUSTERMSG_TYPE_FAIL) {
             out.writeBytes(hdr.data.about.nodename == null ? CLUSTER_NODE_NULL_NAME : hdr.data.about.nodename.getBytes());

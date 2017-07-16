@@ -11,9 +11,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class Startup {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(4);
         ThinGossip gossip = new ThinGossip(new ClusterConfiguration(), executor);
-
         gossip.start();
     }
 }
