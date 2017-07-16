@@ -67,7 +67,7 @@ public class ClusterMsgPongHandler extends AbstractClusterMsgHandler {
                 sender.flags |= CLUSTER_NODE_SLAVE;
             }
 
-            if (master != null && !sender.slaveof.equals(master)) {
+            if (master != null && (sender.slaveof == null || !sender.slaveof.equals(master))) {
                 if (sender.slaveof != null) gossip.nodeManager.clusterNodeRemoveSlave(sender.slaveof, sender);
                 gossip.nodeManager.clusterNodeAddSlave(master, sender);
                 sender.slaveof = master;

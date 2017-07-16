@@ -177,7 +177,6 @@ public class Client {
             }
         } else if (argv[1].equalsIgnoreCase("nodes") && argv.length == 2) {
             /* CLUSTER NODES */
-            logger.info("[cluster nodes]:" + server.cluster.nodes);
             String ci = gossip.configManager.clusterGenNodesDescription();
             t.write("$" + ci.length() + "\r\n" + ci + "\r\n", true);
         } else if (argv[1].equalsIgnoreCase("myid") && argv.length == 2) {

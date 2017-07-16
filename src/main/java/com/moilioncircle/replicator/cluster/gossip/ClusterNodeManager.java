@@ -83,7 +83,7 @@ public class ClusterNodeManager {
         node.flags = flags;
         node.numslots = 0;
         node.numslaves = 0;
-        node.slaves = null;
+        node.slaves = new ArrayList<>();
         node.slaveof = null;
         node.pingSent = node.pongReceived = 0;
         node.failTime = 0;

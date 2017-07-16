@@ -63,16 +63,16 @@ public class ThinGossip {
 
     public ThinGossip(ClusterConfiguration configuration, ScheduledExecutorService executor) {
         this.executor = executor;
-        this.client = new Client(this);
         this.msgManager = new ClusterMsgManager(this);
         this.slotManger = new ClusterSlotManger(this);
         this.nodeManager = new ClusterNodeManager(this);
         this.configuration = new ClusterConfiguration();
-        this.replicationManager = new ReplicationManager();
         this.configManager = new ClusterConfigManager(this);
+        this.replicationManager = new ReplicationManager(this);
         this.connectionManager = new ClusterConnectionManager();
         this.blacklistManager = new ClusterBlacklistManager(this);
         this.msgHandlerManager = new ClusterMsgHandlerManager(this);
+        this.client = new Client(this);
     }
 
     public void start() {
@@ -211,7 +211,6 @@ public class ThinGossip {
 
     public void clusterProcessGossipSection(ClusterMsg hdr, ClusterLink link) {
         List<ClusterMsgDataGossip> gs = hdr.data.gossip;
-        logger.info("nodes:" + server.cluster.nodes);
         ClusterNode sender = link.node != null ? link.node : nodeManager.clusterLookupNode(hdr.sender);
         for (ClusterMsgDataGossip g : gs) {
             int flags = g.flags;
@@ -241,15 +240,12 @@ public class ThinGossip {
             }
 
             if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && node.pingSent == 0 && nodeManager.clusterNodeFailureReportsCount(node) == 0) {
-                //把gossip消息里的节点的pongReceived更新到本地节点上
-                //恶心的是这里需要cluster进行ntp同步，而且误差要小于500ms
                 long pongtime = g.pongReceived;
                 if (pongtime <= (System.currentTimeMillis() + 500) && pongtime > node.pongReceived) {
                     node.pongReceived = pongtime;
                 }
             }
 
-            //本地节点有fail状态了, 发送这个gossip消息的节点是正常的,并且本地节点ip端口和远程节点不一致，更新本地节点ip端口信息
             if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && (flags & CLUSTER_NODE_NOADDR) == 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 &&
                     (!node.ip.equalsIgnoreCase(g.ip) || node.port != g.port || node.cport != g.cport)) {
                 if (node.link != null) connectionManager.freeClusterLink(node.link);
@@ -583,7 +579,7 @@ public class ThinGossip {
             if (updateState || server.cluster.state == CLUSTER_FAIL)
                 clusterUpdateState();
         } catch (Throwable e) {
-            logger.error(e);
+            logger.error("error", e);
         }
     }
 

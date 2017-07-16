@@ -25,9 +25,18 @@ import org.apache.commons.logging.LogFactory;
  */
 public class ReplicationManager {
     private static final Log logger = LogFactory.getLog(ReplicationManager.class);
+    private Server server;
+    private ThinGossip gossip;
+
+    public ReplicationManager(ThinGossip gossip) {
+        this.gossip = gossip;
+        this.server = gossip.server;
+    }
 
     public void replicationSetMaster(String ip, int port) {
         logger.info("replicate to " + ip + ":" + port);
+        server.masterHost = ip;
+        server.masterPort = port;
     }
 
     public long replicationGetSlaveOffset() {
