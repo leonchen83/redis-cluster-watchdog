@@ -15,7 +15,7 @@ public class ClusterMsgPublishHandler extends AbstractClusterMsgHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMsg hdr) {
-        logger.debug("Publish packet received: " + link.node + ",sender:" + sender + ",message:" + hdr);
+        logger.debug("Publish packet received: " + Thread.currentThread() + ",node:" + link.node + ",sender:" + sender + ",message:" + hdr);
         return true;
     }
 }
