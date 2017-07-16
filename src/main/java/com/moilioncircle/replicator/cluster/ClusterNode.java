@@ -37,7 +37,6 @@ public class ClusterNode {
                 ", flags=" + flags +
                 ", ctime=" + ctime +
                 ", name='" + name + '\'' +
-                ", numslots=" + numslots +
                 ", numslaves=" + numslaves +
                 ", pingSent=" + pingSent +
                 ", failTime=" + failTime +
@@ -45,11 +44,6 @@ public class ClusterNode {
                 ", configEpoch=" + configEpoch +
                 ", pongReceived=" + pongReceived +
                 ", orphanedTime=" + orphanedTime +
-                ", slaveof=" + slaveof +
-                ", slaves=" + slaves +
-                ", link=" + link +
-                ", failReports=" + failReports +
-//                ", slots=" + Arrays.toString(slots) +
                 '}';
     }
 }

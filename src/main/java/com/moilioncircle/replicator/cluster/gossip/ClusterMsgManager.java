@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
@@ -46,7 +47,13 @@ public class ClusterMsgManager {
     }
 
     public void clusterSendMessage(ClusterLink link, ClusterMsg hdr) {
-        link.fd.send(hdr);
+        try {
+            link.fd.send(hdr).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            logger.warn("send msg error, link: " + link + ",hdr:" + hdr);
+        }
         int type = hdr.type;
         if (type < CLUSTERMSG_TYPE_COUNT)
             server.cluster.statsBusMessagesSent[type]++;

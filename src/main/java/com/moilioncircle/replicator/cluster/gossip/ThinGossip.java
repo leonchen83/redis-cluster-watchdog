@@ -26,7 +26,6 @@ import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 import com.moilioncircle.replicator.cluster.message.ClusterMsgDataGossip;
 import com.moilioncircle.replicator.cluster.message.Message;
 import com.moilioncircle.replicator.cluster.message.handler.ClusterMsgHandler;
-import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapConfiguration;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapImpl;
 import com.moilioncircle.replicator.cluster.util.net.session.SessionImpl;
@@ -116,7 +115,7 @@ public class ThinGossip {
 
             @Override
             public void onMessage(Transport<Message> transport, Message message) {
-                clusterProcessPacket(server.cfd.get(transport), message);
+                executor.execute(() -> clusterProcessPacket(server.cfd.get(transport), message));
             }
 
             @Override
@@ -436,166 +435,169 @@ public class ThinGossip {
     }
 
     public void clusterCron() {
-        logger.info("cron:" + server.cluster.nodes);
-        long minPong = 0, now = System.currentTimeMillis();
-        ClusterNode minPongNode = null;
-        server.iteration++;
+        try {
+            logger.info("cron:" + server.cluster.nodes);
+            long minPong = 0, now = System.currentTimeMillis();
+            ClusterNode minPongNode = null;
+            server.iteration++;
 
-        String currIp = configuration.getClusterAnnounceIp();
-        boolean changed = false;
+            String currIp = configuration.getClusterAnnounceIp();
+            boolean changed = false;
 
-        if (server.prevIp == null && currIp != null) changed = true;
-        if (server.prevIp != null && currIp == null) changed = true;
-        if (server.prevIp != null && currIp != null && !server.prevIp.equals(currIp)) changed = true;
+            if (server.prevIp == null && currIp != null) changed = true;
+            if (server.prevIp != null && currIp == null) changed = true;
+            if (server.prevIp != null && currIp != null && !server.prevIp.equals(currIp)) changed = true;
 
-        if (changed) {
-            server.prevIp = currIp;
-            if (currIp != null) {
-                server.myself.ip = currIp;
-            } else {
-                server.myself.ip = null;
-            }
-        }
-        long handshakeTimeout = configuration.getClusterNodeTimeout();
-        if (handshakeTimeout < 1000) handshakeTimeout = 1000;
-        List<Object[]> connections = new ArrayList<>();
-        server.cluster.statsPfailNodes = 0;
-        for (ClusterNode node : server.cluster.nodes.values()) {
-            if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0) continue;
-
-            if ((node.flags & CLUSTER_NODE_PFAIL) != 0)
-                server.cluster.statsPfailNodes++;
-
-            if (nodeInHandshake(node) && now - node.ctime > handshakeTimeout) {
-                nodeManager.clusterDelNode(node);
-                continue;
-            }
-
-            if (node.link == null) {
-                final ClusterLink link = connectionManager.createClusterLink(null);
-                NioBootstrapImpl<Message> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration()); //client
-                fd.setEncoder(ClusterMsgEncoder::new);
-                fd.setDecoder(ClusterMsgDecoder::new);
-                fd.setup();
-                fd.setTransportListener(new TransportListener<Message>() {
-                    @Override
-                    public void onConnected(Transport<Message> transport) {
-                        logger.info("[initiator] > " + transport.toString());
-                        link.fd = new SessionImpl<>(transport);
-                    }
-
-                    @Override
-                    public void onMessage(Transport<Message> transport, Message message) {
-                        clusterProcessPacket(link, message);
-                    }
-
-                    @Override
-                    public void onDisconnected(Transport<Message> transport, Throwable cause) {
-                        logger.info("[initiator] < " + transport.toString());
-                        connectionManager.freeClusterLink(link);
-                        fd.shutdown();
-                    }
-                });
-                connections.add(new Object[]{fd.connect(node.ip, node.cport), link, node});
-            }
-        }
-
-        for (Object[] connection : connections) {
-            CompletableFuture<Void> future = (CompletableFuture<Void>) connection[0];
-            ClusterLink link = (ClusterLink) connection[1];
-            ClusterNode node = (ClusterNode) connection[2];
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException e) {
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
+            if (changed) {
+                server.prevIp = currIp;
+                if (currIp != null) {
+                    server.myself.ip = currIp;
+                } else {
+                    server.myself.ip = null;
                 }
-                if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
-                logger.debug("Unable to connect to Cluster Node [" + node.ip + "]:" + node.cport + " -> " + e.getCause().getMessage());
-                continue;
             }
-            link.node = node;
-            link.ctime = System.currentTimeMillis();
-            long oldPingSent = node.pingSent;
-            msgManager.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
-            if (oldPingSent != 0) node.pingSent = oldPingSent;
-            node.flags &= ~CLUSTER_NODE_MEET;
-            logger.debug("Connecting with Node " + node.name + " at " + node.ip + ":" + node.cport);
-        }
+            long handshakeTimeout = configuration.getClusterNodeTimeout();
+            if (handshakeTimeout < 1000) handshakeTimeout = 1000;
+            List<Object[]> connections = new ArrayList<>();
+            server.cluster.statsPfailNodes = 0;
+            for (ClusterNode node : server.cluster.nodes.values()) {
+                if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0) continue;
 
-        if (server.iteration % 10 == 0) {
-            for (int i = 0; i < 5; i++) {
-                List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
-                int idx = ThreadLocalRandom.current().nextInt(list.size());
-                ClusterNode t = list.get(idx);
+                if ((node.flags & CLUSTER_NODE_PFAIL) != 0)
+                    server.cluster.statsPfailNodes++;
 
-                if (t.link == null || t.pingSent != 0) continue;
-                if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0)
+                if (nodeInHandshake(node) && now - node.ctime > handshakeTimeout) {
+                    nodeManager.clusterDelNode(node);
                     continue;
-                if (minPongNode == null || minPong > t.pongReceived) {
-                    minPongNode = t;
-                    minPong = t.pongReceived;
+                }
+
+                if (node.link == null) {
+                    final ClusterLink link = connectionManager.createClusterLink(node);
+                    NioBootstrapImpl<Message> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration()); //client
+                    fd.setEncoder(ClusterMsgEncoder::new);
+                    fd.setDecoder(ClusterMsgDecoder::new);
+                    fd.setup();
+                    fd.setTransportListener(new TransportListener<Message>() {
+                        @Override
+                        public void onConnected(Transport<Message> transport) {
+                            logger.info("[initiator] > " + transport.toString());
+                            link.fd = new SessionImpl<>(transport);
+                        }
+
+                        @Override
+                        public void onMessage(Transport<Message> transport, Message message) {
+                            executor.execute(() -> clusterProcessPacket(link, message));
+                        }
+
+                        @Override
+                        public void onDisconnected(Transport<Message> transport, Throwable cause) {
+                            logger.info("[initiator] < " + transport.toString());
+                            connectionManager.freeClusterLink(link);
+                            fd.shutdown();
+
+                        }
+                    });
+                    try {
+                        fd.connect(node.ip, node.cport).get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        if (e instanceof InterruptedException) {
+                            Thread.currentThread().interrupt();
+                        }
+                        if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
+                        logger.debug("Unable to connect to Cluster Node [" + node.ip + "]:" + node.cport + " -> " + e.getCause().getMessage());
+                        continue;
+                    }
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    node.link = link;
+                    link.ctime = System.currentTimeMillis();
+                    long oldPingSent = node.pingSent;
+                    msgManager.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
+                    if (oldPingSent != 0) node.pingSent = oldPingSent;
+                    node.flags &= ~CLUSTER_NODE_MEET;
+                    logger.debug("Connected with Node " + node.name + " at " + node.ip + ":" + node.cport + ",link " + link);
                 }
             }
-            if (minPongNode != null) {
-                logger.debug("Pinging node " + minPongNode.name);
-                msgManager.clusterSendPing(minPongNode.link, CLUSTERMSG_TYPE_PING);
-            }
-        }
 
-        boolean updateState = false;
-        int orphanedMasters = 0;
-        int maxSlaves = 0;
-        int thisSlaves = 0;
-        for (ClusterNode node : server.cluster.nodes.values()) {
-            now = System.currentTimeMillis();
+            if (server.iteration % 10 == 0) {
+                for (int i = 0; i < 5; i++) {
+                    List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
+                    int idx = ThreadLocalRandom.current().nextInt(list.size());
+                    ClusterNode t = list.get(idx);
 
-            if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR | CLUSTER_NODE_HANDSHAKE)) != 0)
-                continue;
-
-            if (nodeIsSlave(server.myself) && nodeIsMaster(node) && !nodeFailed(node)) {
-                int okslaves = nodeManager.clusterCountNonFailingSlaves(node);
-
-                if (okslaves == 0 && node.numslots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) {
-                    orphanedMasters++;
+                    if (t.link == null || t.pingSent != 0) continue;
+                    if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0)
+                        continue;
+                    if (minPongNode == null || minPong > t.pongReceived) {
+                        minPongNode = t;
+                        minPong = t.pongReceived;
+                    }
                 }
-                if (okslaves > maxSlaves) maxSlaves = okslaves;
-                if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(node))
-                    thisSlaves = okslaves;
+                if (minPongNode != null) {
+                    logger.debug("Pinging node " + minPongNode.name);
+                    msgManager.clusterSendPing(minPongNode.link, CLUSTERMSG_TYPE_PING);
+                }
             }
 
-            if (node.link != null
-                    && now - node.link.ctime > configuration.getClusterNodeTimeout()
-                    && node.pingSent != 0 && node.pongReceived < node.pingSent
-                    && now - node.pingSent > configuration.getClusterNodeTimeout() / 2) {
-                connectionManager.freeClusterLink(node.link);
+            boolean updateState = false;
+            int orphanedMasters = 0;
+            int maxSlaves = 0;
+            int thisSlaves = 0;
+            for (ClusterNode node : server.cluster.nodes.values()) {
+                now = System.currentTimeMillis();
+
+                if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR | CLUSTER_NODE_HANDSHAKE)) != 0)
+                    continue;
+
+                if (nodeIsSlave(server.myself) && nodeIsMaster(node) && !nodeFailed(node)) {
+                    int okslaves = nodeManager.clusterCountNonFailingSlaves(node);
+
+                    if (okslaves == 0 && node.numslots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) {
+                        orphanedMasters++;
+                    }
+                    if (okslaves > maxSlaves) maxSlaves = okslaves;
+                    if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(node))
+                        thisSlaves = okslaves;
+                }
+
+                if (node.link != null
+                        && now - node.link.ctime > configuration.getClusterNodeTimeout()
+                        && node.pingSent != 0 && node.pongReceived < node.pingSent
+                        && now - node.pingSent > configuration.getClusterNodeTimeout() / 2) {
+                    connectionManager.freeClusterLink(node.link);
+                }
+
+                if (node.link != null && node.pingSent == 0 && (now - node.pongReceived) > configuration.getClusterNodeTimeout() / 2) {
+                    msgManager.clusterSendPing(node.link, CLUSTERMSG_TYPE_PING);
+                    continue;
+                }
+
+                if (node.pingSent == 0) continue;
+
+                long delay = now - node.pingSent;
+                if (delay > configuration.getClusterNodeTimeout() && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
+                    logger.debug("*** NODE " + node.name + " possibly failing");
+                    node.flags |= CLUSTER_NODE_PFAIL;
+                    updateState = true;
+                }
             }
 
-            if (node.link != null && node.pingSent == 0 && (now - node.pongReceived) > configuration.getClusterNodeTimeout() / 2) {
-                msgManager.clusterSendPing(node.link, CLUSTERMSG_TYPE_PING);
-                continue;
+            if (nodeIsSlave(server.myself) && server.masterHost == null && server.myself.slaveof != null && nodeHasAddr(server.myself.slaveof)) {
+                replicationManager.replicationSetMaster(server.myself.slaveof.ip, server.myself.slaveof.port);
             }
 
-            if (node.pingSent == 0) continue;
-
-            long delay = now - node.pingSent;
-            if (delay > configuration.getClusterNodeTimeout() && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
-                logger.debug("*** NODE " + node.name + " possibly failing");
-                node.flags |= CLUSTER_NODE_PFAIL;
-                updateState = true;
+            if (nodeIsSlave(server.myself) && orphanedMasters != 0 && maxSlaves >= 2 && thisSlaves == maxSlaves) {
+                clusterHandleSlaveMigration(maxSlaves);
             }
+
+            if (updateState || server.cluster.state == CLUSTER_FAIL)
+                clusterUpdateState();
+        } catch (Throwable e) {
+            logger.error(e);
         }
-
-        if (nodeIsSlave(server.myself) && server.masterHost == null && server.myself.slaveof != null && nodeHasAddr(server.myself.slaveof)) {
-            replicationManager.replicationSetMaster(server.myself.slaveof.ip, server.myself.slaveof.port);
-        }
-
-        if (nodeIsSlave(server.myself) && orphanedMasters != 0 && maxSlaves >= 2 && thisSlaves == maxSlaves) {
-            clusterHandleSlaveMigration(maxSlaves);
-        }
-
-        if (updateState || server.cluster.state == CLUSTER_FAIL)
-            clusterUpdateState();
     }
 
     public void clusterHandleSlaveMigration(int maxSlaves) {

@@ -28,8 +28,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.sun.javafx.animation.TickCalculation.toMillis;
-
 /**
  * @author Leon Chen
  * @since 2.1.0
@@ -111,7 +109,7 @@ public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
                 else future.failure(f.cause());
             } else {
                 future.success(null);
-                logger.info("connected to host: " + host + ", port: " + port + ", elapsed time: " + toMillis(et) + " ms");
+//                logger.info("connected to host: " + host + ", port: " + port + ", elapsed time: " + toMillis(et) + " ms");
             }
         }
     }
