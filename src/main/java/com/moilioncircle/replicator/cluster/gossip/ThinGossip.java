@@ -298,9 +298,6 @@ public class ThinGossip {
     }
 
     public void clusterUpdateSlotsConfigWith(ClusterNode sender, long senderConfigEpoch, byte[] slots) {
-        int[] dirtySlots = new int[CLUSTER_SLOTS];
-        int dirtySlotsCount = 0;
-
         ClusterNode newmaster = null;
         ClusterNode curmaster = nodeIsMaster(server.myself) ? server.myself : server.myself.slaveof;
         if (sender.equals(server.myself)) {
@@ -310,15 +307,9 @@ public class ThinGossip {
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (slotManger.bitmapTestBit(slots, i)) {
-                if (server.cluster.slots[i].equals(sender)) continue;
-
+                if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(sender)) continue;
                 if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
-                    if (server.cluster.slots[i].equals(server.myself) && slotManger.countKeysInSlot(i) != 0 && !sender.equals(server.myself)) {
-                        dirtySlots[dirtySlotsCount] = i;
-                        dirtySlotsCount++;
-                    }
-
-                    if (server.cluster.slots[i].equals(curmaster))
+                    if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(curmaster))
                         newmaster = sender;
                     slotManger.clusterDelSlot(i);
                     slotManger.clusterAddSlot(sender, i);
@@ -329,9 +320,6 @@ public class ThinGossip {
         if (newmaster != null && curmaster.numslots == 0) {
             logger.warn("Configuration change detected. Reconfiguring myself as a replica of " + sender.name);
             clusterSetMaster(sender);
-        } else if (dirtySlotsCount != 0) {
-            for (int i = 0; i < dirtySlotsCount; i++)
-                slotManger.delKeysInSlot(dirtySlots[i]);
         }
     }
 
@@ -436,7 +424,6 @@ public class ThinGossip {
 
     public void clusterCron() {
         try {
-            logger.info("cron:" + server.cluster.nodes);
             long minPong = 0, now = System.currentTimeMillis();
             ClusterNode minPongNode = null;
             server.iteration++;

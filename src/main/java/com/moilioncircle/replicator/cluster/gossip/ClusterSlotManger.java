@@ -20,19 +20,19 @@ public class ClusterSlotManger {
         this.server = gossip.server;
     }
 
-    public boolean bitmapTestBit(byte[] bitmap, int pos) {
+    public static boolean bitmapTestBit(byte[] bitmap, int pos) {
         int offset = pos / 8;
         int bit = pos & 7;
         return (bitmap[offset] & (1 << bit)) != 0;
     }
 
-    public void bitmapSetBit(byte[] bitmap, int pos) {
+    public static void bitmapSetBit(byte[] bitmap, int pos) {
         int offset = pos / 8;
         int bit = pos & 7;
         bitmap[offset] |= 1 << bit;
     }
 
-    public void bitmapClearBit(byte[] bitmap, int pos) {
+    public static void bitmapClearBit(byte[] bitmap, int pos) {
         int offset = pos / 8;
         int bit = pos & 7;
         bitmap[offset] &= ~(1 << bit);
@@ -91,13 +91,6 @@ public class ClusterSlotManger {
             deleted++;
         }
         return deleted;
-    }
-
-    public void delKeysInSlot(int dirtySlot) {
-    }
-
-    public int countKeysInSlot(int i) {
-        return 0;
     }
 
     public int keyHashSlot(String key) {

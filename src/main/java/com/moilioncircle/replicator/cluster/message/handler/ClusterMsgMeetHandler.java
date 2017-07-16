@@ -8,6 +8,7 @@ import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 import java.util.Arrays;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
+import static com.moilioncircle.replicator.cluster.gossip.ClusterSlotManger.bitmapTestBit;
 
 /**
  * Created by Baoyi Chen on 2017/7/13.
@@ -94,7 +95,7 @@ public class ClusterMsgMeetHandler extends AbstractClusterMsgHandler {
 
         if (dirtySlots) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                if (!gossip.slotManger.bitmapTestBit(hdr.myslots, i)) continue;
+                if (!bitmapTestBit(hdr.myslots, i)) continue;
                 if (server.cluster.slots[i].equals(sender) || server.cluster.slots[i] == null) continue;
                 if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
                     logger.debug("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
