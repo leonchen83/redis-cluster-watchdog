@@ -64,7 +64,7 @@ public class ClusterMsgMeetHandler extends AbstractClusterMsgHandler {
 
         if (sender == null) return true;
 
-        if (hdr.slaveof == null) { // hdr.slaveof == null
+        if (hdr.slaveof == null) {
             gossip.clusterSetNodeAsMaster(sender);
         } else {
             ClusterNode master = gossip.nodeManager.clusterLookupNode(hdr.slaveof);

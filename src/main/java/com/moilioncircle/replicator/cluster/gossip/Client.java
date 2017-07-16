@@ -61,7 +61,7 @@ public class Client {
             @Override
             public void onMessage(Transport<String> transport, String message) {
                 String[] argv = toArray(message);
-                clusterCommand(transport, argv);
+                gossip.executor.execute(() -> clusterCommand(transport, argv));
             }
 
             @Override

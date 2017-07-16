@@ -61,8 +61,8 @@ public class ThinGossip {
     public ClusterConnectionManager connectionManager;
     public ClusterMsgHandlerManager msgHandlerManager;
 
-    public ThinGossip(ClusterConfiguration configuration, ScheduledExecutorService executor) {
-        this.executor = executor;
+    public ThinGossip(ClusterConfiguration configuration) {
+        this.executor = Executors.newSingleThreadScheduledExecutor();
         this.msgManager = new ClusterMsgManager(this);
         this.slotManger = new ClusterSlotManger(this);
         this.nodeManager = new ClusterNodeManager(this);
@@ -477,7 +477,6 @@ public class ThinGossip {
                             logger.info("[initiator] < " + transport.toString());
                             connectionManager.freeClusterLink(link);
                             fd.shutdown();
-
                         }
                     });
                     try {
@@ -488,6 +487,7 @@ public class ThinGossip {
                         }
                         if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
                         logger.debug("Unable to connect to Cluster Node [" + node.ip + "]:" + node.cport + " -> " + e.getCause().getMessage());
+                        fd.shutdown();
                         continue;
                     }
                     try {
@@ -508,8 +508,7 @@ public class ThinGossip {
             if (server.iteration % 10 == 0) {
                 for (int i = 0; i < 5; i++) {
                     List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
-                    int idx = ThreadLocalRandom.current().nextInt(list.size());
-                    ClusterNode t = list.get(idx);
+                    ClusterNode t = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
                     if (t.link == null || t.pingSent != 0) continue;
                     if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0)
@@ -542,7 +541,7 @@ public class ThinGossip {
                         orphanedMasters++;
                     }
                     if (okslaves > maxSlaves) maxSlaves = okslaves;
-                    if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(node))
+                    if (server.myself.slaveof.equals(node))
                         thisSlaves = okslaves;
                 }
 

@@ -77,7 +77,7 @@ public class ClusterMsgManager {
         hdr.myip = gossip.configuration.getClusterAnnounceIp();
 
         hdr.myslots = master.slots;
-        if (master.slaveof != null) {
+        if (server.myself.slaveof != null) {
             hdr.slaveof = server.myself.slaveof.name;
         }
 
@@ -131,8 +131,7 @@ public class ClusterMsgManager {
         int gossipcount = 0;
         while (freshnodes > 0 && gossipcount < wanted && maxiterations-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
-            int idx = ThreadLocalRandom.current().nextInt(list.size());
-            ClusterNode t = list.get(idx);
+            ClusterNode t = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
             if (t.equals(server.myself)) continue;
 
