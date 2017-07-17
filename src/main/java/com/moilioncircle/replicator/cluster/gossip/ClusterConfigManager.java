@@ -13,6 +13,7 @@ import java.util.Map;
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 import static com.moilioncircle.replicator.cluster.config.ConfigFileParser.parseLine;
 import static java.lang.Integer.parseInt;
+import static java.lang.Long.parseLong;
 
 /**
  * Created by Baoyi Chen on 2017/7/12.
@@ -110,8 +111,8 @@ public class ClusterConfigManager {
                         gossip.nodeManager.clusterNodeAddSlave(master, n);
                     }
 
-                    if (parseInt(list.get(4)) > 0) n.pingSent = System.currentTimeMillis();
-                    if (parseInt(list.get(5)) > 0) n.pongReceived = System.currentTimeMillis();
+                    if (parseLong(list.get(4)) > 0) n.pingSent = System.currentTimeMillis();
+                    if (parseLong(list.get(5)) > 0) n.pongReceived = System.currentTimeMillis();
                     n.configEpoch = parseInt(list.get(6));
 
                     for (int i = 8; i < list.size(); i++) {

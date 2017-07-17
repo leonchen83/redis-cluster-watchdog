@@ -89,7 +89,7 @@ public class Client {
     public void clusterCommand(Transport<Object> t, byte[][] message) {
         String arg0 = new String(message[0]);
         if (!arg0.equalsIgnoreCase("cluster")) {
-            t.write("-ERR Unsupported operation [" + Arrays.deepToString(message) + "]\r\n".getBytes(), true);
+            t.write(("-ERR Unsupported operation " + Arrays.deepToString(message) + "\r\n").getBytes(), true);
             return;
         }
         // cluster commands
@@ -109,21 +109,21 @@ public class Client {
             if (gossip.clusterStartHandshake(argv[2], port, cport)) {
                 t.write("+OK\r\n".getBytes(), true);
             } else {
-                t.write("-ERR Invalid node address specified:" + argv[2] + ":" + argv[3] + "\r\n".getBytes(), true);
+                t.write(("-ERR Invalid node address specified:" + argv[2] + ":" + argv[3] + "\r\n").getBytes(), true);
             }
         } else if (argv[1].equalsIgnoreCase("nodes") && argv.length == 2) {
             /* CLUSTER NODES */
             String ci = gossip.configManager.clusterGenNodesDescription(0);
-            t.write("$" + ci.length() + "\r\n" + ci + "\r\n".getBytes(), true);
+            t.write(("$" + ci.length() + "\r\n" + ci + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("myid") && argv.length == 2) {
             /* CLUSTER MYID */
-            t.write("+" + server.myself.name + "\r\n".getBytes(), true);
+            t.write(("+" + server.myself.name + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("flushslots") && argv.length == 2) {
-            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n".getBytes(), true);
+            t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if ((argv[1].equalsIgnoreCase("addslots") || argv[1].equalsIgnoreCase("delslots")) && argv.length >= 3) {
-            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n".getBytes(), true);
+            t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("setslot") && argv.length >= 4) {
-            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n".getBytes(), true);
+            t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
             boolean retval = clusterBumpConfigEpochWithoutConsensus();
             String reply = new StringBuilder("+").append(retval ? "BUMPED" : "STILL").append(" ").append(server.myself.configEpoch).append("\r\n").toString();
@@ -177,27 +177,27 @@ public class Client {
             }
 
             info.append("cluster_stats_messages_received:").append(totMsgReceived).append("\r\n");
-            t.write("$" + info.length() + "\r\n" + info.toString() + "\r\n".getBytes(), true);
+            t.write(("$" + info.length() + "\r\n" + info.toString() + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("saveconfig") && argv.length == 2) {
             if (!gossip.configManager.clusterSaveConfig()) {
-                t.write("-ERR Error saving the cluster node config\r\n".getBytes(), true);
+                t.write(("-ERR Error saving the cluster node config\r\n").getBytes(), true);
             }
             t.write("+OK\r\n".getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("keyslot") && argv.length == 3) {
-            t.write(":" + String.valueOf(gossip.slotManger.keyHashSlot(argv[2])) + "\r\n".getBytes(), true);
+            t.write((":" + String.valueOf(gossip.slotManger.keyHashSlot(argv[2])) + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("countkeysinslot") && argv.length == 3) {
-            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n".getBytes(), true);
+            t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("forget") && argv.length == 3) {
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                t.write("-ERR Unknown node " + argv[2] + "\r\n".getBytes(), true);
+                t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
                 return;
             } else if (n.equals(server.myself)) {
-                t.write("-ERR I tried hard but I can't forget myself...\r\n".getBytes(), true);
+                t.write(("-ERR I tried hard but I can't forget myself...\r\n").getBytes(), true);
                 return;
             } else if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(n)) {
-                t.write("-ERR Can't forget my master!\r\n".getBytes(), true);
+                t.write(("-ERR Can't forget my master!\r\n").getBytes(), true);
                 return;
             }
             gossip.blacklistManager.clusterBlacklistAddNode(n);
@@ -208,22 +208,22 @@ public class Client {
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                t.write("-ERR Unknown node " + argv[2] + "\r\n".getBytes(), true);
+                t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
                 return;
             }
 
             if (n.equals(server.myself)) {
-                t.write("-ERR Can't replicate myself\r\n".getBytes(), true);
+                t.write(("-ERR Can't replicate myself\r\n").getBytes(), true);
                 return;
             }
 
             if (nodeIsSlave(n)) {
-                t.write("-ERR I can only replicate a master, not a slave.\r\n".getBytes(), true);
+                t.write(("-ERR I can only replicate a master, not a slave.\r\n").getBytes(), true);
                 return;
             }
 
             if (nodeIsMaster(server.myself) && (server.myself.numslots != 0)) {
-                t.write("-ERR To set a master the node must be empty and without assigned slots.\r\n".getBytes(), true);
+                t.write(("-ERR To set a master the node must be empty and without assigned slots.\r\n").getBytes(), true);
                 return;
             }
 
@@ -234,12 +234,12 @@ public class Client {
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                t.write("-ERR Unknown node " + argv[2] + "\r\n".getBytes(), true);
+                t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
                 return;
             }
 
             if (nodeIsSlave(n)) {
-                t.write("-ERR The specified node is not a master\r\n".getBytes(), true);
+                t.write(("-ERR The specified node is not a master\r\n").getBytes(), true);
                 return;
             }
 
@@ -247,26 +247,26 @@ public class Client {
             for (int j = 0; j < n.numslaves; j++) {
                 ci.append(gossip.configManager.clusterGenNodeDescription(n.slaves.get(j)));
             }
-            t.write("$" + ci.length() + "\r\n" + ci.toString() + "\r\n".getBytes(), true);
+            t.write(("$" + ci.length() + "\r\n" + ci.toString() + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("count-failure-reports") && argv.length == 3) {
             /* CLUSTER COUNT-FAILURE-REPORTS <NODE ID> */
             ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[2]);
 
             if (n == null) {
-                t.write("-ERR Unknown node " + argv[2] + "\r\n".getBytes(), true);
+                t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
                 return;
             } else {
-                t.write(":" + String.valueOf(gossip.nodeManager.clusterNodeFailureReportsCount(n)).getBytes() + "\r\n", true);
+                t.write((":" + String.valueOf(gossip.nodeManager.clusterNodeFailureReportsCount(n)).getBytes() + "\r\n").getBytes(), true);
             }
         } else if (argv[1].equalsIgnoreCase("set-config-epoch") && argv.length == 3) {
             long epoch = parseLong(argv[2]);
 
             if (epoch < 0) {
-                t.write("-ERR Invalid config epoch specified: " + epoch + "\r\n".getBytes(), true);
+                t.write(("-ERR Invalid config epoch specified: " + epoch + "\r\n").getBytes(), true);
             } else if (server.cluster.nodes.size() > 1) {
-                t.write("-ERR The user can assign a config epoch only when the node does not know any other node.\r\n".getBytes(), true);
+                t.write(("-ERR The user can assign a config epoch only when the node does not know any other node.\r\n").getBytes(), true);
             } else if (server.myself.configEpoch != 0) {
-                t.write("-ERR Node config epoch is already non-zero\r\n".getBytes(), true);
+                t.write(("-ERR Node config epoch is already non-zero\r\n").getBytes(), true);
             } else {
                 server.myself.configEpoch = epoch;
                 logger.warn("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
@@ -276,9 +276,9 @@ public class Client {
                 t.write("+OK\r\n".getBytes(), true);
             }
         } else if (argv[1].equalsIgnoreCase("reset") && (argv.length == 2 || argv.length == 3)) {
-            t.write("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n".getBytes(), true);
+            t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else {
-            t.write("-ERR Wrong CLUSTER subcommand or number of arguments\r\n".getBytes(), true);
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
         }
     }
 
