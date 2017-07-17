@@ -41,6 +41,10 @@ public class ReplicationManager {
         server.masterPort = node.port;
     }
 
+    public void replicationUnsetMaster() {
+
+    }
+
     public long replicationGetSlaveOffset() {
         return 0;
     }

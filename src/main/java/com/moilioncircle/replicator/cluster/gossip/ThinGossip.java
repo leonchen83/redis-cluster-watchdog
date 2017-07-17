@@ -140,6 +140,32 @@ public class ThinGossip {
         server.myself.cport = configuration.getClusterAnnounceBusPort();
     }
 
+    public void clusterReset(boolean hard) {
+        if (nodeIsSlave(server.myself)) {
+            clusterSetNodeAsMaster(server.myself);
+            replicationManager.replicationUnsetMaster();
+        }
+
+        for (int i = 0; i < CLUSTER_SLOTS; i++)
+            slotManger.clusterDelSlot(i);
+
+        List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
+        for (ClusterNode node : nodes) {
+            if (node.equals(server.myself)) continue;
+            nodeManager.clusterDelNode(node);
+        }
+        if (!hard) return;
+
+        server.cluster.currentEpoch = 0;
+        server.myself.configEpoch = 0;
+        logger.warn("configEpoch set to 0 via CLUSTER RESET HARD");
+        String oldname = server.myself.name;
+        server.cluster.nodes.remove(oldname);
+        server.myself.name = nodeManager.getRandomHexChars();
+        nodeManager.clusterAddNode(server.myself);
+        logger.info("Node hard reset, now I'm " + server.myself.name);
+    }
+
     public long clusterGetMaxEpoch() {
         return server.cluster.nodes.values().stream().
                 max(comparingLong(x -> x.configEpoch)).

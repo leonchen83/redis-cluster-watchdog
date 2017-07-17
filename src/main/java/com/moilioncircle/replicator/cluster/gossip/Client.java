@@ -276,7 +276,14 @@ public class Client {
                 t.write("+OK\r\n".getBytes(), true);
             }
         } else if (argv[1].equalsIgnoreCase("reset") && (argv.length == 2 || argv.length == 3)) {
-            t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
+            boolean hard = false;
+            if (argv.length == 3) {
+                if (argv[2].equalsIgnoreCase("hard")) hard = true;
+                else if (argv[2].equalsIgnoreCase("soft")) hard = false;
+                else t.write("-ERR Syntax error.\r\n".getBytes(), true);
+            }
+            gossip.clusterReset(hard);
+            t.write(("+OK\r\n").getBytes(), true);
         } else {
             t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
         }
