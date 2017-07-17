@@ -36,9 +36,11 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
+import static java.util.Comparator.comparingLong;
 
 /**
  * @author Leon Chen
@@ -83,19 +85,6 @@ public class ThinGossip {
 
     public void clusterInit() {
         server.cluster = new ClusterState();
-        server.cluster.myself = null;
-        server.cluster.currentEpoch = 0;
-        server.cluster.state = CLUSTER_FAIL;
-        server.cluster.size = 1;
-        server.cluster.todoBeforeSleep = 0;
-        server.cluster.nodes = new ConcurrentHashMap<>();
-        server.cluster.nodesBlackList = new ConcurrentHashMap<>();
-        for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
-            server.cluster.statsBusMessagesSent[i] = 0;
-            server.cluster.statsBusMessagesReceived[i] = 0;
-        }
-        server.cluster.statsPfailNodes = 0;
-
         server.myself = server.cluster.myself = nodeManager.createClusterNode(configuration.getSelfName(), CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
         logger.info("No cluster configuration found, I'm " + server.myself.name);
         nodeManager.clusterAddNode(server.myself);
@@ -140,12 +129,9 @@ public class ThinGossip {
     }
 
     public long clusterGetMaxEpoch() {
-        long max = 0;
-        for (ClusterNode node : server.cluster.nodes.values()) {
-            if (node.configEpoch > max) max = node.configEpoch;
-        }
-        if (max < server.cluster.currentEpoch) max = server.cluster.currentEpoch;
-        return max;
+        return server.cluster.nodes.values().stream().
+                max(comparingLong(x -> x.configEpoch)).
+                map(e -> e.configEpoch).orElse(server.cluster.currentEpoch);
     }
 
     public void clusterHandleConfigEpochCollision(ClusterNode sender) {
@@ -191,11 +177,8 @@ public class ThinGossip {
     }
 
     public boolean clusterHandshakeInProgress(String ip, int port, int cport) {
-        for (ClusterNode node : server.cluster.nodes.values()) {
-            if (nodeInHandshake(node) && node.ip.equalsIgnoreCase(ip) && node.port == port && node.cport == cport)
-                return true;
-        }
-        return false;
+        return server.cluster.nodes.values().stream().
+                anyMatch(x -> nodeInHandshake(x) && x.ip.equalsIgnoreCase(ip) && x.port == port && x.cport == cport);
     }
 
     public boolean clusterStartHandshake(String ip, int port, int cport) {
@@ -232,10 +215,8 @@ public class ThinGossip {
                         logger.debug("Node " + sender.name + " reported node " + node.name + " as not reachable.");
                     }
                     markNodeAsFailingIfNeeded(node);
-                } else {
-                    if (nodeManager.clusterNodeDelFailureReport(node, sender)) {
-                        logger.debug("Node " + sender.name + " reported node " + node.name + " is back online.");
-                    }
+                } else if (nodeManager.clusterNodeDelFailureReport(node, sender)) {
+                    logger.debug("Node " + sender.name + " reported node " + node.name + " is back online.");
                 }
             }
 
@@ -270,12 +251,11 @@ public class ThinGossip {
         node.port = port;
         node.cport = cport;
 
-        //更新ip端口后，把原来的链接释放了
         if (node.link != null) connectionManager.freeClusterLink(node.link);
         logger.warn("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
 
         if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(node)) {
-            replicationManager.replicationSetMaster(node.ip, node.port);
+            replicationManager.replicationSetMaster(node);
         }
         return true;
     }
@@ -415,35 +395,26 @@ public class ThinGossip {
         }
         server.myself.slaveof = n;
         nodeManager.clusterNodeAddSlave(n, server.myself);
-        replicationManager.replicationSetMaster(n.ip, n.port);
+        replicationManager.replicationSetMaster(n);
     }
 
     public void clusterCron() {
         try {
-            long minPong = 0, now = System.currentTimeMillis();
-            ClusterNode minPongNode = null;
+            long now = System.currentTimeMillis();
             server.iteration++;
 
             String currIp = configuration.getClusterAnnounceIp();
-            boolean changed = false;
-
-            if (server.prevIp == null && currIp != null) changed = true;
-            if (server.prevIp != null && currIp == null) changed = true;
-            if (server.prevIp != null && currIp != null && !server.prevIp.equals(currIp)) changed = true;
-
-            if (changed) {
+            if (!Objects.equals(server.prevIp, currIp)) {
                 server.prevIp = currIp;
-                if (currIp != null) {
-                    server.myself.ip = currIp;
-                } else {
-                    server.myself.ip = null;
-                }
+                if (currIp != null) server.myself.ip = currIp;
+                else server.myself.ip = null;
             }
+
             long handshakeTimeout = configuration.getClusterNodeTimeout();
             if (handshakeTimeout < 1000) handshakeTimeout = 1000;
-            List<Object[]> connections = new ArrayList<>();
             server.cluster.statsPfailNodes = 0;
-            for (ClusterNode node : server.cluster.nodes.values()) {
+            List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
+            for (ClusterNode node : nodes) {
                 if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0) continue;
 
                 if ((node.flags & CLUSTER_NODE_PFAIL) != 0)
@@ -456,7 +427,7 @@ public class ThinGossip {
 
                 if (node.link == null) {
                     final ClusterLink link = connectionManager.createClusterLink(node);
-                    NioBootstrapImpl<Message> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration()); //client
+                    NioBootstrapImpl<Message> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration());
                     fd.setEncoder(ClusterMsgEncoder::new);
                     fd.setDecoder(ClusterMsgDecoder::new);
                     fd.setup();
@@ -503,14 +474,15 @@ public class ThinGossip {
                 }
             }
 
+            long minPong = 0;
+            ClusterNode minPongNode = null;
             if (server.iteration % 10 == 0) {
                 for (int i = 0; i < 5; i++) {
                     List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
                     ClusterNode t = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
                     if (t.link == null || t.pingSent != 0) continue;
-                    if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0)
-                        continue;
+                    if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0) continue;
                     if (minPongNode == null || minPong > t.pongReceived) {
                         minPongNode = t;
                         minPong = t.pongReceived;
@@ -563,15 +535,14 @@ public class ThinGossip {
             }
 
             if (nodeIsSlave(server.myself) && server.masterHost == null && server.myself.slaveof != null && nodeHasAddr(server.myself.slaveof)) {
-                replicationManager.replicationSetMaster(server.myself.slaveof.ip, server.myself.slaveof.port);
+                replicationManager.replicationSetMaster(server.myself.slaveof);
             }
 
             if (nodeIsSlave(server.myself) && orphanedMasters != 0 && maxSlaves >= 2 && thisSlaves == maxSlaves) {
                 clusterHandleSlaveMigration(maxSlaves);
             }
 
-            if (update || server.cluster.state == CLUSTER_FAIL)
-                clusterUpdateState();
+            if (update || server.cluster.state == CLUSTER_FAIL) clusterUpdateState();
         } catch (Throwable e) {
             logger.error("error", e);
         }
@@ -579,13 +550,9 @@ public class ThinGossip {
 
     public void clusterHandleSlaveMigration(int maxSlaves) {
         if (server.cluster.state != CLUSTER_OK) return;
-
-        ClusterNode mymaster = server.myself.slaveof;
-        if (mymaster == null) return;
-
-        int slaves = 0;
-        for (int i = 0; i < mymaster.numslaves; i++)
-            if (!nodeFailed(mymaster.slaves.get(i)) && !nodePFailed(mymaster.slaves.get(i))) slaves++;
+        if (server.myself.slaveof == null) return;
+        int slaves = (int) server.myself.slaveof.slaves.stream().
+                filter(x -> !nodeFailed(x) && !nodePFailed(x)).count();
         if (slaves <= configuration.getClusterMigrationBarrier()) return;
 
         ClusterNode candidate = server.myself;
@@ -608,10 +575,7 @@ public class ThinGossip {
             }
 
             if (slaves == maxSlaves) {
-                for (int i = 0; i < node.numslaves; i++) {
-                    if (node.slaves.get(i).name.compareTo(candidate.name) >= 0) continue;
-                    candidate = node.slaves.get(i);
-                }
+                candidate = node.slaves.stream().reduce(server.myself, (a, b) -> a.name.compareTo(b.name) >= 0 ? b : a);
             }
         }
 

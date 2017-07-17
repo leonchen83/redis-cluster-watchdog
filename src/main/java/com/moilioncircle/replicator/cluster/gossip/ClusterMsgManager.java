@@ -49,22 +49,20 @@ public class ClusterMsgManager {
     public void clusterSendMessage(ClusterLink link, ClusterMsg hdr) {
         try {
             link.fd.send(hdr).get();
+            int type = hdr.type;
+            if (type < CLUSTERMSG_TYPE_COUNT)
+                server.cluster.statsBusMessagesSent[type]++;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {
             logger.warn("send msg error, link: " + link + ",hdr:" + hdr);
         }
-        int type = hdr.type;
-        if (type < CLUSTERMSG_TYPE_COUNT)
-            server.cluster.statsBusMessagesSent[type]++;
     }
 
     public void clusterBroadcastMessage(ClusterMsg hdr) {
-        for (ClusterNode node : server.cluster.nodes.values()) {
-            if (node.link == null) continue;
-            if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0) continue;
-            clusterSendMessage(node.link, hdr);
-        }
+        server.cluster.nodes.values().stream().
+                filter(x -> x.link != null && (x.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) == 0).
+                forEach(x -> clusterSendMessage(x.link, hdr));
     }
 
     public ClusterMsg clusterBuildMessageHdr(int type) {
@@ -95,10 +93,7 @@ public class ClusterMsgManager {
     }
 
     public boolean clusterNodeIsInGossipSection(ClusterMsg hdr, int count, ClusterNode n) {
-        for (int i = 0; i < count; i++) {
-            if (hdr.data.gossip.get(i).nodename.equals(n.name)) return true;
-        }
-        return false;
+        return hdr.data.gossip.stream().limit(count).anyMatch(x -> x.nodename.equals(n.name));
     }
 
     public void clusterSetGossipEntry(ClusterMsg hdr, int i, ClusterNode n) {
@@ -169,7 +164,6 @@ public class ClusterMsgManager {
             if (node.link == null) continue;
             if (node.equals(server.myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
-                //node.slaveof.equals(myself)这个条件有点问题
                 boolean localSlave = nodeIsSlave(node) && node.slaveof != null && (node.slaveof.equals(server.myself) || node.slaveof.equals(server.myself.slaveof));
                 if (!localSlave) continue;
             }

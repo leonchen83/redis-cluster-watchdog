@@ -26,12 +26,7 @@ public class ClusterNodeManager {
     }
 
     public void freeClusterNode(ClusterNode n) {
-        for (ClusterNode r : n.slaves) {
-            r.slaveof = null;
-        }
-
         if (nodeIsSlave(n) && n.slaveof != null) clusterNodeRemoveSlave(n.slaveof, n);
-
         server.cluster.nodes.remove(n.name);
         if (n.link != null) gossip.connectionManager.freeClusterLink(n.link);
         n.failReports.clear();
@@ -39,24 +34,19 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterAddNode(ClusterNode node) {
-        ClusterNode old = server.cluster.nodes.put(node.name, node);
-        return old == null;
+        return server.cluster.nodes.put(node.name, node) == null;
     }
 
     public void clusterDelNode(ClusterNode delnode) {
-        String nodename = delnode.name;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (server.cluster.slots[i].equals(delnode)) {
-                gossip.slotManger.clusterDelSlot(i);
-            }
+            if (!server.cluster.slots[i].equals(delnode)) continue;
+            gossip.slotManger.clusterDelSlot(i);
         }
 
-        for (ClusterNode node : server.cluster.nodes.values()) {
-            if (node.equals(delnode)) continue;
-            clusterNodeDelFailureReport(node, delnode);
-        }
+        server.cluster.nodes.values().stream().
+                filter(x -> !x.equals(delnode)).
+                forEach(x -> clusterNodeDelFailureReport(x, delnode));
         freeClusterNode(delnode);
-        logger.info("del node " + nodename);
     }
 
     public ClusterNode clusterLookupNode(String name) {
@@ -117,18 +107,12 @@ public class ClusterNodeManager {
         long now = System.currentTimeMillis();
         Iterator<ClusterNodeFailReport> it = l.iterator();
         while (it.hasNext()) {
-            ClusterNodeFailReport n = it.next();
-            if (now - n.time > max) it.remove();
+            if (now - it.next().time > max) it.remove();
         }
     }
 
     public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
-        ClusterNodeFailReport fr = null;
-        for (ClusterNodeFailReport n : node.failReports) {
-            if (!n.node.equals(sender)) continue;
-            fr = n;
-            break;
-        }
+        ClusterNodeFailReport fr = node.failReports.stream().filter(x -> x.node.equals(sender)).findFirst().orElse(null);
         if (fr == null) return false;
         node.failReports.remove(fr);
         clusterNodeCleanupFailureReports(node);
@@ -154,9 +138,7 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterNodeAddSlave(ClusterNode master, ClusterNode slave) {
-        for (ClusterNode n : master.slaves) {
-            if (n.equals(slave)) return false;
-        }
+        if (master.slaves.stream().anyMatch(e -> e.equals(slave))) return false;
         master.slaves.add(slave);
         master.numslaves++;
         master.flags |= CLUSTER_NODE_MIGRATE_TO;
@@ -164,11 +146,7 @@ public class ClusterNodeManager {
     }
 
     public int clusterCountNonFailingSlaves(ClusterNode n) {
-        int count = 0;
-        for (ClusterNode s : n.slaves) {
-            if (!nodeFailed(s)) count++;
-        }
-        return count;
+        return (int) n.slaves.stream().filter(x -> !nodeFailed(x)).count();
     }
 
     public int clusterGetSlaveRank() {
@@ -176,10 +154,8 @@ public class ClusterNodeManager {
         ClusterNode master = server.myself.slaveof;
         if (master == null) return rank;
         long myoffset = gossip.replicationManager.replicationGetSlaveOffset();
-        for (int i = 0; i < master.numslaves; i++)
-            if (!master.slaves.get(i).equals(server.myself) && master.slaves.get(i).replOffset > myoffset)
-                rank++;
-        return rank;
+        if (server.myself.slaveof == null) return 0;
+        return (int) server.myself.slaveof.slaves.stream().filter(x -> !x.equals(server.myself) && x.replOffset > myoffset).count();
     }
 
     public static final char[] chars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};

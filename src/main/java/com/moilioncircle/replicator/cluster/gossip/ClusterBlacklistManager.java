@@ -1,8 +1,6 @@
 package com.moilioncircle.replicator.cluster.gossip;
 
 import com.moilioncircle.replicator.cluster.ClusterNode;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import java.util.AbstractMap;
 import java.util.Iterator;
@@ -15,7 +13,6 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_BLAC
  */
 public class ClusterBlacklistManager {
 
-    private static final Log logger = LogFactory.getLog(ClusterBlacklistManager.class);
     private Server server;
     private ThinGossip gossip;
 

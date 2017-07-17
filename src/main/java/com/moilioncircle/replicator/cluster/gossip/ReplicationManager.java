@@ -16,6 +16,7 @@
 
 package com.moilioncircle.replicator.cluster.gossip;
 
+import com.moilioncircle.replicator.cluster.ClusterNode;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -33,10 +34,10 @@ public class ReplicationManager {
         this.server = gossip.server;
     }
 
-    public void replicationSetMaster(String ip, int port) {
-        logger.info("replicate to " + ip + ":" + port);
-        server.masterHost = ip;
-        server.masterPort = port;
+    public void replicationSetMaster(ClusterNode node) {
+        logger.info("replicate to " + node.ip + ":" + node.port);
+        server.masterHost = node.ip;
+        server.masterPort = node.port;
     }
 
     public long replicationGetSlaveOffset() {

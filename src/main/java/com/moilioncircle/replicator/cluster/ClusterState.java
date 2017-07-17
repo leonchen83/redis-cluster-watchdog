@@ -1,26 +1,26 @@
 package com.moilioncircle.replicator.cluster;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
-import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTERMSG_TYPE_COUNT;
-import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 
 /**
  * Created by Baoyi Chen on 2017/7/6.
  */
 public class ClusterState {
-    public int size;
-    public byte state;
-    public long currentEpoch;
-    public ClusterNode myself;
-    public int todoBeforeSleep;
-    public long statsPfailNodes;
-    public Map<String, ClusterNode> nodes;
+    public int size = 1;
+    public long currentEpoch = 0;
+    public int todoBeforeSleep = 0;
+    public long statsPfailNodes = 0;
+    public byte state = CLUSTER_FAIL;
+    public ClusterNode myself = null;
+    public Map<String, ClusterNode> nodes = new HashMap<>();
     public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
-    public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList;
     public long[] statsBusMessagesSent = new long[CLUSTERMSG_TYPE_COUNT];
     public long[] statsBusMessagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
+    public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList = new HashMap<>();
 
     @Override
     public String toString() {
