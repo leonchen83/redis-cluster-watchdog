@@ -40,7 +40,7 @@ public class ClusterNodeManager {
 
     public void clusterDelNode(ClusterNode delnode) {
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (!server.cluster.slots[i].equals(delnode)) continue;
+            if (server.cluster.slots[i] != null && !server.cluster.slots[i].equals(delnode)) continue;
             gossip.slotManger.clusterDelSlot(i);
         }
 
