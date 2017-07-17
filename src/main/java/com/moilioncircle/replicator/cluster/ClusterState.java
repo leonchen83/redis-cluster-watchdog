@@ -1,7 +1,7 @@
 package com.moilioncircle.replicator.cluster;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
@@ -12,15 +12,14 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 public class ClusterState {
     public int size = 1;
     public long currentEpoch = 0;
-    public int todoBeforeSleep = 0;
     public long statsPfailNodes = 0;
     public byte state = CLUSTER_FAIL;
     public ClusterNode myself = null;
-    public Map<String, ClusterNode> nodes = new HashMap<>();
+    public Map<String, ClusterNode> nodes = new LinkedHashMap<>();
     public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
     public long[] statsBusMessagesSent = new long[CLUSTERMSG_TYPE_COUNT];
     public long[] statsBusMessagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
-    public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList = new HashMap<>();
+    public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList = new LinkedHashMap<>();
 
     @Override
     public String toString() {
@@ -29,7 +28,6 @@ public class ClusterState {
                 ", state=" + state +
                 ", currentEpoch=" + currentEpoch +
                 ", myself=" + myself +
-                ", todoBeforeSleep=" + todoBeforeSleep +
                 ", statsPfailNodes=" + statsPfailNodes +
                 ", nodes=" + nodes +
                 ", slots=" + Arrays.toString(slots) +

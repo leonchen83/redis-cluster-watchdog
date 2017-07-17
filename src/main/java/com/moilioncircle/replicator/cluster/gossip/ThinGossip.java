@@ -16,12 +16,10 @@
 
 package com.moilioncircle.replicator.cluster.gossip;
 
-import com.moilioncircle.replicator.cluster.ClusterConfiguration;
-import com.moilioncircle.replicator.cluster.ClusterLink;
-import com.moilioncircle.replicator.cluster.ClusterNode;
-import com.moilioncircle.replicator.cluster.ClusterState;
+import com.moilioncircle.replicator.cluster.*;
 import com.moilioncircle.replicator.cluster.codec.ClusterMsgDecoder;
 import com.moilioncircle.replicator.cluster.codec.ClusterMsgEncoder;
+import com.moilioncircle.replicator.cluster.config.ConfigInfo;
 import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 import com.moilioncircle.replicator.cluster.message.ClusterMsgDataGossip;
 import com.moilioncircle.replicator.cluster.message.Message;
@@ -65,10 +63,11 @@ public class ThinGossip {
 
     public ThinGossip(ClusterConfiguration configuration) {
         this.executor = Executors.newSingleThreadScheduledExecutor();
+        this.configuration = configuration;
+        this.configuration.validate();
         this.msgManager = new ClusterMsgManager(this);
         this.slotManger = new ClusterSlotManger(this);
         this.nodeManager = new ClusterNodeManager(this);
-        this.configuration = new ClusterConfiguration();
         this.configManager = new ClusterConfigManager(this);
         this.replicationManager = new ReplicationManager(this);
         this.connectionManager = new ClusterConnectionManager();
@@ -80,14 +79,22 @@ public class ThinGossip {
     public void start() {
         this.clusterInit();
         client.clientInit();
-        executor.scheduleWithFixedDelay(() -> clusterCron(), 0, 100, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(() -> {
+            ConfigInfo oldInfo = ConfigInfo.valueOf(server.cluster);
+            clusterCron();
+            ConfigInfo newInfo = ConfigInfo.valueOf(server.cluster);
+            if (!oldInfo.equals(newInfo)) configManager.clusterSaveConfig();
+        }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     public void clusterInit() {
         server.cluster = new ClusterState();
-        server.myself = server.cluster.myself = nodeManager.createClusterNode(configuration.getSelfName(), CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
-        logger.info("No cluster configuration found, I'm " + server.myself.name);
-        nodeManager.clusterAddNode(server.myself);
+        if (!configManager.clusterLoadConfig(configuration.getClusterConfigfile())) {
+            server.myself = server.cluster.myself = nodeManager.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
+            logger.info("No cluster configuration found, I'm " + server.myself.name);
+            nodeManager.clusterAddNode(server.myself);
+            configManager.clusterSaveConfig();
+        }
 
         NioBootstrapImpl<Message> cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
         cfd.setEncoder(ClusterMsgEncoder::new);
@@ -104,7 +111,12 @@ public class ThinGossip {
 
             @Override
             public void onMessage(Transport<Message> transport, Message message) {
-                executor.execute(() -> clusterProcessPacket(server.cfd.get(transport), message));
+                executor.execute(() -> {
+                    ConfigInfo oldInfo = ConfigInfo.valueOf(server.cluster);
+                    clusterProcessPacket(server.cfd.get(transport), message);
+                    ConfigInfo newInfo = ConfigInfo.valueOf(server.cluster);
+                    if (!oldInfo.equals(newInfo)) configManager.clusterSaveConfig();
+                });
             }
 
             @Override
@@ -331,8 +343,6 @@ public class ThinGossip {
     }
 
     public void clusterUpdateState() {
-        server.cluster.todoBeforeSleep &= ~CLUSTER_TODO_UPDATE_STATE;
-
         if (server.firstCallTime == 0) server.firstCallTime = System.currentTimeMillis();
         if (nodeIsMaster(server.myself)
                 && server.cluster.state == CLUSTER_FAIL
@@ -440,7 +450,12 @@ public class ThinGossip {
 
                         @Override
                         public void onMessage(Transport<Message> transport, Message message) {
-                            executor.execute(() -> clusterProcessPacket(link, message));
+                            executor.execute(() -> {
+                                ConfigInfo oldInfo = ConfigInfo.valueOf(server.cluster);
+                                clusterProcessPacket(link, message);
+                                ConfigInfo newInfo = ConfigInfo.valueOf(server.cluster);
+                                if (!oldInfo.equals(newInfo)) configManager.clusterSaveConfig();
+                            });
                         }
 
                         @Override

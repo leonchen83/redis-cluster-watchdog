@@ -19,11 +19,11 @@ public class ClusterMsgHandlerManager {
         register(CLUSTERMSG_TYPE_PONG, new ClusterMsgPongHandler(gossip));
         register(CLUSTERMSG_TYPE_MEET, new ClusterMsgMeetHandler(gossip));
         register(CLUSTERMSG_TYPE_FAIL, new ClusterMsgFailHandler(gossip));
-        register(CLUSTERMSG_TYPE_PUBLISH, new ClusterMsgPublishHandler(gossip));
-        register(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST, new ClusterMsgFailoverAuthRequestHandler(gossip));
-        register(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK, new ClusterMsgFailoverAuthAckHandler(gossip));
         register(CLUSTERMSG_TYPE_UPDATE, new ClusterMsgUpdateHandler(gossip));
+        register(CLUSTERMSG_TYPE_PUBLISH, new ClusterMsgPublishHandler(gossip));
         register(CLUSTERMSG_TYPE_MFSTART, new ClusterMsgMFStartHandler(gossip));
+        register(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK, new ClusterMsgFailoverAuthAckHandler(gossip));
+        register(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST, new ClusterMsgFailoverAuthRequestHandler(gossip));
     }
 
     public void register(int type, ClusterMsgHandler handler) {

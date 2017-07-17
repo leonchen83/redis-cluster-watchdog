@@ -17,6 +17,7 @@
 package com.moilioncircle.replicator.cluster.gossip;
 
 import com.moilioncircle.replicator.cluster.ClusterNode;
+import com.moilioncircle.replicator.cluster.Server;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 

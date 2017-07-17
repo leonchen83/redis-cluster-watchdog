@@ -18,6 +18,7 @@ package com.moilioncircle.replicator.cluster.gossip;
 
 import com.moilioncircle.replicator.cluster.ClusterLink;
 import com.moilioncircle.replicator.cluster.ClusterNode;
+import com.moilioncircle.replicator.cluster.Server;
 import com.moilioncircle.replicator.cluster.message.ClusterMsg;
 import com.moilioncircle.replicator.cluster.message.ClusterMsgData;
 import com.moilioncircle.replicator.cluster.message.ClusterMsgDataGossip;

@@ -1,6 +1,7 @@
 package com.moilioncircle.replicator.cluster.gossip;
 
 import com.moilioncircle.replicator.cluster.ClusterNode;
+import com.moilioncircle.replicator.cluster.Server;
 
 import java.util.AbstractMap;
 import java.util.Iterator;
@@ -24,8 +25,7 @@ public class ClusterBlacklistManager {
     public void clusterBlacklistCleanup() {
         Iterator<Map.Entry<Long, ClusterNode>> it = server.cluster.nodesBlackList.values().iterator();
         while (it.hasNext()) {
-            Map.Entry<Long, ClusterNode> entry = it.next();
-            if (entry.getKey() < System.currentTimeMillis()) it.remove();
+            if (it.next().getKey() < System.currentTimeMillis()) it.remove();
         }
     }
 

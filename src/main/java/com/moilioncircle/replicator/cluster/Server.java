@@ -1,8 +1,5 @@
-package com.moilioncircle.replicator.cluster.gossip;
+package com.moilioncircle.replicator.cluster;
 
-import com.moilioncircle.replicator.cluster.ClusterLink;
-import com.moilioncircle.replicator.cluster.ClusterNode;
-import com.moilioncircle.replicator.cluster.ClusterState;
 import com.moilioncircle.replicator.cluster.message.Message;
 import com.moilioncircle.replicator.cluster.util.net.transport.Transport;
 

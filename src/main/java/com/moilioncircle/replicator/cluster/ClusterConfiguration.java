@@ -1,17 +1,19 @@
 package com.moilioncircle.replicator.cluster;
 
+import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_PORT_INCR;
+
 /**
  * Created by Baoyi Chen on 2017/7/6.
  */
 public class ClusterConfiguration {
 
+    private int clusterAnnouncePort;
     private String clusterAnnounceIp;
+    private String clusterConfigfile;
+    private int clusterAnnounceBusPort;
     private long clusterNodeTimeout = 15000;
-    private int clusterAnnouncePort = 6379;
     private int clusterMigrationBarrier = 1;
-    private int clusterAnnounceBusPort = 6380;
     private boolean clusterRequireFullCoverage = true;
-    private String selfName = "6c3eb108780109b35aee009c435db482695b3d10";
 
     public String getClusterAnnounceIp() {
         return clusterAnnounceIp;
@@ -35,6 +37,14 @@ public class ClusterConfiguration {
 
     public void setClusterAnnouncePort(int clusterAnnouncePort) {
         this.clusterAnnouncePort = clusterAnnouncePort;
+    }
+
+    public String getClusterConfigfile() {
+        return clusterConfigfile;
+    }
+
+    public void setClusterConfigfile(String clusterConfigfile) {
+        this.clusterConfigfile = clusterConfigfile;
     }
 
     public int getClusterMigrationBarrier() {
@@ -61,11 +71,29 @@ public class ClusterConfiguration {
         this.clusterRequireFullCoverage = clusterRequireFullCoverage;
     }
 
-    public String getSelfName() {
-        return selfName;
-    }
+    public void validate() {
+        if (clusterAnnouncePort <= 0 || clusterAnnouncePort > 65535) {
+            throw new ConfigurationException("illegal port" + clusterAnnouncePort);
+        }
 
-    public void setSelfName(String selfName) {
-        this.selfName = selfName;
+        if (clusterAnnounceBusPort == 0) {
+            clusterAnnounceBusPort = clusterAnnouncePort + CLUSTER_PORT_INCR;
+        }
+
+        if (clusterAnnounceBusPort <= 0 || clusterAnnounceBusPort > 65535) {
+            throw new ConfigurationException("illegal bus port" + clusterAnnounceBusPort);
+        }
+
+        if (clusterConfigfile == null) {
+            clusterConfigfile = "nodes-" + clusterAnnouncePort + ".conf";
+        }
+
+        if (clusterMigrationBarrier < 1) {
+            throw new ConfigurationException("illegal migration barrier" + clusterMigrationBarrier);
+        }
+
+        if (clusterNodeTimeout <= 0) {
+            throw new ConfigurationException("illegal node timeout" + clusterNodeTimeout);
+        }
     }
 }

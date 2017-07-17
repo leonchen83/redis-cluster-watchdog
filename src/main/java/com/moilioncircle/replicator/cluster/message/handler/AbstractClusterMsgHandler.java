@@ -1,6 +1,6 @@
 package com.moilioncircle.replicator.cluster.message.handler;
 
-import com.moilioncircle.replicator.cluster.gossip.Server;
+import com.moilioncircle.replicator.cluster.Server;
 import com.moilioncircle.replicator.cluster.gossip.ThinGossip;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
