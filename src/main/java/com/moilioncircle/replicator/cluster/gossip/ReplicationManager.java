@@ -42,7 +42,8 @@ public class ReplicationManager {
     }
 
     public void replicationUnsetMaster() {
-
+        server.masterHost = null;
+        server.masterPort = 0;
     }
 
     public long replicationGetSlaveOffset() {
