@@ -7,10 +7,10 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_PORT
  */
 public class ClusterConfiguration {
 
-    private int clusterAnnouncePort;
     private String clusterAnnounceIp;
     private String clusterConfigfile;
     private int clusterAnnounceBusPort;
+    private int clusterAnnouncePort = 6379;
     private long clusterNodeTimeout = 15000;
     private int clusterMigrationBarrier = 1;
     private boolean clusterRequireFullCoverage = true;
@@ -19,56 +19,63 @@ public class ClusterConfiguration {
         return clusterAnnounceIp;
     }
 
-    public void setClusterAnnounceIp(String clusterAnnounceIp) {
+    public ClusterConfiguration setClusterAnnounceIp(String clusterAnnounceIp) {
         this.clusterAnnounceIp = clusterAnnounceIp;
+        return this;
     }
 
     public long getClusterNodeTimeout() {
         return clusterNodeTimeout;
     }
 
-    public void setClusterNodeTimeout(long clusterNodeTimeout) {
+    public ClusterConfiguration setClusterNodeTimeout(long clusterNodeTimeout) {
         this.clusterNodeTimeout = clusterNodeTimeout;
+        return this;
     }
 
     public int getClusterAnnouncePort() {
         return clusterAnnouncePort;
     }
 
-    public void setClusterAnnouncePort(int clusterAnnouncePort) {
+    public ClusterConfiguration setClusterAnnouncePort(int clusterAnnouncePort) {
         this.clusterAnnouncePort = clusterAnnouncePort;
+        return this;
     }
 
     public String getClusterConfigfile() {
         return clusterConfigfile;
     }
 
-    public void setClusterConfigfile(String clusterConfigfile) {
+    public ClusterConfiguration setClusterConfigfile(String clusterConfigfile) {
         this.clusterConfigfile = clusterConfigfile;
+        return this;
     }
 
     public int getClusterMigrationBarrier() {
         return clusterMigrationBarrier;
     }
 
-    public void setClusterMigrationBarrier(int clusterMigrationBarrier) {
+    public ClusterConfiguration setClusterMigrationBarrier(int clusterMigrationBarrier) {
         this.clusterMigrationBarrier = clusterMigrationBarrier;
+        return this;
     }
 
     public int getClusterAnnounceBusPort() {
         return clusterAnnounceBusPort;
     }
 
-    public void setClusterAnnounceBusPort(int clusterAnnounceBusPort) {
+    public ClusterConfiguration setClusterAnnounceBusPort(int clusterAnnounceBusPort) {
         this.clusterAnnounceBusPort = clusterAnnounceBusPort;
+        return this;
     }
 
     public boolean isClusterRequireFullCoverage() {
         return clusterRequireFullCoverage;
     }
 
-    public void setClusterRequireFullCoverage(boolean clusterRequireFullCoverage) {
+    public ClusterConfiguration setClusterRequireFullCoverage(boolean clusterRequireFullCoverage) {
         this.clusterRequireFullCoverage = clusterRequireFullCoverage;
+        return this;
     }
 
     public void validate() {
