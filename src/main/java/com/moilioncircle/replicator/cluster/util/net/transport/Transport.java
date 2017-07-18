@@ -21,6 +21,4 @@ public interface Transport<T> {
     CompletableFuture<Void> disconnect(Throwable cause);
 
     CompletableFuture<Void> write(T message, boolean flush);
-
-    TransportListener<T> setTransportListener(TransportListener<T> listener);
 }

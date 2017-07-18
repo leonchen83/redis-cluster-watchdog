@@ -32,11 +32,11 @@ import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
  * @author Leon Chen
  * @since 2.1.0
  */
-public abstract class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
+public class NioAcceptor<T> extends AbstractNioBootstrap<T> {
     protected volatile EventLoopGroup eventLoop;
     protected volatile ServerBootstrap bootstrap;
 
-    protected AbstractNioAcceptor(NioBootstrapConfiguration configuration) {
+    public NioAcceptor(NioBootstrapConfiguration configuration) {
         super(configuration);
     }
 
@@ -52,7 +52,7 @@ public abstract class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", new NioTransport<>(AbstractNioAcceptor.this));
+                p.addLast("transport", new NioTransport<>(NioAcceptor.this));
             }
         });
         this.bootstrap.option(ChannelOption.SO_BACKLOG, configuration.getSoBacklog());
@@ -69,6 +69,11 @@ public abstract class AbstractNioAcceptor<T> extends AbstractNioBootstrap<T> {
         if (configuration.getSoRecvBufferSize() > 0)
             this.bootstrap.childOption(ChannelOption.SO_RCVBUF, configuration.getSoRecvBufferSize());
         bootstrap.childOption(WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT);
+    }
+
+    @Override
+    public boolean isServer() {
+        return true;
     }
 
     @Override

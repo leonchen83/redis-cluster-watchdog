@@ -2,9 +2,11 @@ package com.moilioncircle.replicator.cluster.util.net.transport;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.replicator.cluster.util.concurrent.future.ListenableChannelFuture;
+import com.moilioncircle.replicator.cluster.util.net.AbstractNioBootstrap;
 import com.moilioncircle.replicator.cluster.util.net.ConnectionStatus;
 import com.moilioncircle.replicator.cluster.util.net.exceptions.OverloadException;
 import com.moilioncircle.replicator.cluster.util.net.exceptions.TransportException;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -21,11 +23,12 @@ import static com.moilioncircle.replicator.cluster.util.net.ConnectionStatus.DIS
 public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements Transport<T> {
 
     private long id;
-    private volatile TransportListener<T> listener;
+    private volatile Channel channel;
     private volatile ChannelHandlerContext context;
+    private volatile AbstractNioBootstrap<T> listener;
     private static AtomicInteger acc = new AtomicInteger();
 
-    public NioTransport(TransportListener<T> listener) {
+    public NioTransport(AbstractNioBootstrap<T> listener) {
         super((Class<T>) Object.class);
         this.listener = listener;
         this.id = acc.incrementAndGet();
@@ -35,6 +38,10 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
         return true;
     }
 
+    public void setChannel(Channel channel) {
+        this.channel = channel;
+    }
+
     @Override
     public long getId() {
         return id;
@@ -42,41 +49,57 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
 
     @Override
     public SocketAddress getRemoteAddress() {
-        if (this.context == null) return null;
-        return this.context.channel().remoteAddress();
+        if (listener.isServer()) {
+            if (this.context == null) return null;
+            return this.context.channel().remoteAddress();
+        } else {
+            if (this.channel == null) return null;
+            return this.channel.remoteAddress();
+        }
     }
 
     @Override
     public SocketAddress getLocalAddress() {
-        if (this.context == null) return null;
-        return this.context.channel().localAddress();
+        if (listener.isServer()) {
+            if (this.context == null) return null;
+            return this.context.channel().localAddress();
+        } else {
+            if (this.channel == null) return null;
+            return this.channel.localAddress();
+        }
     }
 
     @Override
     public ConnectionStatus getStatus() {
-        if (this.context == null) return DISCONNECTED;
-        return this.context.channel().isActive() ? CONNECTED : DISCONNECTED;
+        if (listener.isServer()) {
+            if (this.context == null) return DISCONNECTED;
+            return this.context.channel().isActive() ? CONNECTED : DISCONNECTED;
+        } else {
+            if (this.channel == null) return DISCONNECTED;
+            return this.channel.isActive() ? CONNECTED : DISCONNECTED;
+        }
     }
 
     @Override
     public CompletableFuture<Void> write(T message, boolean flush) {
-        if (!flush) {
-            return new ListenableChannelFuture<>(context.write(message));
+        if (listener.isServer()) {
+            if (!flush) {
+                return new ListenableChannelFuture<>(context.write(message));
+            } else {
+                return new ListenableChannelFuture<>(context.writeAndFlush(message));
+            }
         } else {
-            return new ListenableChannelFuture<>(context.writeAndFlush(message));
+            if (!flush) {
+                return new ListenableChannelFuture<>(channel.write(message));
+            } else {
+                return new ListenableChannelFuture<>(channel.writeAndFlush(message));
+            }
         }
     }
 
     @Override
     public CompletableFuture<Void> disconnect(Throwable cause) {
         return new ListenableChannelFuture<>(this.context.close());
-    }
-
-    @Override
-    public TransportListener<T> setTransportListener(TransportListener<T> listener) {
-        TransportListener<T> oldListener = this.listener;
-        this.listener = listener;
-        return oldListener;
     }
 
     @Override

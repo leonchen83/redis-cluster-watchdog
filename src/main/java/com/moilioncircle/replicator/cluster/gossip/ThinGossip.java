@@ -560,11 +560,6 @@ public class ThinGossip {
                         fd.shutdown();
                         continue;
                     }
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } //TODO
                     node.link = link;
                     link.ctime = System.currentTimeMillis();
                     long oldPingSent = node.pingSent;

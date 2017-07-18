@@ -32,13 +32,12 @@ import java.util.concurrent.TimeUnit;
  * @author Leon Chen
  * @since 2.1.0
  */
-public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
+public class NioInitiator<T> extends AbstractNioBootstrap<T> {
     protected volatile Bootstrap bootstrap;
     protected volatile EventLoopGroup workerGroup;
     protected volatile NioTransport<T> transport;
 
-
-    protected AbstractNioInitiator(NioBootstrapConfiguration configuration) {
+    public NioInitiator(NioBootstrapConfiguration configuration) {
         super(configuration);
     }
 
@@ -52,7 +51,7 @@ public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", transport = new NioTransport<>(AbstractNioInitiator.this));
+                p.addLast("transport", transport = new NioTransport<>(NioInitiator.this));
             }
         });
         this.bootstrap.option(ChannelOption.TCP_NODELAY, configuration.isTcpNoDelay());
@@ -67,6 +66,11 @@ public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
 
     protected void reconnect(long delay, CompletableFuture<Void> r, String host, int port) {
         this.bootstrap.config().group().schedule(() -> connect(r, host, port), delay, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public boolean isServer() {
+        return false;
     }
 
     @Override
@@ -111,6 +115,7 @@ public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
                     future.failure(f.cause());
                 }
             } else {
+                transport.setChannel(f.channel());
                 future.success(null);
                 logger.info("connected to host: " + host + ", port: " + port + ", elapsed time: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
             }

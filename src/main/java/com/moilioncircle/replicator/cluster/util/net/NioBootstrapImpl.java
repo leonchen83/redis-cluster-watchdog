@@ -32,10 +32,8 @@ public class NioBootstrapImpl<T> implements NioBootstrap<T> {
     private NioBootstrap<T> wrapper;
 
     public NioBootstrapImpl(boolean server, NioBootstrapConfiguration configuration) {
-        if (server) wrapper = new AbstractNioAcceptor<T>(configuration) {
-        };
-        else wrapper = new AbstractNioInitiator<T>(configuration) {
-        };
+        if (server) wrapper = new NioAcceptor<>(configuration);
+        else wrapper = new NioInitiator<>(configuration);
     }
 
     @Override
@@ -61,6 +59,11 @@ public class NioBootstrapImpl<T> implements NioBootstrap<T> {
     @Override
     public void setup() {
         wrapper.setup();
+    }
+
+    @Override
+    public boolean isServer() {
+        return wrapper.isServer();
     }
 
     @Override

@@ -30,6 +30,8 @@ public interface NioBootstrap<T> extends TransportListener<T> {
 
     void setup();
 
+    boolean isServer();
+
     CompletableFuture<?> shutdown();
 
     void setEncoder(Supplier<ChannelHandler> encoder);
