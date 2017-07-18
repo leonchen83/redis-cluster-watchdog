@@ -95,12 +95,12 @@ public class ClusterSlotManger {
     }
 
     public static int keyHashSlot(String key) {
+        if (key == null) return 0;
         byte[] bytes = key.getBytes();
         int st = key.indexOf('{');
         if (st < 0) return crc16(bytes);
         int ed = key.indexOf('}');
-        if (ed < 0 || ed == st + 1) return crc16(bytes); //{}
-        if (st > ed) return crc16(bytes); //}{
+        if (ed < 0 || ed == st + 1 || st > ed) return crc16(bytes); //{} or }{
         return crc16(key.substring(st + 1, ed).getBytes());
     }
 }
