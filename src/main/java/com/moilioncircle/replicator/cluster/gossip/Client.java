@@ -21,6 +21,7 @@ import com.moilioncircle.replicator.cluster.Server;
 import com.moilioncircle.replicator.cluster.codec.RedisDecoder;
 import com.moilioncircle.replicator.cluster.codec.RedisEncoder;
 import com.moilioncircle.replicator.cluster.config.ConfigInfo;
+import com.moilioncircle.replicator.cluster.config.NodeInfo;
 import com.moilioncircle.replicator.cluster.util.Arrays;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapConfiguration;
 import com.moilioncircle.replicator.cluster.util.net.NioBootstrapImpl;
@@ -32,6 +33,7 @@ import org.apache.commons.logging.LogFactory;
 import java.util.concurrent.ExecutionException;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
+import static com.moilioncircle.replicator.cluster.config.ConfigInfo.valueOf;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 
@@ -63,10 +65,11 @@ public class Client {
             @Override
             public void onMessage(Transport<Object> transport, Object message) {
                 gossip.executor.execute(() -> {
-                    ConfigInfo oldInfo = ConfigInfo.valueOf(gossip.server.cluster);
+                    ConfigInfo oldInfo = valueOf(gossip.server.cluster);
                     clusterCommand(transport, (byte[][]) message);
-                    ConfigInfo newInfo = ConfigInfo.valueOf(gossip.server.cluster);
-                    if (!oldInfo.equals(newInfo)) gossip.configManager.clusterSaveConfig();
+                    ConfigInfo newInfo = valueOf(gossip.server.cluster);
+                    if (!oldInfo.equals(newInfo))
+                        gossip.file.submit(() -> gossip.configManager.clusterSaveConfig(newInfo));
                 });
             }
 
@@ -113,7 +116,7 @@ public class Client {
             }
         } else if (argv[1].equalsIgnoreCase("nodes") && argv.length == 2) {
             /* CLUSTER NODES */
-            String ci = gossip.configManager.clusterGenNodesDescription(0);
+            String ci = gossip.configManager.clusterGenNodesDescription(valueOf(server.cluster), 0);
             t.write(("$" + ci.length() + "\r\n" + ci + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("myid") && argv.length == 2) {
             /* CLUSTER MYID */
@@ -278,7 +281,7 @@ public class Client {
             info.append("cluster_stats_messages_received:").append(totMsgReceived).append("\r\n");
             t.write(("$" + info.length() + "\r\n" + info.toString() + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("saveconfig") && argv.length == 2) {
-            if (!gossip.configManager.clusterSaveConfig()) {
+            if (!gossip.configManager.clusterSaveConfig(valueOf(server.cluster))) {
                 t.write(("-ERR Error saving the cluster node config\r\n").getBytes(), true);
             }
             t.write("+OK\r\n".getBytes(), true);
@@ -344,7 +347,7 @@ public class Client {
 
             StringBuilder ci = new StringBuilder();
             for (int j = 0; j < n.numslaves; j++) {
-                ci.append(gossip.configManager.clusterGenNodeDescription(n.slaves.get(j)));
+                ci.append(gossip.configManager.clusterGenNodeDescription(NodeInfo.valueOf(n.slaves.get(j), server.cluster.myself)));
             }
             t.write(("$" + ci.length() + "\r\n" + ci.toString() + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("count-failure-reports") && argv.length == 3) {

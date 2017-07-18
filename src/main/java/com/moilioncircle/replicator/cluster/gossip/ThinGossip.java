@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.concurrent.*;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
+import static com.moilioncircle.replicator.cluster.config.ConfigInfo.valueOf;
 import static com.moilioncircle.replicator.cluster.gossip.ClusterSlotManger.bitmapTestBit;
 import static java.util.Comparator.comparingLong;
 
@@ -48,6 +49,8 @@ import static java.util.Comparator.comparingLong;
 public class ThinGossip {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
 
+    ExecutorService file;
+    ExecutorService worker;
     ScheduledExecutorService executor;
     public Server server = new Server();
 
@@ -63,6 +66,8 @@ public class ThinGossip {
     public ClusterMsgHandlerManager msgHandlerManager;
 
     public ThinGossip(ClusterConfiguration configuration) {
+        this.file = Executors.newSingleThreadExecutor();
+        this.worker = Executors.newSingleThreadExecutor();
         this.executor = Executors.newSingleThreadScheduledExecutor();
         this.configuration = configuration;
         this.configuration.validate();
@@ -81,10 +86,10 @@ public class ThinGossip {
         this.clusterInit();
         client.clientInit();
         executor.scheduleWithFixedDelay(() -> {
-            ConfigInfo oldInfo = ConfigInfo.valueOf(server.cluster);
+            ConfigInfo oldInfo = valueOf(server.cluster);
             clusterCron();
-            ConfigInfo newInfo = ConfigInfo.valueOf(server.cluster);
-            if (!oldInfo.equals(newInfo)) configManager.clusterSaveConfig();
+            ConfigInfo newInfo = valueOf(server.cluster);
+            if (!oldInfo.equals(newInfo)) file.submit(() -> configManager.clusterSaveConfig(newInfo));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -94,7 +99,8 @@ public class ThinGossip {
             server.myself = server.cluster.myself = nodeManager.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
             logger.info("No cluster configuration found, I'm " + server.myself.name);
             nodeManager.clusterAddNode(server.myself);
-            configManager.clusterSaveConfig();
+            ConfigInfo info = valueOf(server.cluster);
+            file.submit(() -> configManager.clusterSaveConfig(info));
         }
 
         NioBootstrapImpl<Message> cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
@@ -113,10 +119,10 @@ public class ThinGossip {
             @Override
             public void onMessage(Transport<Message> transport, Message message) {
                 executor.execute(() -> {
-                    ConfigInfo oldInfo = ConfigInfo.valueOf(server.cluster);
+                    ConfigInfo oldInfo = valueOf(server.cluster);
                     clusterProcessPacket(server.cfd.get(transport), message);
-                    ConfigInfo newInfo = ConfigInfo.valueOf(server.cluster);
-                    if (!oldInfo.equals(newInfo)) configManager.clusterSaveConfig();
+                    ConfigInfo newInfo = valueOf(server.cluster);
+                    if (!oldInfo.equals(newInfo)) file.submit(() -> configManager.clusterSaveConfig(newInfo));
                 });
             }
 
@@ -529,10 +535,11 @@ public class ThinGossip {
                         @Override
                         public void onMessage(Transport<Message> transport, Message message) {
                             executor.execute(() -> {
-                                ConfigInfo oldInfo = ConfigInfo.valueOf(server.cluster);
+                                ConfigInfo oldInfo = valueOf(server.cluster);
                                 clusterProcessPacket(link, message);
-                                ConfigInfo newInfo = ConfigInfo.valueOf(server.cluster);
-                                if (!oldInfo.equals(newInfo)) configManager.clusterSaveConfig();
+                                ConfigInfo newInfo = valueOf(server.cluster);
+                                if (!oldInfo.equals(newInfo))
+                                    file.submit(() -> configManager.clusterSaveConfig(newInfo));
                             });
                         }
 

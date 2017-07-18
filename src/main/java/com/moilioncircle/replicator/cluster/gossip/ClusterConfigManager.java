@@ -2,6 +2,8 @@ package com.moilioncircle.replicator.cluster.gossip;
 
 import com.moilioncircle.replicator.cluster.ClusterNode;
 import com.moilioncircle.replicator.cluster.Server;
+import com.moilioncircle.replicator.cluster.config.ConfigInfo;
+import com.moilioncircle.replicator.cluster.config.NodeInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -12,6 +14,7 @@ import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 import static com.moilioncircle.replicator.cluster.config.ConfigFileParser.parseLine;
+import static com.moilioncircle.replicator.cluster.gossip.ClusterSlotManger.bitmapTestBit;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 
@@ -143,16 +146,16 @@ public class ClusterConfigManager {
         }
     }
 
-    public boolean clusterSaveConfig() {
+    public boolean clusterSaveConfig(ConfigInfo info) {
         BufferedWriter r = null;
         try {
             File file = new File(gossip.configuration.getClusterConfigfile());
             if (!file.exists()) file.createNewFile();
             r = new BufferedWriter(new FileWriter(file));
             StringBuilder ci = new StringBuilder();
-            ci.append(clusterGenNodesDescription(CLUSTER_NODE_HANDSHAKE));
-            ci.append("vars currentEpoch ").append(server.cluster.currentEpoch);
-            ci.append(" lastVoteEpoch ").append(server.cluster.lastVoteEpoch);
+            ci.append(clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE));
+            ci.append("vars currentEpoch ").append(info.currentEpoch);
+            ci.append(" lastVoteEpoch ").append(info.lastVoteEpoch);
             r.write(ci.toString());
             r.flush();
             return true;
@@ -179,13 +182,13 @@ public class ClusterConfigManager {
         return builder.toString();
     }
 
-    public String clusterGenNodeDescription(ClusterNode node) {
+    public String clusterGenNodeDescription(NodeInfo node) {
         StringBuilder ci = new StringBuilder();
 
         ci.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip).append(":").append(node.port).append("@").append(node.cport).append(" ");
         ci.append(representClusterNodeFlags(node.flags));
         if (node.slaveof != null)
-            ci.append(" ").append(node.slaveof.name).append(" ");
+            ci.append(" ").append(node.slaveof).append(" ");
         else
             ci.append(" - ");
 
@@ -195,7 +198,7 @@ public class ClusterConfigManager {
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             boolean bit;
 
-            if ((bit = gossip.slotManger.clusterNodeGetSlotBit(node, i))) {
+            if ((bit = bitmapTestBit(node.slots, i))) {
                 if (start == -1) start = i;
             }
             if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
@@ -212,9 +215,9 @@ public class ClusterConfigManager {
         return ci.toString();
     }
 
-    public String clusterGenNodesDescription(int filter) {
+    public String clusterGenNodesDescription(ConfigInfo info, int filter) {
         StringBuilder ci = new StringBuilder();
-        for (ClusterNode node : server.cluster.nodes.values()) {
+        for (NodeInfo node : info.nodes.values()) {
             if ((node.flags & filter) != 0) continue;
             ci.append(clusterGenNodeDescription(node));
             ci.append("\n");

@@ -1,5 +1,7 @@
 package com.moilioncircle.replicator.cluster.config;
 
+import com.moilioncircle.replicator.cluster.ClusterNode;
+
 import java.util.Arrays;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_SLOTS;
@@ -13,6 +15,8 @@ public class NodeInfo {
     public int port;
     public int cport;
     public int flags;
+    public long pingSent;
+    public long pongReceived;
     public String slaveof;
     public long configEpoch;
     public String link;
@@ -48,5 +52,21 @@ public class NodeInfo {
         result = 31 * result + (link != null ? link.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(slots);
         return result;
+    }
+
+    public static NodeInfo valueOf(ClusterNode node, ClusterNode myself) {
+        NodeInfo n = new NodeInfo();
+        n.configEpoch = node.configEpoch;
+        n.name = node.name;
+        n.port = node.port;
+        n.cport = node.cport;
+        n.flags = node.flags;
+        n.ip = node.ip;
+        n.pingSent = node.pingSent;
+        n.pongReceived = node.pongReceived;
+        n.link = node.link != null || node.equals(myself) ? "connected" : "disconnected";
+        n.slaveof = node.slaveof == null ? null : node.slaveof.name;
+        System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
+        return n;
     }
 }

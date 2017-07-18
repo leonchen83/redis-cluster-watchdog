@@ -20,17 +20,7 @@ public class ConfigInfo {
         info.lastVoteEpoch = state.lastVoteEpoch;
         info.nodes = new LinkedHashMap<>();
         for (ClusterNode node : state.nodes.values()) {
-            NodeInfo n = new NodeInfo();
-            n.configEpoch = node.configEpoch;
-            n.name = node.name;
-            n.port = node.port;
-            n.cport = node.cport;
-            n.flags = node.flags;
-            n.ip = node.ip;
-            n.link = node.link != null || node.equals(state.myself) ? "connected" : "disconnected";
-            n.slaveof = node.slaveof == null ? null : node.slaveof.name;
-            System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
-            info.nodes.put(node.name, n);
+            info.nodes.put(node.name, NodeInfo.valueOf(node, state.myself));
         }
         return info;
     }
