@@ -19,6 +19,8 @@ package com.moilioncircle.replicator.cluster.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.Integer.parseInt;
+
 /**
  * @author Leon Chen
  * @since 2.1.0
@@ -90,9 +92,9 @@ public class ConfigFileParser {
                                     else {
                                         char high = ary[++i];
                                         char low = ary[++i];
-                                        if (hex(high) && hex(low)) {
-                                            s.append((char) hexToInt(high, low));
-                                        } else {
+                                        try {
+                                            s.append(parseInt(new String(new char[]{high, low}), 16));
+                                        } catch (Exception e) {
                                             s.append("\\x");
                                             s.append(high);
                                             s.append(low);
@@ -116,62 +118,4 @@ public class ConfigFileParser {
         if (s.length() > 0) list.add(s.toString());
         return list;
     }
-
-    private static boolean hex(char c) {
-        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-    }
-
-    private static int hexToInt(char high, char low) {
-        return hexToInt(high) * 16 + hexToInt(low);
-    }
-
-    private static int hexToInt(char c) {
-        switch (c) {
-            case '0':
-                return 0;
-            case '1':
-                return 1;
-            case '2':
-                return 2;
-            case '3':
-                return 3;
-            case '4':
-                return 4;
-            case '5':
-                return 5;
-            case '6':
-                return 6;
-            case '7':
-                return 7;
-            case '8':
-                return 8;
-            case '9':
-                return 9;
-            case 'a':
-            case 'A':
-                return 10;
-            case 'b':
-            case 'B':
-                return 11;
-            case 'c':
-            case 'C':
-                return 12;
-            case 'd':
-            case 'D':
-                return 13;
-            case 'e':
-            case 'E':
-                return 14;
-            case 'f':
-            case 'F':
-                return 15;
-            default:
-                return 0;
-        }
-    }
-
-    public static void main(String[] args) {
-        System.out.println(parseLine("foo bar \"newline are supported\\n\" and \"\\xff\\x00otherstuff\" test   \"''\""));
-    }
-
 }

@@ -6,7 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
-import static com.moilioncircle.replicator.cluster.util.Crc16.crc16;
+import static com.moilioncircle.replicator.cluster.util.CRC16.crc16;
 
 /**
  * Created by Baoyi Chen on 2017/7/12.
@@ -94,12 +94,13 @@ public class ClusterSlotManger {
         return deleted;
     }
 
-    public int keyHashSlot(String key) {
+    public static int keyHashSlot(String key) {
+        byte[] bytes = key.getBytes();
         int st = key.indexOf('{');
-        if (st < 0) return crc16(key) & 0x3FFF;
+        if (st < 0) return crc16(bytes);
         int ed = key.indexOf('}');
-        if (ed < 0 || ed == st + 1) return crc16(key) & 0x3FFF; //{}
-        if (st > ed) return crc16(key) & 0x3FFF; //}{
-        return crc16(key.substring(st + 1, ed)) & 0x3FFF;
+        if (ed < 0 || ed == st + 1) return crc16(bytes); //{}
+        if (st > ed) return crc16(bytes); //}{
+        return crc16(key.substring(st + 1, ed).getBytes());
     }
 }
