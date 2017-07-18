@@ -75,8 +75,6 @@ public class ClusterConstants {
 
     public static final byte[] CLUSTER_NODE_NULL_IP = new byte[46];
 
-    public static final int CLUSTER_TODO_UPDATE_STATE = (1 << 1);
-
     public static final int CLUSTERMSG_TYPE_PING = 0;
 
     public static final int CLUSTERMSG_TYPE_PONG = 1;
@@ -104,4 +102,6 @@ public class ClusterConstants {
     public static final int CLUSTER_MIN_REJOIN_DELAY = 500;
 
     public static final int CLUSTER_WRITABLE_DELAY = 2000;
+
+    public static final int CLUSTERMSG_FLAG0_FORCEACK = (1 << 1);
 }

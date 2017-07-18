@@ -18,6 +18,7 @@ public class ClusterNode {
     public int numslaves;
     public long pingSent;
     public long failTime;
+    public long votedTime;
     public long replOffset;
     public long configEpoch;
     public long pongReceived;

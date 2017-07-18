@@ -118,11 +118,110 @@ public class Client {
         } else if (argv[1].equalsIgnoreCase("myid") && argv.length == 2) {
             /* CLUSTER MYID */
             t.write(("+" + server.myself.name + "\r\n").getBytes(), true);
+        } else if (argv[1].equalsIgnoreCase("slots") && argv.length == 2) {
+            t.write(clusterReplyMultiBulkSlots().getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("flushslots") && argv.length == 2) {
-            t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
+            /* CLUSTER FLUSHSLOTS */
+            gossip.slotManger.clusterDelNodeSlots(server.myself);
+            gossip.clusterUpdateState();
+            t.write(("+OK\r\n").getBytes(), true);
         } else if ((argv[1].equalsIgnoreCase("addslots") || argv[1].equalsIgnoreCase("delslots")) && argv.length >= 3) {
+//            /* CLUSTER ADDSLOTS <slot> [slot] ... */
+//            /* CLUSTER DELSLOTS <slot> [slot] ... */
+//            byte[] slots = new byte[CLUSTER_SLOTS];
+//            boolean del = argv[1].equalsIgnoreCase("delslots");
+//
+//            for (int i = 2; i < argv.length; i++) {
+//                int slot = parseInt(argv[i]);
+//
+//                if (del && server.cluster.slots[slot] == null) {
+//                    t.write(("-ERR Slot " + slot + " is already unassigned\r\n").getBytes(), true);
+//                    return;
+//                } else if (!del && server.cluster.slots[slot] != null) {
+//                    t.write(("-ERR Slot " + slot + " is already busy\r\n").getBytes(), true);
+//                    return;
+//                }
+//                if (slots[slot]++ == 1) {
+//                    t.write(("-ERR Slot " + slot + " specified multiple times\r\n").getBytes(), true);
+//                    return;
+//                }
+//            }
+//            for (int i = 0; i < CLUSTER_SLOTS; i++) {
+//                if (slots[i] != 0) {
+//                    if (server.cluster.importingSlotsFrom[i] != null)
+//                        server.cluster.importingSlotsFrom[i] = null;
+//                    if (del) gossip.slotManger.clusterDelSlot(i);
+//                    else gossip.slotManger.clusterAddSlot(gossip.server.myself, i);
+//                }
+//            }
+//            gossip.clusterUpdateState();
+//            t.write(("+OK\r\n").getBytes(), true);
             t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("setslot") && argv.length >= 4) {
+//            /* SETSLOT 10 MIGRATING <node ID> */
+//            /* SETSLOT 10 IMPORTING <node ID> */
+//            /* SETSLOT 10 STABLE */
+//            /* SETSLOT 10 NODE <node ID> */
+//
+//            if (nodeIsSlave(server.myself)) {
+//                t.write("-ERR Please use SETSLOT only with masters.\r\n".getBytes(), true);
+//                return;
+//            }
+//
+//            int slot = parseInt(argv[2]);
+//
+//            if (argv[3].equalsIgnoreCase("migrating") && argv.length == 5) {
+//                if (server.cluster.slots[slot] == null || !server.cluster.slots[slot].equals(server.myself)) {
+//                    t.write(("-ERR I'm not the owner of hash slot " + slot + "\r\n").getBytes(), true);
+//                    return;
+//                }
+//                ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[4]);
+//                if (n == null) {
+//                    t.write(("-ERR I don't know about node " + argv[4] + "\r\n").getBytes(), true);
+//                    return;
+//                }
+//                server.cluster.migratingSlotsTo[slot] = n;
+//            } else if (argv[3].equalsIgnoreCase("importing") && argv.length == 5) {
+//                if (server.cluster.slots[slot] != null && server.cluster.slots[slot].equals(server.myself)) {
+//                    t.write(("-ERR I'm already the owner of hash slot " + slot + "\r\n").getBytes(), true);
+//                    return;
+//                }
+//                ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[4]);
+//                if (n == null) {
+//                    t.write(("-ERR I don't know about node " + argv[4] + "\r\n").getBytes(), true);
+//                    return;
+//                }
+//                server.cluster.importingSlotsFrom[slot] = n;
+//            } else if (argv[3].equalsIgnoreCase("stable") && argv.length == 4) {
+//                /* CLUSTER SETSLOT <SLOT> STABLE */
+//                server.cluster.importingSlotsFrom[slot] = null;
+//                server.cluster.migratingSlotsTo[slot] = null;
+//            } else if (argv[3].equalsIgnoreCase("node") && argv.length == 5) {
+//                /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
+//                ClusterNode n = gossip.nodeManager.clusterLookupNode(argv[4]);
+//
+//                if (n == null) {
+//                    t.write(("-ERR Unknown node " + argv[4] + "\r\n").getBytes(), true);
+//                    return;
+//                }
+//
+//                if (server.cluster.migratingSlotsTo[slot] != null)
+//                    server.cluster.migratingSlotsTo[slot] = null;
+//
+//                if (n.equals(server.myself) && server.cluster.importingSlotsFrom[slot] != null) {
+//                    if (clusterBumpConfigEpochWithoutConsensus()) {
+//                        logger.warn("configEpoch updated after importing slot " + slot);
+//                    }
+//                    server.cluster.importingSlotsFrom[slot] = null;
+//                }
+//                gossip.slotManger.clusterDelSlot(slot);
+//                gossip.slotManger.clusterAddSlot(n, slot);
+//            } else {
+//                t.write("-ERR Invalid CLUSTER SETSLOT action or number of arguments\r\n".getBytes(), true);
+//                return;
+//            }
+//            gossip.clusterUpdateState();
+//            t.write(("+OK\r\n").getBytes(), true);
             t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
             boolean retval = clusterBumpConfigEpochWithoutConsensus();
@@ -298,5 +397,52 @@ public class Client {
             return true;
         }
         return false;
+    }
+
+    public String clusterReplyMultiBulkSlots() {
+        int numMasters = 0;
+        StringBuilder ci = new StringBuilder();
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            int start = -1;
+            if (!nodeIsMaster(node) || node.numslots == 0) continue;
+
+            for (int i = 0; i < CLUSTER_SLOTS; i++) {
+                boolean bit;
+                if ((bit = gossip.slotManger.clusterNodeGetSlotBit(node, i))) {
+                    if (start == -1) start = i;
+                }
+                if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
+                    StringBuilder builder = new StringBuilder();
+                    int nestedElements = 3;
+                    if (bit && i == CLUSTER_SLOTS - 1) i++;
+                    if (start == i - 1) {
+                        builder.append(":" + start + "\r\n");
+                        builder.append(":" + start + "\r\n");
+                    } else {
+                        builder.append(":" + start + "\r\n");
+                        builder.append(":" + (i - 1) + "\r\n");
+                    }
+                    start = -1;
+                    builder.append("*3\r\n");
+                    builder.append("$" + node.ip.length() + "\r\n" + node.ip + "\r\n");
+                    builder.append(":" + node.port + "\r\n");
+                    builder.append("$" + node.name.length() + "\r\n" + node.name + "\r\n");
+                    for (int j = 0; j < node.numslaves; j++) {
+                        if (nodeFailed(node.slaves.get(j))) continue;
+                        ClusterNode n = node.slaves.get(j);
+                        builder.append("*3\r\n");
+                        builder.append("$" + n.ip.length() + "\r\n" + n.ip + "\r\n");
+                        builder.append(":" + n.port + "\r\n");
+                        builder.append("$" + n.name.length() + "\r\n" + n.name + "\r\n");
+                        nestedElements++;
+                    }
+                    builder.insert(0, "*" + nestedElements + "\r\n");
+                    ci.append(builder.toString());
+                    numMasters++;
+                }
+            }
+        }
+        ci.insert(0, "*" + numMasters + "\r\n");
+        return ci.toString();
     }
 }

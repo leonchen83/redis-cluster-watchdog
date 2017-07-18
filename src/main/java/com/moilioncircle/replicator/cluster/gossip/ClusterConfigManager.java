@@ -52,7 +52,7 @@ public class ClusterConfigManager {
                         if (list.get(i).equals("currentEpoch")) {
                             server.cluster.currentEpoch = parseInt(list.get(i + 1));
                         } else if (list.get(i).equals("lastVoteEpoch")) {
-                            //skip
+                            server.cluster.lastVoteEpoch = parseInt(list.get(i + 1));
                         } else {
                             logger.warn("Skipping unknown cluster config variable '" + list.get(i) + "'");
                         }
@@ -152,7 +152,7 @@ public class ClusterConfigManager {
             StringBuilder ci = new StringBuilder();
             ci.append(clusterGenNodesDescription(CLUSTER_NODE_HANDSHAKE));
             ci.append("vars currentEpoch ").append(server.cluster.currentEpoch);
-            ci.append(" lastVoteEpoch ").append(0); //always 0
+            ci.append(" lastVoteEpoch ").append(server.cluster.lastVoteEpoch);
             r.write(ci.toString());
             r.flush();
             return true;

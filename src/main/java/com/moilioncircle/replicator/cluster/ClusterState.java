@@ -12,6 +12,7 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
 public class ClusterState {
     public int size = 1;
     public long currentEpoch = 0;
+    public long lastVoteEpoch = 0;
     public long statsPfailNodes = 0;
     public byte state = CLUSTER_FAIL;
     public ClusterNode myself = null;

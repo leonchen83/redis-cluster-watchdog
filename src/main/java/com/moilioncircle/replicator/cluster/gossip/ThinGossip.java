@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.concurrent.*;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
+import static com.moilioncircle.replicator.cluster.gossip.ClusterSlotManger.bitmapTestBit;
 import static java.util.Comparator.comparingLong;
 
 /**
@@ -320,7 +321,7 @@ public class ThinGossip {
         }
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (slotManger.bitmapTestBit(slots, i)) {
+            if (bitmapTestBit(slots, i)) {
                 if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(sender)) continue;
                 if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
                     if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(curmaster))
@@ -366,6 +367,56 @@ public class ThinGossip {
         }
         clusterUpdateState();
         return true;
+    }
+
+    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMsg request) {
+        ClusterNode master = node.slaveof;
+        long requestCurrentEpoch = request.currentEpoch;
+        long requestConfigEpoch = request.configEpoch;
+        byte[] claimedSlots = request.myslots;
+        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
+
+        if (nodeIsSlave(server.myself) || server.myself.numslots == 0) return;
+
+        if (requestCurrentEpoch < server.cluster.currentEpoch) {
+            logger.warn("Failover auth denied to " + node.name + ": reqEpoch " + requestCurrentEpoch + " < curEpoch(" + server.cluster.currentEpoch + ")");
+            return;
+        }
+
+        if (server.cluster.lastVoteEpoch == server.cluster.currentEpoch) {
+            logger.warn("Failover auth denied to " + node.name + ": already voted for epoch " + server.cluster.currentEpoch);
+            return;
+        }
+
+        if (nodeIsMaster(node) || master == null || (!nodeFailed(master) && !forceAck)) {
+            if (nodeIsMaster(node)) {
+                logger.warn("Failover auth denied to " + node.name + ": it is a master node");
+            } else if (master == null) {
+                logger.warn("Failover auth denied to " + node.name + ": I don't know its master");
+            } else if (!nodeFailed(master)) {
+                logger.warn("Failover auth denied to " + node.name + ": its master is up");
+            }
+            return;
+        }
+
+        if (System.currentTimeMillis() - node.slaveof.votedTime < configuration.getClusterNodeTimeout() * 2) {
+            logger.warn("Failover auth denied to " + node.name + ": can't vote about this master before " + (configuration.getClusterNodeTimeout() * 2 - (System.currentTimeMillis() - node.slaveof.votedTime)) + " milliseconds");
+            return;
+        }
+
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            if (!bitmapTestBit(claimedSlots, i)) continue;
+            if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= requestConfigEpoch)
+                continue;
+
+            logger.warn("Failover auth denied to " + node.name + ": slot %d epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + requestConfigEpoch + ")");
+            return;
+        }
+
+        msgManager.clusterSendFailoverAuth(node);
+        server.cluster.lastVoteEpoch = server.cluster.currentEpoch;
+        node.slaveof.votedTime = System.currentTimeMillis();
+        logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
     }
 
     public void clusterUpdateState() {

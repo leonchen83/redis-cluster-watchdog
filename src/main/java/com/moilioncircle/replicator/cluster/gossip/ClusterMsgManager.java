@@ -187,4 +187,10 @@ public class ClusterMsgManager {
         clusterSendMessage(link, hdr);
     }
 
+    public void clusterSendFailoverAuth(ClusterNode node) {
+        if (node.link == null) return;
+        ClusterMsg hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK);
+        clusterSendMessage(node.link, hdr);
+    }
+
 }
