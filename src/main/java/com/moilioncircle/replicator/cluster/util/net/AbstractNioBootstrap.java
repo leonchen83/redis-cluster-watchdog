@@ -16,6 +16,7 @@
 
 package com.moilioncircle.replicator.cluster.util.net;
 
+import com.moilioncircle.replicator.cluster.util.net.transport.NioTransport;
 import com.moilioncircle.replicator.cluster.util.net.transport.Transport;
 import com.moilioncircle.replicator.cluster.util.net.transport.TransportListener;
 import io.netty.channel.ChannelHandler;
@@ -33,11 +34,17 @@ public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
 
     protected Supplier<ChannelHandler> encoder;
     protected Supplier<ChannelHandler> decoder;
+    protected volatile NioTransport<T> transport;
     protected volatile TransportListener<T> listener;
     protected final NioBootstrapConfiguration configuration;
 
     protected AbstractNioBootstrap(NioBootstrapConfiguration configuration) {
         this.configuration = configuration;
+    }
+
+    @Override
+    public Transport<T> getTransport() {
+        return this.transport;
     }
 
     @Override

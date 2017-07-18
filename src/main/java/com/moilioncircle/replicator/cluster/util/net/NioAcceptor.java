@@ -52,7 +52,7 @@ public class NioAcceptor<T> extends AbstractNioBootstrap<T> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", new NioTransport<>(NioAcceptor.this));
+                p.addLast("transport", transport = new NioTransport<>(NioAcceptor.this));
             }
         });
         this.bootstrap.option(ChannelOption.SO_BACKLOG, configuration.getSoBacklog());

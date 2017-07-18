@@ -17,6 +17,7 @@
 package com.moilioncircle.replicator.cluster.util.net;
 
 import com.moilioncircle.replicator.cluster.util.concurrent.future.CompletableFuture;
+import com.moilioncircle.replicator.cluster.util.net.transport.Transport;
 import com.moilioncircle.replicator.cluster.util.net.transport.TransportListener;
 import io.netty.channel.ChannelHandler;
 
@@ -31,6 +32,8 @@ public interface NioBootstrap<T> extends TransportListener<T> {
     void setup();
 
     boolean isServer();
+
+    Transport<T> getTransport();
 
     CompletableFuture<?> shutdown();
 

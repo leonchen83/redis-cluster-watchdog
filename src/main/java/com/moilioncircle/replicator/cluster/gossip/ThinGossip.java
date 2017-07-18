@@ -529,7 +529,6 @@ public class ThinGossip {
                         @Override
                         public void onConnected(Transport<Message> transport) {
                             logger.info("[initiator] > " + transport.toString());
-                            link.fd = new SessionImpl<>(transport);
                         }
 
                         @Override
@@ -552,6 +551,7 @@ public class ThinGossip {
                     });
                     try {
                         fd.connect(node.ip, node.cport).get();
+                        link.fd = new SessionImpl<>(fd.getTransport());
                     } catch (InterruptedException | ExecutionException e) {
                         if (e instanceof InterruptedException) {
                             Thread.currentThread().interrupt();

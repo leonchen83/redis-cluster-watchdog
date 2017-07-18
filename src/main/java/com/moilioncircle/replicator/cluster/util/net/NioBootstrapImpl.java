@@ -67,6 +67,11 @@ public class NioBootstrapImpl<T> implements NioBootstrap<T> {
     }
 
     @Override
+    public Transport<T> getTransport() {
+        return wrapper.getTransport();
+    }
+
+    @Override
     public CompletableFuture<?> shutdown() {
         return wrapper.shutdown();
     }

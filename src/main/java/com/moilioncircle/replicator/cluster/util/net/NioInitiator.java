@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 public class NioInitiator<T> extends AbstractNioBootstrap<T> {
     protected volatile Bootstrap bootstrap;
     protected volatile EventLoopGroup workerGroup;
-    protected volatile NioTransport<T> transport;
 
     public NioInitiator(NioBootstrapConfiguration configuration) {
         super(configuration);
