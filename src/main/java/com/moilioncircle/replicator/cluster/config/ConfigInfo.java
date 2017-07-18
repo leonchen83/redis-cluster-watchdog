@@ -11,11 +11,13 @@ import java.util.Map;
  */
 public class ConfigInfo {
     public long currentEpoch;
+    public long lastVoteEpoch;
     public Map<String, NodeInfo> nodes = new LinkedHashMap<>();
 
     public static ConfigInfo valueOf(ClusterState state) {
         ConfigInfo info = new ConfigInfo();
         info.currentEpoch = state.currentEpoch;
+        info.lastVoteEpoch = state.lastVoteEpoch;
         info.nodes = new LinkedHashMap<>();
         for (ClusterNode node : state.nodes.values()) {
             NodeInfo n = new NodeInfo();
@@ -38,15 +40,17 @@ public class ConfigInfo {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ConfigInfo info = (ConfigInfo) o;
+        ConfigInfo that = (ConfigInfo) o;
 
-        if (currentEpoch != info.currentEpoch) return false;
-        return nodes.equals(info.nodes);
+        if (currentEpoch != that.currentEpoch) return false;
+        if (lastVoteEpoch != that.lastVoteEpoch) return false;
+        return nodes.equals(that.nodes);
     }
 
     @Override
     public int hashCode() {
         int result = (int) (currentEpoch ^ (currentEpoch >>> 32));
+        result = 31 * result + (int) (lastVoteEpoch ^ (lastVoteEpoch >>> 32));
         result = 31 * result + nodes.hashCode();
         return result;
     }
