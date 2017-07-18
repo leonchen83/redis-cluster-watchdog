@@ -106,7 +106,10 @@ public abstract class AbstractNioInitiator<T> extends AbstractNioBootstrap<T> {
             if (!f.isSuccess()) {
                 if (configuration.isAutoReconnect())
                     reconnect(configuration.getReconnectInterval(), future, host, port);
-                else future.failure(f.cause());
+                else {
+                    logger.info("failed to connected to host: " + host + ", port: " + port + ", elapsed time: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
+                    future.failure(f.cause());
+                }
             } else {
                 future.success(null);
                 logger.info("connected to host: " + host + ", port: " + port + ", elapsed time: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
