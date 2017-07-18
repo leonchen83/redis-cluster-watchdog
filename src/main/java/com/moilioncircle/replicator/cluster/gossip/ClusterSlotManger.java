@@ -98,9 +98,9 @@ public class ClusterSlotManger {
         if (key == null) return 0;
         byte[] bytes = key.getBytes();
         int st = key.indexOf('{');
-        if (st < 0) return crc16(bytes);
+        if (st < 0) return crc16(bytes) & 0x3FFF;
         int ed = key.indexOf('}');
-        if (ed < 0 || ed == st + 1 || st > ed) return crc16(bytes); //{} or }{
-        return crc16(key.substring(st + 1, ed).getBytes());
+        if (ed < 0 || ed == st + 1 || st > ed) return crc16(bytes) & 0x3FFF; //{} or }{
+        return crc16(key.substring(st + 1, ed).getBytes()) & 0x3FFF;
     }
 }
