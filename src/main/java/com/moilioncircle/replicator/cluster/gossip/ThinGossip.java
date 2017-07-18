@@ -158,6 +158,7 @@ public class ThinGossip {
         if (!hard) return;
 
         server.cluster.currentEpoch = 0;
+        server.cluster.lastVoteEpoch = 0;
         server.myself.configEpoch = 0;
         logger.warn("configEpoch set to 0 via CLUSTER RESET HARD");
         String oldname = server.myself.name;
