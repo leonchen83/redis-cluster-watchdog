@@ -85,7 +85,7 @@ public class ThinGossip {
     public void start() {
         this.clusterInit();
         client.clientInit();
-        executor.scheduleWithFixedDelay(() -> {
+        executor.scheduleAtFixedRate(() -> {
             ConfigInfo oldInfo = valueOf(server.cluster);
             clusterCron();
             ConfigInfo newInfo = valueOf(server.cluster);
