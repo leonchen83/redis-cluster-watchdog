@@ -4,7 +4,6 @@ import com.moilioncircle.replicator.cluster.state.ClusterNode;
 import com.moilioncircle.replicator.cluster.state.ServerState;
 
 import java.util.AbstractMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_BLACKLIST_TTL;
@@ -23,10 +22,7 @@ public class ClusterBlacklistManager {
     }
 
     public void clusterBlacklistCleanup() {
-        Iterator<Map.Entry<Long, ClusterNode>> it = server.cluster.nodesBlackList.values().iterator();
-        while (it.hasNext()) {
-            if (it.next().getKey() < System.currentTimeMillis()) it.remove();
-        }
+        server.cluster.nodesBlackList.values().removeIf(e -> e.getKey() < System.currentTimeMillis());
     }
 
     public void clusterBlacklistAddNode(ClusterNode node) {

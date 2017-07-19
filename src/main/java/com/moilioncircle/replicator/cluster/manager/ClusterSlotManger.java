@@ -108,7 +108,6 @@ public class ClusterSlotManger {
             }
             if (ed > st + 1) key = key.substring(st + 1, ed);
         }
-        int result = crc16(key.getBytes()) & (CLUSTER_SLOTS - 1);
-        return result;
+        return crc16(key.getBytes()) & (CLUSTER_SLOTS - 1);
     }
 }

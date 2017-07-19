@@ -26,15 +26,15 @@ public abstract class AbstractCompletableFuture<T> implements CompletableFuture<
 
     @Override
     public boolean addListeners(List<FutureListener<T>> listeners) {
-        boolean rs = listeners.addAll(listeners);
-        if (this.isDone() && !listeners.isEmpty()) {
-            for (FutureListener<T> r : listeners) r.onComplete(this);
+        boolean rs = this.listeners.addAll(listeners);
+        if (this.isDone() && !this.listeners.isEmpty()) {
+            for (FutureListener<T> r : this.listeners) r.onComplete(this);
         }
         return rs;
     }
 
     @Override
     public boolean removeListeners(List<FutureListener<T>> listeners) {
-        return listeners.removeAll(listeners);
+        return this.listeners.removeAll(listeners);
     }
 }

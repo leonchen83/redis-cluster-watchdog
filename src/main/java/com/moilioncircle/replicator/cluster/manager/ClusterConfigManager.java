@@ -59,7 +59,6 @@ public class ClusterConfigManager {
                             logger.warn("Skipping unknown cluster config variable '" + list.get(i) + "'");
                         }
                     }
-                    continue;
                 } else if (list.size() < 8) {
                     throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
                 } else {
@@ -79,26 +78,35 @@ public class ClusterConfigManager {
                     n.cport = atIdx == -1 ? n.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx + 1));
                     String[] roles = list.get(2).split(",");
                     for (String role : roles) {
-                        if (role.equals("myself")) {
-                            server.myself = server.cluster.myself = n;
-                            n.flags |= CLUSTER_NODE_MYSELF;
-                        } else if (role.equals("master")) {
-                            n.flags |= CLUSTER_NODE_MASTER;
-                        } else if (role.equals("slave")) {
-                            n.flags |= CLUSTER_NODE_SLAVE;
-                        } else if (role.equals("fail?")) {
-                            n.flags |= CLUSTER_NODE_PFAIL;
-                        } else if (role.equals("fail")) {
-                            n.flags |= CLUSTER_NODE_FAIL;
-                            n.failTime = System.currentTimeMillis();
-                        } else if (role.equals("handshake")) {
-                            n.flags |= CLUSTER_NODE_HANDSHAKE;
-                        } else if (role.equals("noaddr")) {
-                            n.flags |= CLUSTER_NODE_NOADDR;
-                        } else if (role.equals("noflags")) {
-                            // NOP
-                        } else {
-                            throw new UnsupportedOperationException("Unknown flag in redis cluster config file");
+                        switch (role) {
+                            case "myself":
+                                server.myself = server.cluster.myself = n;
+                                n.flags |= CLUSTER_NODE_MYSELF;
+                                break;
+                            case "master":
+                                n.flags |= CLUSTER_NODE_MASTER;
+                                break;
+                            case "slave":
+                                n.flags |= CLUSTER_NODE_SLAVE;
+                                break;
+                            case "fail?":
+                                n.flags |= CLUSTER_NODE_PFAIL;
+                                break;
+                            case "fail":
+                                n.flags |= CLUSTER_NODE_FAIL;
+                                n.failTime = System.currentTimeMillis();
+                                break;
+                            case "handshake":
+                                n.flags |= CLUSTER_NODE_HANDSHAKE;
+                                break;
+                            case "noaddr":
+                                n.flags |= CLUSTER_NODE_NOADDR;
+                                break;
+                            case "noflags":
+                                // NOP
+                                break;
+                            default:
+                                throw new UnsupportedOperationException("Unknown flag in redis cluster config file");
                         }
                     }
 
@@ -118,7 +126,7 @@ public class ClusterConfigManager {
                     n.configEpoch = parseInt(list.get(6));
 
                     for (int i = 8; i < list.size(); i++) {
-                        int start = 0, stop = 0;
+                        int start, stop;
                         String argi = list.get(i);
                         if (argi.contains("-")) {
                             int idx = argi.indexOf("-");
@@ -165,6 +173,7 @@ public class ClusterConfigManager {
             if (r != null) try {
                 r.close();
             } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
@@ -265,8 +274,9 @@ public class ClusterConfigManager {
                     }
                     break;
                 case '"':
-                    if (!inq && !insq) inq = true;
-                    else if (insq) {
+                    if (!inq && !insq) {
+                        inq = true;
+                    } else if (insq) {
                         s.append('"');
                     } else if (inq) {
                         list.add(s.toString());
@@ -277,8 +287,9 @@ public class ClusterConfigManager {
                     }
                     break;
                 case '\'':
-                    if (!inq && !insq) insq = true;
-                    else if (inq) {
+                    if (!inq && !insq) {
+                        insq = true;
+                    } else if (inq) {
                         s.append('\'');
                     } else if (insq) {
                         list.add(s.toString());

@@ -106,13 +106,10 @@ public class ClusterNodeManager {
     }
 
     public void clusterNodeCleanupFailureReports(ClusterNode node) {
-        List<ClusterNodeFailReport> l = node.failReports;
+        List<ClusterNodeFailReport> list = node.failReports;
         long max = managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_REPORT_VALIDITY_MULT;
         long now = System.currentTimeMillis();
-        Iterator<ClusterNodeFailReport> it = l.iterator();
-        while (it.hasNext()) {
-            if (now - it.next().time > max) it.remove();
-        }
+        list.removeIf(e -> now - e.time > max);
     }
 
     public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {

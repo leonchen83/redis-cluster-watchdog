@@ -32,7 +32,7 @@ public class Arrays {
         if (a.length != 0 && bufLen <= 0)
             bufLen = Integer.MAX_VALUE;
         StringBuilder buf = new StringBuilder(bufLen);
-        deepToString(a, buf, new HashSet<Object[]>());
+        deepToString(a, buf, new HashSet<>());
         return buf.toString();
     }
 

@@ -20,6 +20,7 @@ import static com.moilioncircle.replicator.cluster.util.net.ConnectionStatus.DIS
 /**
  * Created by Baoyi Chen on 2017/7/7.
  */
+@SuppressWarnings("unchecked")
 public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements Transport<T> {
 
     private long id;

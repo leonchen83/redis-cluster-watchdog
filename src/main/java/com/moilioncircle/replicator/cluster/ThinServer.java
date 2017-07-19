@@ -105,7 +105,7 @@ public class ThinServer {
             argv[i] = new String(message[i]);
         }
         if (argv[1].equalsIgnoreCase("meet") && (argv.length == 4 || argv.length == 5)) {
-            int cport = 0;
+            int cport;
             int port = parseInt(argv[3]);
             if (argv.length == 5) {
                 cport = parseInt(argv[4]);
@@ -360,9 +360,8 @@ public class ThinServer {
 
             if (n == null) {
                 t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
-                return;
             } else {
-                t.write((":" + String.valueOf(managers.nodes.clusterNodeFailureReportsCount(n)).getBytes() + "\r\n").getBytes(), true);
+                t.write((":" + String.valueOf(managers.nodes.clusterNodeFailureReportsCount(n)) + "\r\n").getBytes(), true);
             }
         } else if (argv[1].equalsIgnoreCase("set-config-epoch") && argv.length == 3) {
             long epoch = parseLong(argv[2]);
