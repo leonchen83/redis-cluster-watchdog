@@ -114,7 +114,7 @@ public class ConfigFileParser {
 
             }
         }
-        if (inq || insq) throw new UnsupportedOperationException("parse file error.");
+        if (inq || insq) throw new UnsupportedOperationException("parse line[" + line + "] error.");
         if (s.length() > 0) list.add(s.toString());
         return list;
     }
