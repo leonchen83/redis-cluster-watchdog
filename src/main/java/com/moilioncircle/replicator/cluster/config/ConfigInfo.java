@@ -1,7 +1,7 @@
 package com.moilioncircle.replicator.cluster.config;
 
-import com.moilioncircle.replicator.cluster.ClusterNode;
-import com.moilioncircle.replicator.cluster.ClusterState;
+import com.moilioncircle.replicator.cluster.state.ClusterNode;
+import com.moilioncircle.replicator.cluster.state.ClusterState;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

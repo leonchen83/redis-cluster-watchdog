@@ -1,6 +1,6 @@
 package com.moilioncircle.replicator.cluster.config;
 
-import com.moilioncircle.replicator.cluster.ClusterNode;
+import com.moilioncircle.replicator.cluster.state.ClusterNode;
 
 import java.util.Arrays;
 

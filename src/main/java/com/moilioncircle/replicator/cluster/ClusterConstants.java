@@ -5,34 +5,6 @@ package com.moilioncircle.replicator.cluster;
  */
 public class ClusterConstants {
 
-    public static boolean nodeIsMaster(ClusterNode n) {
-        return (n.flags & CLUSTER_NODE_MASTER) != 0;
-    }
-
-    public static boolean nodeIsSlave(ClusterNode n) {
-        return (n.flags & CLUSTER_NODE_SLAVE) != 0;
-    }
-
-    public static boolean nodeInHandshake(ClusterNode n) {
-        return (n.flags & CLUSTER_NODE_HANDSHAKE) != 0;
-    }
-
-    public static boolean nodeHasAddr(ClusterNode n) {
-        return (n.flags & CLUSTER_NODE_NOADDR) == 0;
-    }
-
-    public static boolean nodeWithoutAddr(ClusterNode n) {
-        return (n.flags & CLUSTER_NODE_NOADDR) != 0;
-    }
-
-    public static boolean nodePFailed(ClusterNode n) {
-        return (n.flags & CLUSTER_NODE_PFAIL) != 0;
-    }
-
-    public static boolean nodeFailed(ClusterNode n) {
-        return (n.flags & CLUSTER_NODE_FAIL) != 0;
-    }
-
     public static final int CLUSTER_SLOTS = 16384;
 
     public static final byte CLUSTER_OK = 0;
@@ -44,8 +16,6 @@ public class ClusterConstants {
     public static final int CLUSTER_PORT_INCR = 10000;
 
     public static final int CLUSTER_PROTO_VER = 1;
-
-    public static final int CLUSTER_BROADCAST_LOCAL_SLAVES = 1;
 
     public static final int CLUSTER_FAIL_REPORT_VALIDITY_MULT = 2;
 
