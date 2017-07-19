@@ -36,9 +36,16 @@ public class ReplicationManager {
     }
 
     public void replicationSetMaster(ClusterNode node) {
-        logger.info("replicate to " + node.ip + ":" + node.port);
+        logger.info("replicate set " + node.ip + ":" + node.port);
         server.masterHost = node.ip;
         server.masterPort = node.port;
         managers.notifySetReplication(node.ip, node.port);
+    }
+
+    public void replicationUnsetMaster() {
+        logger.info("replicate unset");
+        managers.notifyUnsetReplication();
+        server.masterHost = null;
+        server.masterPort = 0;
     }
 }

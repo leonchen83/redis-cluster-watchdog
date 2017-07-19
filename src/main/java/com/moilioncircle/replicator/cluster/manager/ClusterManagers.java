@@ -76,4 +76,11 @@ public class ClusterManagers {
             if (r != null) r.onSetReplication(ip, host);
         });
     }
+
+    public void notifyUnsetReplication() {
+        worker.submit(() -> {
+            ReplicationListener r = this.replicationListener;
+            if (r != null) r.onUnsetReplication();
+        });
+    }
 }

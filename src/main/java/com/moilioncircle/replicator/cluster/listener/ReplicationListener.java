@@ -22,4 +22,6 @@ package com.moilioncircle.replicator.cluster.listener;
  */
 public interface ReplicationListener {
     void onSetReplication(String ip, int host);
+
+    void onUnsetReplication();
 }

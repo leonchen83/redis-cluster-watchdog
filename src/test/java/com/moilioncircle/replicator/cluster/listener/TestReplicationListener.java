@@ -17,7 +17,7 @@
 package com.moilioncircle.replicator.cluster.listener;
 
 import com.moilioncircle.redis.replicator.Configuration;
-import com.moilioncircle.redis.replicator.RedisSocketReplicator;
+import com.moilioncircle.redis.replicator.RedisReplicator;
 import com.moilioncircle.redis.replicator.Replicator;
 import com.moilioncircle.redis.replicator.UncheckedIOException;
 import com.moilioncircle.redis.replicator.rdb.RdbListener;
@@ -33,7 +33,7 @@ import java.io.IOException;
  */
 public class TestReplicationListener implements ReplicationListener {
     private static final Log logger = LogFactory.getLog(TestReplicationListener.class);
-    private volatile RedisSocketReplicator replicator;
+    private volatile Replicator replicator;
 
     @Override
     public void onSetReplication(String ip, int host) {
@@ -43,7 +43,7 @@ public class TestReplicationListener implements ReplicationListener {
                     replicator.close();
                     replicator = null;
                 }
-                replicator = new RedisSocketReplicator(ip, host, Configuration.defaultSetting());
+                replicator = new RedisReplicator(ip, host, Configuration.defaultSetting());
                 replicator.addRdbListener(new RdbListener.Adaptor() {
                     @Override
                     public void handle(Replicator replicator, KeyValuePair<?> kv) {
@@ -58,5 +58,15 @@ public class TestReplicationListener implements ReplicationListener {
                 throw new UncheckedIOException(e);
             }
         }).start();
+    }
+
+    @Override
+    public void onUnsetReplication() {
+        try {
+            Replicator replicator = this.replicator;
+            if (replicator != null) replicator.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
