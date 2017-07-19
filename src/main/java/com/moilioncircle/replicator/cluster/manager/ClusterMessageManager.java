@@ -89,8 +89,7 @@ public class ClusterMessageManager {
         hdr.currentEpoch = server.cluster.currentEpoch;
         hdr.configEpoch = master.configEpoch;
 
-        if (States.nodeIsSlave(server.myself))
-            hdr.offset = managers.replications.replicationGetSlaveOffset();
+        hdr.offset = 0;
         return hdr;
     }
 

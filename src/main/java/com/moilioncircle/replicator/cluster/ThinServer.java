@@ -456,7 +456,6 @@ public class ThinServer {
     public void clusterReset(boolean hard) {
         if (States.nodeIsSlave(server.myself)) {
             managers.nodes.clusterSetNodeAsMaster(server.myself);
-            managers.replications.replicationUnsetMaster();
         }
 
         for (int i = 0; i < CLUSTER_SLOTS; i++)

@@ -17,6 +17,7 @@
 package com.moilioncircle.replicator.cluster.manager;
 
 import com.moilioncircle.replicator.cluster.ClusterConfiguration;
+import com.moilioncircle.replicator.cluster.listener.ReplicationListener;
 import com.moilioncircle.replicator.cluster.state.ServerState;
 
 import java.util.concurrent.ExecutorService;
@@ -44,6 +45,8 @@ public class ClusterManagers {
     public ClusterConnectionManager connections;
     public ClusterMessageHandlerManager handlers;
 
+    private volatile ReplicationListener replicationListener;
+
     public ClusterManagers(ClusterConfiguration configuration) {
         this.file = Executors.newSingleThreadExecutor();
         this.worker = Executors.newSingleThreadExecutor();
@@ -59,5 +62,18 @@ public class ClusterManagers {
         this.connections = new ClusterConnectionManager();
         this.blacklists = new ClusterBlacklistManager(this);
         this.handlers = new ClusterMessageHandlerManager(this);
+    }
+
+    public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
+        ReplicationListener r = this.replicationListener;
+        this.replicationListener = replicationListener;
+        return r;
+    }
+
+    public void notifySetReplication(String ip, int host) {
+        worker.submit(() -> {
+            ReplicationListener r = this.replicationListener;
+            if (r != null) r.onSetReplication(ip, host);
+        });
     }
 }

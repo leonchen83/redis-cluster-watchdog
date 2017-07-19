@@ -39,14 +39,6 @@ public class ReplicationManager {
         logger.info("replicate to " + node.ip + ":" + node.port);
         server.masterHost = node.ip;
         server.masterPort = node.port;
-    }
-
-    public void replicationUnsetMaster() {
-        server.masterHost = null;
-        server.masterPort = 0;
-    }
-
-    public long replicationGetSlaveOffset() {
-        return 0;
+        managers.notifySetReplication(node.ip, node.port);
     }
 }
