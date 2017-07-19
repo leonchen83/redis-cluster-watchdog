@@ -51,7 +51,6 @@ public class TestReplicationListener implements ReplicationListener {
                     }
                 });
                 replicator.addCommandListener((r, c) -> logger.info(c));
-                replicator.addAuxFieldListener((r, a) -> logger.info(a));
                 replicator.addCloseListener(r -> logger.info("replicate closed"));
                 replicator.open();
             } catch (IOException e) {
