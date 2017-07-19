@@ -6,7 +6,6 @@ import com.moilioncircle.replicator.cluster.config.ConfigInfo;
 import com.moilioncircle.replicator.cluster.manager.ClusterManagers;
 import com.moilioncircle.replicator.cluster.message.ClusterMessage;
 import com.moilioncircle.replicator.cluster.message.RCmbMessage;
-import com.moilioncircle.replicator.cluster.message.handler.ClusterMessageHandler;
 import com.moilioncircle.replicator.cluster.state.ClusterLink;
 import com.moilioncircle.replicator.cluster.state.ClusterNode;
 import com.moilioncircle.replicator.cluster.state.ClusterState;
@@ -78,7 +77,7 @@ public class ThinGossip {
             public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                 managers.executor.execute(() -> {
                     ConfigInfo oldInfo = valueOf(managers.server.cluster);
-                    clusterProcessPacket(managers.server.cfd.get(transport), message);
+                    clusterProcessPacket(managers.server.cfd.get(transport), (ClusterMessage) message);
                     ConfigInfo newInfo = valueOf(managers.server.cluster);
                     if (!oldInfo.equals(newInfo))
                         managers.file.submit(() -> managers.configs.clusterSaveConfig(newInfo));
@@ -149,7 +148,7 @@ public class ThinGossip {
                         public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                             managers.executor.execute(() -> {
                                 ConfigInfo oldInfo = valueOf(managers.server.cluster);
-                                clusterProcessPacket(link, message);
+                                clusterProcessPacket(link, (ClusterMessage) message);
                                 ConfigInfo newInfo = valueOf(managers.server.cluster);
                                 if (!oldInfo.equals(newInfo))
                                     managers.file.submit(() -> managers.configs.clusterSaveConfig(newInfo));
@@ -253,7 +252,7 @@ public class ThinGossip {
 
             if (update || managers.server.cluster.state == CLUSTER_FAIL) managers.states.clusterUpdateState();
         } catch (Throwable e) {
-            logger.error("error", e);
+            logger.error("unexpected error ", e);
         }
     }
 
@@ -289,20 +288,12 @@ public class ThinGossip {
         }
 
         if (target != null && candidate.equals(managers.server.myself) && (System.currentTimeMillis() - target.orphanedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
-            logger.warn("Migrating to orphaned master " + target.name);
+            logger.info("Migrating to orphaned master " + target.name);
             managers.nodes.clusterSetMyMaster(target);
         }
     }
 
-    public boolean clusterProcessPacket(ClusterLink link, RCmbMessage message) {
-        ClusterMessage hdr = (ClusterMessage) message;
-        int type = hdr.type;
-        ClusterMessageHandler handler = managers.handlers.get(type);
-        if (handler == null) {
-            logger.warn("Received unknown packet type: " + type);
-        } else {
-            handler.handle(link, hdr);
-        }
-        return true;
+    public boolean clusterProcessPacket(ClusterLink link, ClusterMessage hdr) {
+        return managers.handlers.get(hdr.type).handle(link, hdr);
     }
 }

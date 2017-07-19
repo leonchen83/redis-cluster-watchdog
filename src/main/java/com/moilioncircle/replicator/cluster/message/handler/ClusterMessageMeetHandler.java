@@ -26,7 +26,7 @@ public class ClusterMessageMeetHandler extends AbstractClusterMessageHandler {
             String ip = link.fd.getLocalAddress(null);
             if (ip != null && !ip.equals(server.myself.ip)) {
                 server.myself.ip = ip;
-                logger.warn("IP address for this node updated to " + server.myself.ip);
+                logger.info("IP address for this node updated to " + server.myself.ip);
             }
         }
 
@@ -99,7 +99,7 @@ public class ClusterMessageMeetHandler extends AbstractClusterMessageHandler {
                 if (!bitmapTestBit(hdr.myslots, i)) continue;
                 if (server.cluster.slots[i].equals(sender) || server.cluster.slots[i] == null) continue;
                 if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
-                    logger.debug("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
+                    logger.info("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
                     managers.messages.clusterSendUpdate(sender.link, server.cluster.slots[i]);
                     break;
                 }

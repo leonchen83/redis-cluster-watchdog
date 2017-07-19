@@ -26,7 +26,7 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
             String ip = link.fd.getLocalAddress(null);
             if (ip != null && !ip.equals(server.myself.ip)) {
                 server.myself.ip = ip;
-                logger.warn("IP address for this node updated to " + server.myself.ip);
+                logger.info("IP address for this node updated to " + server.myself.ip);
             }
         }
 

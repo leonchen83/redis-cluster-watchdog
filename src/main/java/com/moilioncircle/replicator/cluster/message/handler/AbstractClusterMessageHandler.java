@@ -61,7 +61,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         ClusterNode newmaster = null;
         ClusterNode curmaster = States.nodeIsMaster(server.myself) ? server.myself : server.myself.slaveof;
         if (sender.equals(server.myself)) {
-            logger.warn("Discarding UPDATE message about myself.");
+            logger.info("Discarding UPDATE message about myself.");
             return;
         }
 
@@ -77,7 +77,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         }
 
         if (newmaster != null && curmaster.numslots == 0) {
-            logger.warn("Configuration change detected. Reconfiguring myself as a replica of " + sender.name);
+            logger.info("Configuration change detected. Reconfiguring myself as a replica of " + sender.name);
             managers.nodes.clusterSetMyMaster(sender);
         }
     }
@@ -102,11 +102,11 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
             if (sender != null && States.nodeIsMaster(sender) && !node.equals(server.myself)) {
                 if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0) {
                     if (managers.nodes.clusterNodeAddFailureReport(node, sender)) {
-                        logger.debug("Node " + sender.name + " reported node " + node.name + " as not reachable.");
+                        logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
                     }
                     markNodeAsFailingIfNeeded(node);
                 } else if (managers.nodes.clusterNodeDelFailureReport(node, sender)) {
-                    logger.debug("Node " + sender.name + " reported node " + node.name + " is back online.");
+                    logger.info("Node " + sender.name + " reported node " + node.name + " is back online.");
                 }
             }
 
@@ -142,7 +142,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         node.cport = cport;
 
         if (node.link != null) managers.connections.freeClusterLink(node.link);
-        logger.warn("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
+        logger.info("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
 
         if (States.nodeIsSlave(server.myself) && server.myself.slaveof.equals(node)) {
             managers.replications.replicationSetMaster(node);
@@ -175,6 +175,6 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         if (sender.name.compareTo(server.myself.name) <= 0) return;
         server.cluster.currentEpoch++;
         server.myself.configEpoch = server.cluster.currentEpoch;
-        logger.debug("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + server.myself.configEpoch);
+        logger.warn("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + server.myself.configEpoch);
     }
 }

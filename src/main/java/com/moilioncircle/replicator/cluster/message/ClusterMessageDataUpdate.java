@@ -12,10 +12,9 @@ public class ClusterMessageDataUpdate {
 
     @Override
     public String toString() {
-        return "ClusterMsgDataUpdate{" +
+        return "ClusterMessageDataUpdate{" +
                 "configEpoch=" + configEpoch +
                 ", nodename='" + nodename + '\'' +
-//                ", slots=" + Arrays.toString(slots) +
                 '}';
     }
 }

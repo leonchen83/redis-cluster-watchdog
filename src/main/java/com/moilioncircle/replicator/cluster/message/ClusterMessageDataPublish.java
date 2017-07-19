@@ -12,7 +12,7 @@ public class ClusterMessageDataPublish {
 
     @Override
     public String toString() {
-        return "ClusterMsgDataPublish{" +
+        return "ClusterMessageDataPublish{" +
                 "channelLen=" + channelLen +
                 ", messageLen=" + messageLen +
                 ", bulkData=" + Arrays.toString(bulkData) +

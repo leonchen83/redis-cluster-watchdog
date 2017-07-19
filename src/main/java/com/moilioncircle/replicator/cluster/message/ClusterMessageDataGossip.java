@@ -15,7 +15,7 @@ public class ClusterMessageDataGossip {
 
     @Override
     public String toString() {
-        return "ClusterMsgDataGossip{" +
+        return "ClusterMessageDataGossip{" +
                 "nodename='" + nodename + '\'' +
                 ", pingSent=" + pingSent +
                 ", pongReceived=" + pongReceived +

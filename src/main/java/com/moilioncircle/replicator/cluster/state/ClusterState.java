@@ -31,7 +31,6 @@ public class ClusterState {
                 ", myself=" + myself +
                 ", statsPfailNodes=" + statsPfailNodes +
                 ", nodes=" + nodes +
-                ", slots=" + Arrays.toString(slots) +
                 ", nodesBlackList=" + nodesBlackList +
                 ", statsBusMessagesSent=" + Arrays.toString(statsBusMessagesSent) +
                 ", statsBusMessagesReceived=" + Arrays.toString(statsBusMessagesReceived) +

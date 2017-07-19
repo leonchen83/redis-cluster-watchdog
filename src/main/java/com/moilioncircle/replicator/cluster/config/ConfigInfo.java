@@ -16,9 +16,9 @@ public class ConfigInfo {
 
     public static ConfigInfo valueOf(ClusterState state) {
         ConfigInfo info = new ConfigInfo();
+        info.nodes = new LinkedHashMap<>();
         info.currentEpoch = state.currentEpoch;
         info.lastVoteEpoch = state.lastVoteEpoch;
-        info.nodes = new LinkedHashMap<>();
         for (ClusterNode node : state.nodes.values()) {
             info.nodes.put(node.name, NodeInfo.valueOf(node, state.myself));
         }

@@ -8,12 +8,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.moilioncircle.replicator.cluster.ClusterConstants.*;
-import static com.moilioncircle.replicator.cluster.config.ConfigFileParser.parseLine;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 
@@ -141,7 +141,7 @@ public class ClusterConfigManager {
                 server.cluster.currentEpoch = maxEpoch;
             }
             return true;
-        } catch (IOException e) {
+        } catch (Throwable e) {
             return false;
         }
     }
@@ -247,5 +247,97 @@ public class ClusterConfigManager {
                 return "mfstart";
         }
         return "unknown";
+    }
+
+    public static List<String> parseLine(String line) {
+        char[] ary = line.toCharArray();
+        List<String> list = new ArrayList<>();
+        StringBuilder s = new StringBuilder();
+        boolean inq = false, insq = false;
+        for (int i = 0; i < ary.length; i++) {
+            char c = ary[i];
+            switch (c) {
+                case ' ':
+                    if (inq || insq) s.append(' ');
+                    else if (s.length() > 0) {
+                        list.add(s.toString());
+                        s.setLength(0);
+                    }
+                    break;
+                case '"':
+                    if (!inq && !insq) inq = true;
+                    else if (insq) {
+                        s.append('"');
+                    } else if (inq) {
+                        list.add(s.toString());
+                        s.setLength(0);
+                        inq = false;
+                        if (i + 1 < ary.length && ary[i + 1] != ' ')
+                            throw new UnsupportedOperationException("parse file error.");
+                    }
+                    break;
+                case '\'':
+                    if (!inq && !insq) insq = true;
+                    else if (inq) {
+                        s.append('\'');
+                    } else if (insq) {
+                        list.add(s.toString());
+                        s.setLength(0);
+                        insq = false;
+                        if (i + 1 < ary.length && ary[i + 1] != ' ')
+                            throw new UnsupportedOperationException("parse file error.");
+                    }
+                    break;
+                case '\\':
+                    if (!inq) s.append('\\');
+                    else {
+                        i++;
+                        if (i < ary.length) {
+                            switch (ary[i]) {
+                                case 'n':
+                                    s.append('\n');
+                                    break;
+                                case 'r':
+                                    s.append('\r');
+                                    break;
+                                case 't':
+                                    s.append('\t');
+                                    break;
+                                case 'b':
+                                    s.append('\b');
+                                    break;
+                                case 'f':
+                                    s.append('\f');
+                                    break;
+                                case 'x':
+                                    if (i + 2 >= ary.length) s.append("\\x");
+                                    else {
+                                        char high = ary[++i];
+                                        char low = ary[++i];
+                                        try {
+                                            s.append(parseInt(new String(new char[]{high, low}), 16));
+                                        } catch (Exception e) {
+                                            s.append("\\x");
+                                            s.append(high);
+                                            s.append(low);
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    s.append(ary[i]);
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    s.append(c);
+                    break;
+
+            }
+        }
+        if (inq || insq) throw new UnsupportedOperationException("parse line[" + line + "] error.");
+        if (s.length() > 0) list.add(s.toString());
+        return list;
     }
 }

@@ -57,7 +57,7 @@ public class ClusterMessageManager {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {
-            logger.warn("send msg error, link: " + link + ",hdr:" + hdr);
+            logger.warn("send RCmb message failed, link: " + link + ",hdr:" + hdr);
         }
     }
 
@@ -144,7 +144,6 @@ public class ClusterMessageManager {
             gossipcount++;
         }
 
-        //把pfail节点加到最后
         if (pfailWanted != 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             for (int i = 0; i < list.size() && pfailWanted > 0; i++) {

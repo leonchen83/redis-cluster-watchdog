@@ -375,7 +375,7 @@ public class ThinServer {
                 t.write(("-ERR Node config epoch is already non-zero\r\n").getBytes(), true);
             } else {
                 server.myself.configEpoch = epoch;
-                logger.warn("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
+                logger.info("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
                 if (server.cluster.currentEpoch < epoch)
                     server.cluster.currentEpoch = epoch;
                 managers.states.clusterUpdateState();
@@ -400,7 +400,7 @@ public class ThinServer {
         if (server.myself.configEpoch == 0 || server.myself.configEpoch != maxEpoch) {
             server.cluster.currentEpoch++;
             server.myself.configEpoch = server.cluster.currentEpoch;
-            logger.warn("New configEpoch set to " + server.myself.configEpoch);
+            logger.info("New configEpoch set to " + server.myself.configEpoch);
             return true;
         }
         return false;
@@ -472,7 +472,7 @@ public class ThinServer {
         server.cluster.currentEpoch = 0;
         server.cluster.lastVoteEpoch = 0;
         server.myself.configEpoch = 0;
-        logger.warn("configEpoch set to 0 via CLUSTER RESET HARD");
+        logger.info("configEpoch set to 0 via CLUSTER RESET HARD");
         String oldname = server.myself.name;
         server.cluster.nodes.remove(oldname);
         server.myself.name = managers.nodes.getRandomHexChars();

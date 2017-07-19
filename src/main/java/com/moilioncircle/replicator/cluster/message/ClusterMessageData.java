@@ -14,8 +14,8 @@ public class ClusterMessageData {
 
     @Override
     public String toString() {
-        return "ClusterMsgData{" +
-                "managers=" + gossip +
+        return "ClusterMessageData{" +
+                "gossip=" + gossip +
                 ", about=" + about +
                 ", msg=" + msg +
                 ", nodecfg=" + nodecfg +

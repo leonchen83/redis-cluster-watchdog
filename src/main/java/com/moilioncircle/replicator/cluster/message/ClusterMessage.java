@@ -30,7 +30,7 @@ public class ClusterMessage implements RCmbMessage {
 
     @Override
     public String toString() {
-        return "ClusterMsg{" +
+        return "ClusterMessage{" +
                 "sig='" + sig + '\'' +
                 ", totlen=" + totlen +
                 ", ver=" + ver +
@@ -41,10 +41,8 @@ public class ClusterMessage implements RCmbMessage {
                 ", configEpoch=" + configEpoch +
                 ", offset=" + offset +
                 ", sender='" + sender + '\'' +
-//                ", myslots=" + Arrays.toString(myslots) +
                 ", slaveof='" + slaveof + '\'' +
                 ", myip='" + myip + '\'' +
-//                ", notused=" + Arrays.toString(notused) +
                 ", cport=" + cport +
                 ", flags=" + flags +
                 ", state=" + state +

@@ -8,7 +8,7 @@ public class ClusterMessageDataFail {
 
     @Override
     public String toString() {
-        return "ClusterMsgDataFail{" +
+        return "ClusterMessageDataFail{" +
                 "nodename='" + nodename + '\'' +
                 '}';
     }

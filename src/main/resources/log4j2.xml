@@ -26,7 +26,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="com.moilioncircle" level="debug" additivity="false">
+        <Logger name="com.moilioncircle" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Root level="error">

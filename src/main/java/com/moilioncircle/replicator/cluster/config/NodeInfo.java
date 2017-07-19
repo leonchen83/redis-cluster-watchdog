@@ -10,16 +10,16 @@ import static com.moilioncircle.replicator.cluster.ClusterConstants.CLUSTER_SLOT
  * Created by Baoyi Chen on 2017/7/17.
  */
 public class NodeInfo {
-    public String name;
-    public String ip;
     public int port;
     public int cport;
+    public String ip;
     public int flags;
+    public String name;
+    public String link;
     public long pingSent;
-    public long pongReceived;
     public String slaveof;
     public long configEpoch;
-    public String link;
+    public long pongReceived;
     public byte[] slots = new byte[CLUSTER_SLOTS / 8];
 
     @Override
@@ -56,17 +56,17 @@ public class NodeInfo {
 
     public static NodeInfo valueOf(ClusterNode node, ClusterNode myself) {
         NodeInfo n = new NodeInfo();
-        n.configEpoch = node.configEpoch;
+        n.ip = node.ip;
         n.name = node.name;
         n.port = node.port;
         n.cport = node.cport;
         n.flags = node.flags;
-        n.ip = node.ip;
         n.pingSent = node.pingSent;
+        n.configEpoch = node.configEpoch;
         n.pongReceived = node.pongReceived;
-        n.link = node.link != null || node.equals(myself) ? "connected" : "disconnected";
         n.slaveof = node.slaveof == null ? null : node.slaveof.name;
         System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
+        n.link = node.link != null || node.equals(myself) ? "connected" : "disconnected";
         return n;
     }
 }

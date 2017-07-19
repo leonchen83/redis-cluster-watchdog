@@ -19,9 +19,8 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         ClusterMessage msg = decode(in);
-        if (msg != null) {
-            out.add(msg);
-        }
+        if (msg == null) return;
+        out.add(msg);
     }
 
     protected ClusterMessage decode(ByteBuf in) {
@@ -99,9 +98,7 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
                 msg.data.msg = new ClusterMessageDataPublish();
                 msg.data.msg.channelLen = in.readInt();
                 msg.data.msg.messageLen = in.readInt();
-                byte[] bulkData = new byte[8];
-                in.readBytes(bulkData);
-                msg.data.msg.bulkData = bulkData;
+                in.readBytes(msg.data.msg.bulkData);
             } else if (msg.type == CLUSTERMSG_TYPE_UPDATE) {
                 msg.data = new ClusterMessageData();
                 msg.data.nodecfg = new ClusterMessageDataUpdate();

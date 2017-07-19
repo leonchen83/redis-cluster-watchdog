@@ -21,14 +21,13 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
         ClusterMessage hdr = (ClusterMessage) msg;
         out.writeBytes(hdr.sig.getBytes());
         if (hdr.type == CLUSTERMSG_TYPE_PING || hdr.type == CLUSTERMSG_TYPE_PONG || hdr.type == CLUSTERMSG_TYPE_MEET) {
-            int len = hdr.count * (40 + 4 + 4 + 46 + 2 + 2 + 2 + 4);
-            out.writeInt(2256 + len);
+            out.writeInt(2256 + hdr.count * 104);
         } else if (hdr.type == CLUSTERMSG_TYPE_FAIL) {
-            out.writeInt(2256 + 40);
+            out.writeInt(2296);
         } else if (hdr.type == CLUSTERMSG_TYPE_PUBLISH) {
-            out.writeInt(2256 + 4 + 4 + 8);
+            out.writeInt(2272);
         } else if (hdr.type == CLUSTERMSG_TYPE_UPDATE) {
-            out.writeInt(2256 + 8 + 40 + 2048);
+            out.writeInt(4352);
         } else {
             out.writeInt(2256);
         }
