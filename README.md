@@ -12,6 +12,8 @@ $wget https://github.com/antirez/redis/archive/4.0.0.tar.gz
 $tar -xvzf 4.0.0.tar.gz
 $cd redis-4.0.0
 $make MALLOC=libc
+$cp src/redis-trib.rb /usr/local/bin/
+$gem install redis
 $cd utils/create-cluster
 $./create-cluster start
 $./create-cluster create
