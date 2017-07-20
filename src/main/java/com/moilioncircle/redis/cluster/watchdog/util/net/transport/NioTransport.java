@@ -136,10 +136,9 @@ public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements T
 
     @Override
     public String toString() {
-        return new StringBuilder()
-                .append("[").append("id=").append(id)
-                .append(",la=").append(getLocalAddress())
-                .append(",ra=").append(getRemoteAddress()).append("]").toString();
+        return "[" + "id=" + id +
+                ",la=" + getLocalAddress() +
+                ",ra=" + getRemoteAddress() + "]";
     }
 
 }

@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static com.moilioncircle.redis.cluster.watchdog.config.ConfigInfo.valueOf;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterNodeManager.getRandomHexChars;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.keyHashSlot;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 
@@ -231,7 +233,7 @@ public class ThinServer {
             t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
             boolean retval = clusterBumpConfigEpochWithoutConsensus();
-            String reply = new StringBuilder("+").append(retval ? "BUMPED" : "STILL").append(" ").append(server.myself.configEpoch).append("\r\n").toString();
+            String reply = "+" + (retval ? "BUMPED" : "STILL") + " " + server.myself.configEpoch + "\r\n";
             t.write(reply.getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("info") && argv.length == 2) {
             String[] statestr = {"ok", "fail", "needhelp"};
@@ -270,7 +272,7 @@ public class ThinServer {
             for (int i = 0; i < ClusterConstants.CLUSTERMSG_TYPE_COUNT; i++) {
                 if (server.cluster.statsBusMessagesSent[i] == 0) continue;
                 totMsgSent += server.cluster.statsBusMessagesSent[i];
-                info.append("cluster_stats_messages_" + managers.configs.clusterGetMessageTypeString(i) + "_sent:").append(server.cluster.statsBusMessagesSent[i]).append("\r\n");
+                info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_sent:").append(server.cluster.statsBusMessagesSent[i]).append("\r\n");
             }
 
             info.append("cluster_stats_messages_sent:").append(totMsgSent).append("\r\n");
@@ -278,7 +280,7 @@ public class ThinServer {
             for (int i = 0; i < ClusterConstants.CLUSTERMSG_TYPE_COUNT; i++) {
                 if (server.cluster.statsBusMessagesReceived[i] == 0) continue;
                 totMsgReceived += server.cluster.statsBusMessagesReceived[i];
-                info.append("cluster_stats_messages_" + managers.configs.clusterGetMessageTypeString(i) + "_received:").append(server.cluster.statsBusMessagesReceived[i]).append("\r\n");
+                info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_received:").append(server.cluster.statsBusMessagesReceived[i]).append("\r\n");
             }
 
             info.append("cluster_stats_messages_received:").append(totMsgReceived).append("\r\n");
@@ -289,7 +291,7 @@ public class ThinServer {
             }
             t.write("+OK\r\n".getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("keyslot") && argv.length == 3) {
-            t.write((":" + String.valueOf(managers.slots.keyHashSlot(argv[2])) + "\r\n").getBytes(), true);
+            t.write((":" + String.valueOf(keyHashSlot(argv[2])) + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("countkeysinslot") && argv.length == 3) {
             t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("forget") && argv.length == 3) {
@@ -419,26 +421,26 @@ public class ThinServer {
                 if (start != -1 && (!bit || i == ClusterConstants.CLUSTER_SLOTS - 1)) {
                     StringBuilder builder = new StringBuilder();
                     int nestedElements = 3;
-                    if (bit && i == ClusterConstants.CLUSTER_SLOTS - 1) i++;
+                    if (bit) i++;
                     if (start == i - 1) {
-                        builder.append(":" + start + "\r\n");
-                        builder.append(":" + start + "\r\n");
+                        builder.append(":").append(start).append("\r\n");
+                        builder.append(":").append(start).append("\r\n");
                     } else {
-                        builder.append(":" + start + "\r\n");
-                        builder.append(":" + (i - 1) + "\r\n");
+                        builder.append(":").append(start).append("\r\n");
+                        builder.append(":").append(i - 1).append("\r\n");
                     }
                     start = -1;
                     builder.append("*3\r\n");
-                    builder.append("$" + node.ip.length() + "\r\n" + node.ip + "\r\n");
-                    builder.append(":" + node.port + "\r\n");
-                    builder.append("$" + node.name.length() + "\r\n" + node.name + "\r\n");
+                    builder.append("$").append(node.ip.length()).append("\r\n").append(node.ip).append("\r\n");
+                    builder.append(":").append(node.port).append("\r\n");
+                    builder.append("$").append(node.name.length()).append("\r\n").append(node.name).append("\r\n");
                     for (int j = 0; j < node.numslaves; j++) {
                         if (States.nodeFailed(node.slaves.get(j))) continue;
                         ClusterNode n = node.slaves.get(j);
                         builder.append("*3\r\n");
-                        builder.append("$" + n.ip.length() + "\r\n" + n.ip + "\r\n");
-                        builder.append(":" + n.port + "\r\n");
-                        builder.append("$" + n.name.length() + "\r\n" + n.name + "\r\n");
+                        builder.append("$").append(n.ip.length()).append("\r\n").append(n.ip).append("\r\n");
+                        builder.append(":").append(n.port).append("\r\n");
+                        builder.append("$").append(n.name.length()).append("\r\n").append(n.name).append("\r\n");
                         nestedElements++;
                     }
                     builder.insert(0, "*" + nestedElements + "\r\n");
@@ -471,9 +473,9 @@ public class ThinServer {
         server.cluster.lastVoteEpoch = 0;
         server.myself.configEpoch = 0;
         logger.info("configEpoch set to 0 via CLUSTER RESET HARD");
-        String oldname = server.myself.name;
-        server.cluster.nodes.remove(oldname);
-        server.myself.name = managers.nodes.getRandomHexChars();
+        String old = server.myself.name;
+        server.cluster.nodes.remove(old);
+        server.myself.name = getRandomHexChars();
         managers.nodes.clusterAddNode(server.myself);
         logger.info("Node hard reset, now I'm " + server.myself.name);
     }

@@ -196,7 +196,7 @@ public class ClusterNodeManager {
 
     public static final char[] chars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-    public String getRandomHexChars() {
+    public static String getRandomHexChars() {
         StringBuilder r = new StringBuilder();
         for (int i = 0; i < CLUSTER_NAMELEN; i++) {
             r.append(chars[ThreadLocalRandom.current().nextInt(chars.length)]);

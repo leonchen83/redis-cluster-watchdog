@@ -158,13 +158,12 @@ public class ClusterConfigManager {
         BufferedWriter r = null;
         try {
             File file = new File(managers.configuration.getClusterConfigFile());
-            if (!file.exists()) file.createNewFile();
+            if (!file.exists() && !file.createNewFile()) return false;
             r = new BufferedWriter(new FileWriter(file));
-            StringBuilder ci = new StringBuilder();
-            ci.append(clusterGenNodesDescription(info, ClusterConstants.CLUSTER_NODE_HANDSHAKE));
-            ci.append("vars currentEpoch ").append(info.currentEpoch);
-            ci.append(" lastVoteEpoch ").append(info.lastVoteEpoch);
-            r.write(ci.toString());
+            String ci = clusterGenNodesDescription(info, ClusterConstants.CLUSTER_NODE_HANDSHAKE) +
+                    "vars currentEpoch " + info.currentEpoch +
+                    " lastVoteEpoch " + info.lastVoteEpoch;
+            r.write(ci);
             r.flush();
             return true;
         } catch (IOException e) {
@@ -211,7 +210,7 @@ public class ClusterConfigManager {
                 if (start == -1) start = i;
             }
             if (start != -1 && (!bit || i == ClusterConstants.CLUSTER_SLOTS - 1)) {
-                if (bit && i == ClusterConstants.CLUSTER_SLOTS - 1) i++;
+                if (bit) i++;
                 if (start == i - 1) {
                     ci.append(" ").append(start);
                 } else {
@@ -278,7 +277,7 @@ public class ClusterConfigManager {
                         inq = true;
                     } else if (insq) {
                         s.append('"');
-                    } else if (inq) {
+                    } else {
                         list.add(s.toString());
                         s.setLength(0);
                         inq = false;
@@ -291,7 +290,7 @@ public class ClusterConfigManager {
                         insq = true;
                     } else if (inq) {
                         s.append('\'');
-                    } else if (insq) {
+                    } else {
                         list.add(s.toString());
                         s.setLength(0);
                         insq = false;

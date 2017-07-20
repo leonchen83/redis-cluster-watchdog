@@ -52,11 +52,10 @@ public class ClusterSlotManger {
     public boolean clusterNodeSetSlotBit(ClusterNode n, int slot) {
         boolean old = bitmapTestBit(n.slots, slot);
         bitmapSetBit(n.slots, slot);
-        if (!old) {
-            n.numslots++;
-            if (n.numslots == 1 && clusterMastersHaveSlaves())
-                n.flags |= ClusterConstants.CLUSTER_NODE_MIGRATE_TO;
-        }
+        if (old) return old;
+        n.numslots++;
+        if (n.numslots == 1 && clusterMastersHaveSlaves())
+            n.flags |= ClusterConstants.CLUSTER_NODE_MIGRATE_TO;
         return old;
     }
 
@@ -89,7 +88,8 @@ public class ClusterSlotManger {
     public int clusterDelNodeSlots(ClusterNode node) {
         int deleted = 0;
         for (int j = 0; j < ClusterConstants.CLUSTER_SLOTS; j++) {
-            if (clusterNodeGetSlotBit(node, j)) clusterDelSlot(j);
+            if (!clusterNodeGetSlotBit(node, j)) continue;
+            clusterDelSlot(j);
             deleted++;
         }
         return deleted;

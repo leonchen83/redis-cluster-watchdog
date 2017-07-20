@@ -36,6 +36,7 @@ public class Arrays {
         return buf.toString();
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     private static void deepToString(Object[] a, StringBuilder buf, Set<Object[]> dejaVu) {
         if (a == null) {
             buf.append("null");
