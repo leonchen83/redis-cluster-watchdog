@@ -27,6 +27,6 @@ hs_err_pid*
 /.classpath
 
 # Idea
-/redis-replicator-cluster.iml
+/redis-cluster-watchdog.iml
 /.idea
 /target
