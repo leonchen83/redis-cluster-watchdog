@@ -34,14 +34,16 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
 
         if (link.node != null && States.nodeInHandshake(link.node)) {
             if (sender != null) {
-                logger.debug("Handshake: we already know node " + sender.name + ", updating the address if needed.");
+                if (managers.configuration.isVerbose())
+                    logger.info("Handshake: we already know node " + sender.name + ", updating the address if needed.");
                 nodeUpdateAddressIfNeeded(sender, link, hdr);
                 managers.nodes.clusterDelNode(link.node);
                 return false;
             }
 
             managers.nodes.clusterRenameNode(link.node, hdr.sender);
-            logger.debug("Handshake with node " + link.node.name + " completed.");
+            if (managers.configuration.isVerbose())
+                logger.info("Handshake with node " + link.node.name + " completed.");
             link.node.flags &= ~CLUSTER_NODE_HANDSHAKE;
             link.node.flags |= hdr.flags & (CLUSTER_NODE_MASTER | CLUSTER_NODE_SLAVE);
         } else if (link.node != null && !link.node.name.equals(hdr.sender)) {
@@ -92,7 +94,8 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
                 if (!bitmapTestBit(hdr.myslots, i)) continue;
                 if (server.cluster.slots[i] == null || server.cluster.slots[i].equals(sender)) continue;
                 if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
-                    logger.debug("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
+                    if (managers.configuration.isVerbose())
+                        logger.info("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
                     managers.messages.clusterSendUpdate(sender.link, server.cluster.slots[i]);
                     break;
                 }

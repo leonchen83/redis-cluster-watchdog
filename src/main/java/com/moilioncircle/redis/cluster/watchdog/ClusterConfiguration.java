@@ -5,6 +5,7 @@ package com.moilioncircle.redis.cluster.watchdog;
  */
 public class ClusterConfiguration {
 
+    private boolean verbose = false;
     private String clusterAnnounceIp;
     private String clusterConfigFile;
     private int clusterAnnounceBusPort;
@@ -12,6 +13,14 @@ public class ClusterConfiguration {
     private long clusterNodeTimeout = 15000;
     private int clusterMigrationBarrier = 1;
     private boolean clusterRequireFullCoverage = true;
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
 
     public String getClusterAnnounceIp() {
         return clusterAnnounceIp;

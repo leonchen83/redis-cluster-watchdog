@@ -101,11 +101,13 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
             if (sender != null && States.nodeIsMaster(sender) && !node.equals(server.myself)) {
                 if ((flags & (ClusterConstants.CLUSTER_NODE_FAIL | ClusterConstants.CLUSTER_NODE_PFAIL)) != 0) {
                     if (managers.nodes.clusterNodeAddFailureReport(node, sender)) {
-                        logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
+                        if (managers.configuration.isVerbose())
+                            logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
                     }
                     markNodeAsFailingIfNeeded(node);
                 } else if (managers.nodes.clusterNodeDelFailureReport(node, sender)) {
-                    logger.info("Node " + sender.name + " reported node " + node.name + " is back online.");
+                    if (managers.configuration.isVerbose())
+                        logger.info("Node " + sender.name + " reported node " + node.name + " is back online.");
                 }
             }
 
