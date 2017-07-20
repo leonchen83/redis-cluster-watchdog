@@ -157,7 +157,7 @@ public class ClusterConfigManager {
     public boolean clusterSaveConfig(ConfigInfo info) {
         BufferedWriter r = null;
         try {
-            File file = new File(managers.configuration.getClusterConfigfile());
+            File file = new File(managers.configuration.getClusterConfigFile());
             if (!file.exists()) file.createNewFile();
             r = new BufferedWriter(new FileWriter(file));
             StringBuilder ci = new StringBuilder();

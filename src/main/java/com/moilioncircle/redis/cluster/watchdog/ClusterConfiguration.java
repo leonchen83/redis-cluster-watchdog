@@ -6,7 +6,7 @@ package com.moilioncircle.redis.cluster.watchdog;
 public class ClusterConfiguration {
 
     private String clusterAnnounceIp;
-    private String clusterConfigfile;
+    private String clusterConfigFile;
     private int clusterAnnounceBusPort;
     private int clusterAnnouncePort = 6379;
     private long clusterNodeTimeout = 15000;
@@ -40,12 +40,12 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public String getClusterConfigfile() {
-        return clusterConfigfile;
+    public String getClusterConfigFile() {
+        return clusterConfigFile;
     }
 
-    public ClusterConfiguration setClusterConfigfile(String clusterConfigfile) {
-        this.clusterConfigfile = clusterConfigfile;
+    public ClusterConfiguration setClusterConfigFile(String clusterConfigFile) {
+        this.clusterConfigFile = clusterConfigFile;
         return this;
     }
 
@@ -89,8 +89,8 @@ public class ClusterConfiguration {
             throw new ConfigurationException("illegal bus port" + clusterAnnounceBusPort);
         }
 
-        if (clusterConfigfile == null) {
-            clusterConfigfile = "nodes-" + clusterAnnouncePort + ".conf";
+        if (clusterConfigFile == null) {
+            clusterConfigFile = "nodes-" + clusterAnnouncePort + ".conf";
         }
 
         if (clusterMigrationBarrier < 1) {

@@ -49,7 +49,7 @@ public class ThinGossip {
 
     public void clusterInit() {
         managers.server.cluster = new ClusterState();
-        if (!managers.configs.clusterLoadConfig(managers.configuration.getClusterConfigfile())) {
+        if (!managers.configs.clusterLoadConfig(managers.configuration.getClusterConfigFile())) {
             managers.server.myself = managers.server.cluster.myself = managers.nodes.createClusterNode(null, ClusterConstants.CLUSTER_NODE_MYSELF | ClusterConstants.CLUSTER_NODE_MASTER);
             logger.info("No cluster configuration found, I'm " + managers.server.myself.name);
             managers.nodes.clusterAddNode(managers.server.myself);
