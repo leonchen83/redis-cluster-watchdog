@@ -36,14 +36,14 @@ public class TestReplicationListener implements ReplicationListener {
     private volatile Replicator replicator;
 
     @Override
-    public void onSetReplication(String ip, int host) {
+    public void onSetReplication(String ip, int port) {
         new Thread(() -> {
             try {
                 if (replicator != null) {
                     replicator.close();
                     replicator = null;
                 }
-                replicator = new RedisReplicator(ip, host, Configuration.defaultSetting());
+                replicator = new RedisReplicator(ip, port, Configuration.defaultSetting());
                 replicator.addRdbListener(new RdbListener.Adaptor() {
                     @Override
                     public void handle(Replicator replicator, KeyValuePair<?> kv) {
@@ -51,7 +51,7 @@ public class TestReplicationListener implements ReplicationListener {
                     }
                 });
                 replicator.addCommandListener((r, c) -> logger.info(c));
-                replicator.addCloseListener(r -> logger.info("replicate closed"));
+                replicator.addCloseListener(r -> logger.info("replication closed [" + ip + ":" + port + "]"));
                 replicator.open();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
