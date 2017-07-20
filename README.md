@@ -1,6 +1,6 @@
-# redis-replicator-cluster
+# redis-cluster-watchdog
 
-`redis-replicator-cluster` can pretend as a redis cluster node which accept `RCmb` message.
+`redis-cluster-watchdog` can pretend as a redis cluster node which accept `RCmb` message.
 
 # play with it
 
@@ -20,7 +20,7 @@ $./create-cluster create
 
 ```
 
-## run redis-replicator-cluster
+## run redis-cluster-watchdog
 
 ```java  
 
@@ -34,7 +34,7 @@ $./create-cluster create
 
 ```
 
-## add redis-replicator-cluster to redis cluster
+## add redis-cluster-watchdog to redis cluster
 
 ```java  
 
