@@ -3,9 +3,7 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-
-import java.util.AbstractMap;
-import java.util.Map;
+import com.moilioncircle.redis.cluster.watchdog.util.Tuples;
 
 /**
  * Created by Baoyi Chen on 2017/7/13.
@@ -21,13 +19,12 @@ public class ClusterBlacklistManager {
     }
 
     public void clusterBlacklistCleanup() {
-        server.cluster.nodesBlackList.values().removeIf(e -> e.getKey() < System.currentTimeMillis());
+        server.cluster.nodesBlackList.values().removeIf(e -> e.getV1() < System.currentTimeMillis());
     }
 
     public void clusterBlacklistAddNode(ClusterNode node) {
         clusterBlacklistCleanup();
-        Map.Entry<Long, ClusterNode> entry = new AbstractMap.SimpleEntry<>(System.currentTimeMillis() + ClusterConstants.CLUSTER_BLACKLIST_TTL, node);
-        server.cluster.nodesBlackList.put(node.name, entry);
+        server.cluster.nodesBlackList.put(node.name, Tuples.of(System.currentTimeMillis() + ClusterConstants.CLUSTER_BLACKLIST_TTL, node));
     }
 
     public boolean clusterBlacklistExists(String nodename) {

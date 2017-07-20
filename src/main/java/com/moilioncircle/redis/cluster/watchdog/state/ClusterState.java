@@ -1,6 +1,7 @@
 package com.moilioncircle.redis.cluster.watchdog.state;
 
 import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
+import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple2;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -20,7 +21,7 @@ public class ClusterState {
     public Map<String, ClusterNode> nodes = new LinkedHashMap<>();
     public long[] statsBusMessagesSent = new long[ClusterConstants.CLUSTERMSG_TYPE_COUNT];
     public long[] statsBusMessagesReceived = new long[ClusterConstants.CLUSTERMSG_TYPE_COUNT];
-    public Map<String, Map.Entry<Long, ClusterNode>> nodesBlackList = new LinkedHashMap<>();
+    public Map<String, Tuple2<Long, ClusterNode>> nodesBlackList = new LinkedHashMap<>();
 
     @Override
     public String toString() {
