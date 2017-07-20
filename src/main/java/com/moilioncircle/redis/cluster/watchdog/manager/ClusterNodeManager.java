@@ -3,16 +3,17 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNodeFailReport;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-import com.moilioncircle.redis.cluster.watchdog.state.States;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 import static java.util.Comparator.comparingLong;
 
 /**
@@ -29,7 +30,7 @@ public class ClusterNodeManager {
     }
 
     public void freeClusterNode(ClusterNode n) {
-        if (States.nodeIsSlave(n) && n.slaveof != null) clusterNodeRemoveSlave(n.slaveof, n);
+        if (nodeIsSlave(n) && n.slaveof != null) clusterNodeRemoveSlave(n.slaveof, n);
         server.cluster.nodes.remove(n.name);
         if (n.link != null) managers.connections.freeClusterLink(n.link);
         n.failReports.clear();
@@ -97,11 +98,7 @@ public class ClusterNodeManager {
             n.time = System.currentTimeMillis();
             return false;
         }
-
-        ClusterNodeFailReport fr = new ClusterNodeFailReport();
-        fr.node = sender;
-        fr.time = System.currentTimeMillis();
-        failing.failReports.add(fr);
+        failing.failReports.add(new ClusterNodeFailReport(sender));
         return true;
     }
 
@@ -113,9 +110,9 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
-        ClusterNodeFailReport fr = node.failReports.stream().filter(x -> x.node.equals(sender)).findFirst().orElse(null);
-        if (fr == null) return false;
-        node.failReports.remove(fr);
+        Optional<ClusterNodeFailReport> fr = node.failReports.stream().filter(x -> x.node.equals(sender)).findFirst();
+        if (!fr.isPresent()) return false;
+        node.failReports.remove(fr.get());
         clusterNodeCleanupFailureReports(node);
         return true;
     }
@@ -147,11 +144,11 @@ public class ClusterNodeManager {
     }
 
     public int clusterCountNonFailingSlaves(ClusterNode n) {
-        return (int) n.slaves.stream().filter(x -> !States.nodeFailed(x)).count();
+        return (int) n.slaves.stream().filter(x -> !nodeFailed(x)).count();
     }
 
     public void clusterSetNodeAsMaster(ClusterNode n) {
-        if (States.nodeIsMaster(n)) return;
+        if (nodeIsMaster(n)) return;
 
         if (n.slaveof != null) {
             clusterNodeRemoveSlave(n.slaveof, n);
@@ -171,7 +168,7 @@ public class ClusterNodeManager {
 
     public boolean clusterStartHandshake(String ip, int port, int cport) {
         boolean inHandshake = server.cluster.nodes.values().stream().
-                anyMatch(x -> States.nodeInHandshake(x) && x.ip.equalsIgnoreCase(ip) && x.port == port && x.cport == cport);
+                anyMatch(x -> nodeInHandshake(x) && x.ip.equalsIgnoreCase(ip) && x.port == port && x.cport == cport);
         if (inHandshake) return false;
 
         ClusterNode n = createClusterNode(null, CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_MEET);
@@ -183,7 +180,7 @@ public class ClusterNodeManager {
     }
 
     public void clusterSetMyMaster(ClusterNode n) {
-        if (States.nodeIsMaster(server.myself)) {
+        if (nodeIsMaster(server.myself)) {
             server.myself.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
             server.myself.flags |= CLUSTER_NODE_SLAVE;
         } else if (server.myself.slaveof != null) {

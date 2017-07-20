@@ -1,11 +1,12 @@
 package com.moilioncircle.redis.cluster.watchdog.state;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
 import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple2;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 
 /**
  * Created by Baoyi Chen on 2017/7/6.
@@ -15,12 +16,12 @@ public class ClusterState {
     public long currentEpoch = 0;
     public long lastVoteEpoch = 0;
     public long statsPfailNodes = 0;
-    public byte state = ClusterConstants.CLUSTER_FAIL;
+    public byte state = CLUSTER_FAIL;
     public ClusterNode myself = null;
-    public ClusterNode[] slots = new ClusterNode[ClusterConstants.CLUSTER_SLOTS];
+    public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
     public Map<String, ClusterNode> nodes = new LinkedHashMap<>();
-    public long[] statsBusMessagesSent = new long[ClusterConstants.CLUSTERMSG_TYPE_COUNT];
-    public long[] statsBusMessagesReceived = new long[ClusterConstants.CLUSTERMSG_TYPE_COUNT];
+    public long[] statsBusMessagesSent = new long[CLUSTERMSG_TYPE_COUNT];
+    public long[] statsBusMessagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
     public Map<String, Tuple2<Long, ClusterNode>> nodesBlackList = new LinkedHashMap<>();
 
     @Override

@@ -22,7 +22,6 @@ import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-import com.moilioncircle.redis.cluster.watchdog.state.States;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -32,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 
 /**
  * @author Leon Chen
@@ -69,7 +69,7 @@ public class ClusterMessageManager {
 
     public ClusterMessage clusterBuildMessageHdr(int type) {
         ClusterMessage hdr = new ClusterMessage();
-        ClusterNode master = (States.nodeIsSlave(server.myself) && server.myself.slaveof != null) ? server.myself.slaveof : server.myself;
+        ClusterNode master = (nodeIsSlave(server.myself) && server.myself.slaveof != null) ? server.myself.slaveof : server.myself;
         hdr.ver = CLUSTER_PROTO_VER;
         hdr.sig = "RCmb";
         hdr.type = type;
@@ -147,7 +147,7 @@ public class ClusterMessageManager {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             for (int i = 0; i < list.size() && pfailWanted > 0; i++) {
                 ClusterNode node = list.get(i);
-                if (States.nodeInHandshake(node) || States.nodeWithoutAddr(node) || !States.nodePFailed(node)) continue;
+                if (nodeInHandshake(node) || nodeWithoutAddr(node) || !nodePFailed(node)) continue;
                 clusterSetGossipEntry(hdr, gossipcount, node);
                 freshnodes--;
                 gossipcount++;

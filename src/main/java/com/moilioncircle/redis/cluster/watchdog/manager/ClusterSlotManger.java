@@ -1,24 +1,20 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-import com.moilioncircle.redis.cluster.watchdog.state.States;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MIGRATE_TO;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsSlave;
 import static com.moilioncircle.redis.cluster.watchdog.util.CRC16.crc16;
 
 /**
  * Created by Baoyi Chen on 2017/7/12.
  */
 public class ClusterSlotManger {
-    private static final Log logger = LogFactory.getLog(ClusterSlotManger.class);
     private ServerState server;
-    private ClusterManagers managers;
 
     public ClusterSlotManger(ClusterManagers managers) {
-        this.managers = managers;
         this.server = managers.server;
     }
 
@@ -43,7 +39,7 @@ public class ClusterSlotManger {
     public boolean clusterMastersHaveSlaves() {
         int slaves = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
-            if (States.nodeIsSlave(node)) continue;
+            if (nodeIsSlave(node)) continue;
             slaves += node.numslaves;
         }
         return slaves != 0;
@@ -55,7 +51,7 @@ public class ClusterSlotManger {
         if (old) return old;
         n.numslots++;
         if (n.numslots == 1 && clusterMastersHaveSlaves())
-            n.flags |= ClusterConstants.CLUSTER_NODE_MIGRATE_TO;
+            n.flags |= CLUSTER_NODE_MIGRATE_TO;
         return old;
     }
 
@@ -64,10 +60,6 @@ public class ClusterSlotManger {
         bitmapClearBit(n.slots, slot);
         if (old) n.numslots--;
         return old;
-    }
-
-    public boolean clusterNodeGetSlotBit(ClusterNode n, int slot) {
-        return bitmapTestBit(n.slots, slot);
     }
 
     public boolean clusterAddSlot(ClusterNode n, int slot) {
@@ -87,8 +79,8 @@ public class ClusterSlotManger {
 
     public int clusterDelNodeSlots(ClusterNode node) {
         int deleted = 0;
-        for (int j = 0; j < ClusterConstants.CLUSTER_SLOTS; j++) {
-            if (!clusterNodeGetSlotBit(node, j)) continue;
+        for (int j = 0; j < CLUSTER_SLOTS; j++) {
+            if (!bitmapTestBit(node.slots, j)) continue;
             clusterDelSlot(j);
             deleted++;
         }
@@ -107,6 +99,6 @@ public class ClusterSlotManger {
             }
             if (ed > st + 1) key = key.substring(st + 1, ed);
         }
-        return crc16(key.getBytes()) & (ClusterConstants.CLUSTER_SLOTS - 1);
+        return crc16(key.getBytes()) & (CLUSTER_SLOTS - 1);
     }
 }

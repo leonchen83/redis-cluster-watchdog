@@ -1,9 +1,9 @@
 package com.moilioncircle.redis.cluster.watchdog.state;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 
 /**
  * Created by Baoyi Chen on 2017/7/6.
@@ -26,7 +26,7 @@ public class ClusterNode {
     public long orphanedTime;
     public ClusterNode slaveof;
     public volatile ClusterLink link;
-    public byte[] slots = new byte[ClusterConstants.CLUSTER_SLOTS / 8];
+    public byte[] slots = new byte[CLUSTER_SLOTS / 8];
     public List<ClusterNode> slaves = new ArrayList<>();
     public List<ClusterNodeFailReport> failReports = new ArrayList<>();
 

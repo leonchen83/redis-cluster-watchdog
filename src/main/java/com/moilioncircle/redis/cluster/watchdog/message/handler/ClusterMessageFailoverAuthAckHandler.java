@@ -15,7 +15,9 @@ public class ClusterMessageFailoverAuthAckHandler extends AbstractClusterMessage
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
-        logger.debug("Failover auth ack packet received: " + Thread.currentThread() + ",node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Failover auth ack packet received: node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+        }
         return true;
     }
 }

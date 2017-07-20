@@ -23,7 +23,6 @@ public class ClusterMessageDataGossip {
                 ", port=" + port +
                 ", cport=" + cport +
                 ", flags=" + flags +
-//                ", notused1=" + Arrays.toString(notused1) +
                 '}';
     }
 }

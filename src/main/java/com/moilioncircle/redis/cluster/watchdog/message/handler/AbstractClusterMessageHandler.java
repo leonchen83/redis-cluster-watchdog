@@ -1,6 +1,5 @@
 package com.moilioncircle.redis.cluster.watchdog.message.handler;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
@@ -8,11 +7,14 @@ import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-import com.moilioncircle.redis.cluster.watchdog.state.States;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.List;
+
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.representClusterNodeFlags;
+import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 
 /**
  * Created by Baoyi Chen on 2017/7/13.
@@ -31,16 +33,17 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
 
     @Override
     public boolean handle(ClusterLink link, ClusterMessage hdr) {
+        long st = System.nanoTime();
         int type = hdr.type;
 
-        if (type < ClusterConstants.CLUSTERMSG_TYPE_COUNT) {
+        if (type < CLUSTERMSG_TYPE_COUNT) {
             server.cluster.statsBusMessagesReceived[type]++;
         }
 
-        if (hdr.ver != ClusterConstants.CLUSTER_PROTO_VER) return true;
+        if (hdr.ver != CLUSTER_PROTO_VER) return true;
 
         ClusterNode sender = managers.nodes.clusterLookupNode(hdr.sender);
-        if (sender != null && !States.nodeInHandshake(sender)) {
+        if (sender != null && !nodeInHandshake(sender)) {
             if (hdr.currentEpoch > server.cluster.currentEpoch) {
                 server.cluster.currentEpoch = hdr.currentEpoch;
             }
@@ -51,6 +54,8 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
 
         handle(sender, link, hdr);
         managers.states.clusterUpdateState();
+        long ed = System.nanoTime();
+        logger.info("request type: " + type + ", ellipse nano-time: " + (ed - st));
         return true;
     }
 
@@ -58,13 +63,13 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
 
     public void clusterUpdateSlotsConfigWith(ClusterNode sender, long senderConfigEpoch, byte[] slots) {
         ClusterNode newmaster = null;
-        ClusterNode curmaster = States.nodeIsMaster(server.myself) ? server.myself : server.myself.slaveof;
+        ClusterNode curmaster = nodeIsMaster(server.myself) ? server.myself : server.myself.slaveof;
         if (sender.equals(server.myself)) {
             logger.info("Discarding UPDATE message about myself.");
             return;
         }
 
-        for (int i = 0; i < ClusterConstants.CLUSTER_SLOTS; i++) {
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!ClusterSlotManger.bitmapTestBit(slots, i)) continue;
             if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(sender)) continue;
             if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
@@ -86,20 +91,21 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         ClusterNode sender = link.node != null ? link.node : managers.nodes.clusterLookupNode(hdr.sender);
         for (ClusterMessageDataGossip g : gs) {
             int flags = g.flags;
-            String ci = managers.configs.representClusterNodeFlags(flags);
-            logger.debug("GOSSIP " + g.nodename + " " + g.ip + ":" + g.port + "@" + g.cport + " " + ci);
+            if (logger.isDebugEnabled()) {
+                logger.debug("GOSSIP " + g.nodename + " " + g.ip + ":" + g.port + "@" + g.cport + " " + representClusterNodeFlags(flags));
+            }
 
             ClusterNode node = managers.nodes.clusterLookupNode(g.nodename);
 
             if (node == null) {
-                if (sender != null && (flags & ClusterConstants.CLUSTER_NODE_NOADDR) == 0 && !managers.blacklists.clusterBlacklistExists(g.nodename)) {
+                if (sender != null && (flags & CLUSTER_NODE_NOADDR) == 0 && !managers.blacklists.clusterBlacklistExists(g.nodename)) {
                     managers.nodes.clusterStartHandshake(g.ip, g.port, g.cport);
                 }
                 continue;
             }
 
-            if (sender != null && States.nodeIsMaster(sender) && !node.equals(server.myself)) {
-                if ((flags & (ClusterConstants.CLUSTER_NODE_FAIL | ClusterConstants.CLUSTER_NODE_PFAIL)) != 0) {
+            if (sender != null && nodeIsMaster(sender) && !node.equals(server.myself)) {
+                if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0) {
                     if (managers.nodes.clusterNodeAddFailureReport(node, sender)) {
                         if (managers.configuration.isVerbose())
                             logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
@@ -111,20 +117,20 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
                 }
             }
 
-            if ((flags & (ClusterConstants.CLUSTER_NODE_FAIL | ClusterConstants.CLUSTER_NODE_PFAIL)) == 0 && node.pingSent == 0 && managers.nodes.clusterNodeFailureReportsCount(node) == 0) {
+            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && node.pingSent == 0 && managers.nodes.clusterNodeFailureReportsCount(node) == 0) {
                 long pongtime = g.pongReceived;
                 if (pongtime <= (System.currentTimeMillis() + 500) && pongtime > node.pongReceived) {
                     node.pongReceived = pongtime;
                 }
             }
 
-            if ((node.flags & (ClusterConstants.CLUSTER_NODE_FAIL | ClusterConstants.CLUSTER_NODE_PFAIL)) != 0 && (flags & ClusterConstants.CLUSTER_NODE_NOADDR) == 0 && (flags & (ClusterConstants.CLUSTER_NODE_FAIL | ClusterConstants.CLUSTER_NODE_PFAIL)) == 0 &&
+            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && (flags & CLUSTER_NODE_NOADDR) == 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 &&
                     (!node.ip.equalsIgnoreCase(g.ip) || node.port != g.port || node.cport != g.cport)) {
                 if (node.link != null) managers.connections.freeClusterLink(node.link);
                 node.ip = g.ip;
                 node.port = g.port;
                 node.cport = g.cport;
-                node.flags &= ~ClusterConstants.CLUSTER_NODE_NOADDR;
+                node.flags &= ~CLUSTER_NODE_NOADDR;
             }
         }
     }
@@ -145,7 +151,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         if (node.link != null) managers.connections.freeClusterLink(node.link);
         logger.info("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
 
-        if (States.nodeIsSlave(server.myself) && server.myself.slaveof.equals(node)) {
+        if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(node)) {
             managers.replications.replicationSetMaster(node);
         }
         return true;
@@ -154,24 +160,24 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
     public void markNodeAsFailingIfNeeded(ClusterNode node) {
         int neededQuorum = server.cluster.size / 2 + 1;
 
-        if (!States.nodePFailed(node) || States.nodeFailed(node)) return;
+        if (!nodePFailed(node) || nodeFailed(node)) return;
 
         int failures = managers.nodes.clusterNodeFailureReportsCount(node);
 
-        if (States.nodeIsMaster(server.myself)) failures++;
+        if (nodeIsMaster(server.myself)) failures++;
         if (failures < neededQuorum) return;
 
         logger.info("Marking node " + node.name + " as failing (quorum reached).");
 
-        node.flags &= ~ClusterConstants.CLUSTER_NODE_PFAIL;
-        node.flags |= ClusterConstants.CLUSTER_NODE_FAIL;
+        node.flags &= ~CLUSTER_NODE_PFAIL;
+        node.flags |= CLUSTER_NODE_FAIL;
         node.failTime = System.currentTimeMillis();
 
-        if (States.nodeIsMaster(server.myself)) managers.messages.clusterSendFail(node.name);
+        if (nodeIsMaster(server.myself)) managers.messages.clusterSendFail(node.name);
     }
 
     public void clusterHandleConfigEpochCollision(ClusterNode sender) {
-        if (sender.configEpoch != server.myself.configEpoch || States.nodeIsSlave(sender) || States.nodeIsSlave(server.myself))
+        if (sender.configEpoch != server.myself.configEpoch || nodeIsSlave(sender) || nodeIsSlave(server.myself))
             return;
         if (sender.name.compareTo(server.myself.name) <= 0) return;
         server.cluster.currentEpoch++;

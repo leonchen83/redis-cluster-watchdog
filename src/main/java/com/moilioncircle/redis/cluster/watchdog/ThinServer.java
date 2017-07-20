@@ -23,7 +23,6 @@ import com.moilioncircle.redis.cluster.watchdog.config.NodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-import com.moilioncircle.redis.cluster.watchdog.state.States;
 import com.moilioncircle.redis.cluster.watchdog.util.Arrays;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
@@ -36,9 +35,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.config.ConfigInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterNodeManager.getRandomHexChars;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.keyHashSlot;
+import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 
@@ -111,7 +113,7 @@ public class ThinServer {
             if (argv.length == 5) {
                 cport = parseInt(argv[4]);
             } else {
-                cport = port + ClusterConstants.CLUSTER_PORT_INCR;
+                cport = port + CLUSTER_PORT_INCR;
             }
 
             if (managers.nodes.clusterStartHandshake(argv[2], port, cport)) {
@@ -239,21 +241,21 @@ public class ThinServer {
             String[] statestr = {"ok", "fail", "needhelp"};
             int slotsAssigned = 0, slotsOk = 0, slotsFail = 0, slotsPfail = 0;
 
-            for (int j = 0; j < ClusterConstants.CLUSTER_SLOTS; j++) {
+            for (int j = 0; j < CLUSTER_SLOTS; j++) {
                 ClusterNode n = server.cluster.slots[j];
 
                 if (n == null) continue;
                 slotsAssigned++;
-                if (States.nodeFailed(n)) {
+                if (nodeFailed(n)) {
                     slotsFail++;
-                } else if (States.nodePFailed(n)) {
+                } else if (nodePFailed(n)) {
                     slotsPfail++;
                 } else {
                     slotsOk++;
                 }
             }
 
-            long myepoch = (States.nodeIsSlave(server.myself) && server.myself.slaveof != null) ? server.myself.slaveof.configEpoch : server.myself.configEpoch;
+            long myepoch = (nodeIsSlave(server.myself) && server.myself.slaveof != null) ? server.myself.slaveof.configEpoch : server.myself.configEpoch;
 
             StringBuilder info = new StringBuilder("cluster_state:").append(statestr[server.cluster.state]).append("\r\n")
                     .append("cluster_slots_assigned:").append(slotsAssigned).append("\r\n")
@@ -269,7 +271,7 @@ public class ThinServer {
             long totMsgSent = 0;
             long totMsgReceived = 0;
 
-            for (int i = 0; i < ClusterConstants.CLUSTERMSG_TYPE_COUNT; i++) {
+            for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
                 if (server.cluster.statsBusMessagesSent[i] == 0) continue;
                 totMsgSent += server.cluster.statsBusMessagesSent[i];
                 info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_sent:").append(server.cluster.statsBusMessagesSent[i]).append("\r\n");
@@ -277,7 +279,7 @@ public class ThinServer {
 
             info.append("cluster_stats_messages_sent:").append(totMsgSent).append("\r\n");
 
-            for (int i = 0; i < ClusterConstants.CLUSTERMSG_TYPE_COUNT; i++) {
+            for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
                 if (server.cluster.statsBusMessagesReceived[i] == 0) continue;
                 totMsgReceived += server.cluster.statsBusMessagesReceived[i];
                 info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_received:").append(server.cluster.statsBusMessagesReceived[i]).append("\r\n");
@@ -303,7 +305,7 @@ public class ThinServer {
             } else if (n.equals(server.myself)) {
                 t.write(("-ERR I tried hard but I can't forget myself...\r\n").getBytes(), true);
                 return;
-            } else if (States.nodeIsSlave(server.myself) && server.myself.slaveof.equals(n)) {
+            } else if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(n)) {
                 t.write(("-ERR Can't forget my master!\r\n").getBytes(), true);
                 return;
             }
@@ -324,12 +326,12 @@ public class ThinServer {
                 return;
             }
 
-            if (States.nodeIsSlave(n)) {
+            if (nodeIsSlave(n)) {
                 t.write(("-ERR I can only replicate a master, not a slave.\r\n").getBytes(), true);
                 return;
             }
 
-            if (States.nodeIsMaster(server.myself) && (server.myself.numslots != 0)) {
+            if (nodeIsMaster(server.myself) && (server.myself.numslots != 0)) {
                 t.write(("-ERR To set a master the node must be empty and without assigned slots.\r\n").getBytes(), true);
                 return;
             }
@@ -345,7 +347,7 @@ public class ThinServer {
                 return;
             }
 
-            if (States.nodeIsSlave(n)) {
+            if (nodeIsSlave(n)) {
                 t.write(("-ERR The specified node is not a master\r\n").getBytes(), true);
                 return;
             }
@@ -411,14 +413,14 @@ public class ThinServer {
         StringBuilder ci = new StringBuilder();
         for (ClusterNode node : server.cluster.nodes.values()) {
             int start = -1;
-            if (!States.nodeIsMaster(node) || node.numslots == 0) continue;
+            if (!nodeIsMaster(node) || node.numslots == 0) continue;
 
-            for (int i = 0; i < ClusterConstants.CLUSTER_SLOTS; i++) {
+            for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 boolean bit;
-                if ((bit = managers.slots.clusterNodeGetSlotBit(node, i))) {
+                if ((bit = bitmapTestBit(node.slots, i))) {
                     if (start == -1) start = i;
                 }
-                if (start != -1 && (!bit || i == ClusterConstants.CLUSTER_SLOTS - 1)) {
+                if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
                     StringBuilder builder = new StringBuilder();
                     int nestedElements = 3;
                     if (bit) i++;
@@ -435,7 +437,7 @@ public class ThinServer {
                     builder.append(":").append(node.port).append("\r\n");
                     builder.append("$").append(node.name.length()).append("\r\n").append(node.name).append("\r\n");
                     for (int j = 0; j < node.numslaves; j++) {
-                        if (States.nodeFailed(node.slaves.get(j))) continue;
+                        if (nodeFailed(node.slaves.get(j))) continue;
                         ClusterNode n = node.slaves.get(j);
                         builder.append("*3\r\n");
                         builder.append("$").append(n.ip.length()).append("\r\n").append(n.ip).append("\r\n");
@@ -454,12 +456,12 @@ public class ThinServer {
     }
 
     public void clusterReset(boolean hard) {
-        if (States.nodeIsSlave(server.myself)) {
+        if (nodeIsSlave(server.myself)) {
             managers.nodes.clusterSetNodeAsMaster(server.myself);
             managers.replications.replicationUnsetMaster();
         }
 
-        for (int i = 0; i < ClusterConstants.CLUSTER_SLOTS; i++)
+        for (int i = 0; i < CLUSTER_SLOTS; i++)
             managers.slots.clusterDelSlot(i);
 
         List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());

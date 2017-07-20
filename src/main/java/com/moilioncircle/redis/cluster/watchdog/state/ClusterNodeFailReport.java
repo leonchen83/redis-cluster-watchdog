@@ -7,6 +7,11 @@ public class ClusterNodeFailReport {
     public long time;
     public ClusterNode node;
 
+    public ClusterNodeFailReport(ClusterNode node) {
+        this.time = System.currentTimeMillis();
+        this.node = node;
+    }
+
     @Override
     public String toString() {
         return "ClusterNodeFailReport{" +

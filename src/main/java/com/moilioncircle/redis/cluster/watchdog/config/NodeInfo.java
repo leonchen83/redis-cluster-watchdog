@@ -1,9 +1,10 @@
 package com.moilioncircle.redis.cluster.watchdog.config;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
 import java.util.Arrays;
+
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 
 /**
  * Created by Baoyi Chen on 2017/7/17.
@@ -19,7 +20,7 @@ public class NodeInfo {
     public String slaveof;
     public long configEpoch;
     public long pongReceived;
-    public byte[] slots = new byte[ClusterConstants.CLUSTER_SLOTS / 8];
+    public byte[] slots = new byte[CLUSTER_SLOTS / 8];
 
     @Override
     public boolean equals(Object o) {

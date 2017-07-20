@@ -4,12 +4,13 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
-import com.moilioncircle.redis.cluster.watchdog.state.States;
 
 import java.util.Arrays;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
+import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeInHandshake;
+import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsMaster;
 
 /**
  * Created by Baoyi Chen on 2017/7/13.
@@ -21,7 +22,10 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
-        logger.debug("Ping packet received: " + Thread.currentThread() + ",node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Ping packet received: node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+        }
+
         if (server.myself.ip == null && managers.configuration.getClusterAnnounceIp() == null) {
             String ip = link.fd.getLocalAddress(null);
             if (ip != null && !ip.equals(server.myself.ip)) {
@@ -32,7 +36,7 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
 
         managers.messages.clusterSendPing(link, CLUSTERMSG_TYPE_PONG);
 
-        if (link.node != null && States.nodeInHandshake(link.node)) {
+        if (link.node != null && nodeInHandshake(link.node)) {
             if (sender != null) {
                 if (managers.configuration.isVerbose())
                     logger.info("Handshake: we already know node " + sender.name + ", updating the address if needed.");
@@ -58,14 +62,14 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
 
         if (sender == null) return true;
 
-        if (!States.nodeInHandshake(sender)) nodeUpdateAddressIfNeeded(sender, link, hdr);
+        if (!nodeInHandshake(sender)) nodeUpdateAddressIfNeeded(sender, link, hdr);
 
         if (hdr.slaveof == null) {
             managers.nodes.clusterSetNodeAsMaster(sender);
         } else {
             ClusterNode master = managers.nodes.clusterLookupNode(hdr.slaveof);
 
-            if (States.nodeIsMaster(sender)) {
+            if (nodeIsMaster(sender)) {
                 managers.slots.clusterDelNodeSlots(sender);
                 sender.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
                 sender.flags |= CLUSTER_NODE_SLAVE;
@@ -80,12 +84,12 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
 
         boolean dirtySlots = false;
 
-        ClusterNode senderMaster = States.nodeIsMaster(sender) ? sender : sender.slaveof;
+        ClusterNode senderMaster = nodeIsMaster(sender) ? sender : sender.slaveof;
         if (senderMaster != null) {
             dirtySlots = !Arrays.equals(senderMaster.slots, hdr.myslots);
         }
 
-        if (States.nodeIsMaster(sender) && dirtySlots) {
+        if (nodeIsMaster(sender) && dirtySlots) {
             clusterUpdateSlotsConfigWith(sender, hdr.configEpoch, hdr.myslots);
         }
 
@@ -102,7 +106,7 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
             }
         }
 
-        if (States.nodeIsMaster(server.myself) && States.nodeIsMaster(sender) && hdr.configEpoch == server.myself.configEpoch) {
+        if (nodeIsMaster(server.myself) && nodeIsMaster(sender) && hdr.configEpoch == server.myself.configEpoch) {
             clusterHandleConfigEpochCollision(sender);
         }
 

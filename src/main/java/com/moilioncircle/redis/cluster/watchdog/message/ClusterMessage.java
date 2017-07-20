@@ -1,8 +1,8 @@
 package com.moilioncircle.redis.cluster.watchdog.message;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConstants;
-
 import java.util.Arrays;
+
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 
 /**
  * Created by Baoyi Chen on 2017/7/6.
@@ -11,20 +11,20 @@ public class ClusterMessage implements RCmbMessage {
     public String sig;
     public int totlen;
     public int ver;
-    public int port;
     public int type;
+    public String myip;
+    public int port;
+    public int cport;
+    public int flags;
     public int count;
+    public byte state;
     public long currentEpoch;
     public long configEpoch;
     public long offset;
     public String sender;
-    public byte[] myslots = new byte[ClusterConstants.CLUSTER_SLOTS / 8];
+    public byte[] myslots = new byte[CLUSTER_SLOTS / 8];
     public String slaveof;
-    public String myip;
     public byte[] notused = new byte[34];
-    public int cport;
-    public int flags;
-    public byte state;
     public byte[] mflags = new byte[3];
     public ClusterMessageData data;
 
