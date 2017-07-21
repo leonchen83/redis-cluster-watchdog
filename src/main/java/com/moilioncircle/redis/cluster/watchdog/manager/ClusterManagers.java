@@ -32,7 +32,6 @@ public class ClusterManagers {
     public ExecutorService file;
     public ExecutorService worker;
     public ScheduledExecutorService executor;
-    public ServerState server = new ServerState();
 
     public ClusterSlotManger slots;
     public ClusterNodeManager nodes;
@@ -45,14 +44,12 @@ public class ClusterManagers {
     public ClusterConnectionManager connections;
     public ClusterMessageHandlerManager handlers;
 
+    public ServerState server = new ServerState();
+
     private volatile ReplicationListener replicationListener;
 
     public ClusterManagers(ClusterConfiguration configuration) {
-        this.file = Executors.newSingleThreadExecutor();
-        this.worker = Executors.newSingleThreadExecutor();
-        this.executor = Executors.newSingleThreadScheduledExecutor();
         this.configuration = configuration;
-        this.configuration.validate();
         this.slots = new ClusterSlotManger(this);
         this.nodes = new ClusterNodeManager(this);
         this.states = new ClusterStateManager(this);
@@ -62,6 +59,10 @@ public class ClusterManagers {
         this.connections = new ClusterConnectionManager();
         this.blacklists = new ClusterBlacklistManager(this);
         this.handlers = new ClusterMessageHandlerManager(this);
+
+        this.file = Executors.newSingleThreadExecutor();
+        this.worker = Executors.newSingleThreadExecutor();
+        this.executor = Executors.newSingleThreadScheduledExecutor();
     }
 
     public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {

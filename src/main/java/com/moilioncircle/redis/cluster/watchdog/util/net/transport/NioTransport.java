@@ -15,7 +15,8 @@ import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by Baoyi Chen on 2017/7/7.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 @SuppressWarnings("unchecked")
 public class NioTransport<T> extends SimpleChannelInboundHandler<T> implements Transport<T> {

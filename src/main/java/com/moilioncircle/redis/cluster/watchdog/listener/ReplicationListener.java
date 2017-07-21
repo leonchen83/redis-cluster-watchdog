@@ -21,7 +21,7 @@ package com.moilioncircle.redis.cluster.watchdog.listener;
  * @since 2.1.0
  */
 public interface ReplicationListener {
-    void onSetReplication(String ip, int host);
+    void onSetReplication(String ip, int port);
 
     void onUnsetReplication();
 }

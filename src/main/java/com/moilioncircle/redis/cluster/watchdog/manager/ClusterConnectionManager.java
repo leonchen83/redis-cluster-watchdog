@@ -4,12 +4,12 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
 /**
- * Created by Baoyi Chen on 2017/7/12.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterConnectionManager {
     public synchronized ClusterLink createClusterLink(ClusterNode node) {
         ClusterLink link = new ClusterLink();
-        link.ctime = System.currentTimeMillis();
         link.node = node;
         return link;
     }

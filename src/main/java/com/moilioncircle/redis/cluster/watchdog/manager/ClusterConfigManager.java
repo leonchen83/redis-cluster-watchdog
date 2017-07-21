@@ -19,7 +19,8 @@ import static java.lang.Long.parseLong;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Created by Baoyi Chen on 2017/7/12.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterConfigManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
@@ -44,68 +45,67 @@ public class ClusterConfigManager {
     }
 
     public boolean clusterLoadConfig() {
-        String fileName = managers.configuration.getClusterConfigFile();
-        try (BufferedReader r = new BufferedReader(new FileReader(new File(fileName)))) {
+        String file = managers.configuration.getClusterConfigFile();
+        try (BufferedReader r = new BufferedReader(new FileReader(new File(file)))) {
             String line;
             while ((line = r.readLine()) != null) {
-                if (line.length() == 0 || line.equals("\n")) continue;
-                List<String> list = parseLine(line);
-                if (list.isEmpty()) continue;
-                if (list.get(0).equals("vars")) {
-                    for (int i = 1; i < list.size(); i += 2) {
-                        if (list.get(i).equals("currentEpoch")) {
-                            server.cluster.currentEpoch = parseInt(list.get(i + 1));
-                        } else if (list.get(i).equals("lastVoteEpoch")) {
-                            server.cluster.lastVoteEpoch = parseInt(list.get(i + 1));
+                List<String> args = parseLine(line);
+                if (args.isEmpty()) continue;
+                if (args.get(0).equals("vars")) {
+                    for (int i = 1; i < args.size(); i += 2) {
+                        if (args.get(i).equals("currentEpoch")) {
+                            server.cluster.currentEpoch = parseInt(args.get(i + 1));
+                        } else if (args.get(i).equals("lastVoteEpoch")) {
+                            server.cluster.lastVoteEpoch = parseInt(args.get(i + 1));
                         } else {
-                            logger.warn("Skipping unknown cluster config variable '" + list.get(i) + "'");
+                            logger.warn("Skipping unknown cluster config variable '" + args.get(i) + "'");
                         }
                     }
-                } else if (list.size() < 8) {
+                } else if (args.size() < 8) {
                     throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
                 } else {
-                    ClusterNode n = managers.nodes.clusterLookupNode(list.get(0));
-                    if (n == null) {
-                        n = managers.nodes.createClusterNode(list.get(0), 0);
-                        managers.nodes.clusterAddNode(n);
+                    ClusterNode node = managers.nodes.clusterLookupNode(args.get(0));
+                    if (node == null) {
+                        node = managers.nodes.createClusterNode(args.get(0), 0);
+                        managers.nodes.clusterAddNode(node);
                     }
-                    String hostAndPort = list.get(1);
+                    String hostAndPort = args.get(1);
                     if (!hostAndPort.contains(":")) {
                         throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
                     }
                     int colonIdx = hostAndPort.indexOf(":");
                     int atIdx = hostAndPort.indexOf("@");
-                    n.ip = hostAndPort.substring(0, colonIdx);
-                    n.port = parseInt(hostAndPort.substring(colonIdx + 1, atIdx == -1 ? hostAndPort.length() : atIdx));
-                    n.cport = atIdx == -1 ? n.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx + 1));
-                    String[] roles = list.get(2).split(",");
+                    node.ip = hostAndPort.substring(0, colonIdx);
+                    node.port = parseInt(hostAndPort.substring(colonIdx + 1, atIdx == -1 ? hostAndPort.length() : atIdx));
+                    node.busPort = atIdx == -1 ? node.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx + 1));
+                    String[] roles = args.get(2).split(",");
+                    long now = System.currentTimeMillis();
                     for (String role : roles) {
                         switch (role) {
                             case "myself":
-                                server.myself = server.cluster.myself = n;
-                                n.flags |= CLUSTER_NODE_MYSELF;
+                                server.myself = server.cluster.myself = node;
+                                node.flags |= CLUSTER_NODE_MYSELF;
                                 break;
                             case "master":
-                                n.flags |= CLUSTER_NODE_MASTER;
+                                node.flags |= CLUSTER_NODE_MASTER;
                                 break;
                             case "slave":
-                                n.flags |= CLUSTER_NODE_SLAVE;
+                                node.flags |= CLUSTER_NODE_SLAVE;
                                 break;
                             case "fail?":
-                                n.flags |= CLUSTER_NODE_PFAIL;
+                                node.flags |= CLUSTER_NODE_PFAIL;
                                 break;
                             case "fail":
-                                n.flags |= CLUSTER_NODE_FAIL;
-                                n.failTime = System.currentTimeMillis();
+                                node.flags |= CLUSTER_NODE_FAIL;
+                                node.failTime = now;
                                 break;
                             case "handshake":
-                                n.flags |= CLUSTER_NODE_HANDSHAKE;
+                                node.flags |= CLUSTER_NODE_HANDSHAKE;
                                 break;
                             case "noaddr":
-                                n.flags |= CLUSTER_NODE_NOADDR;
+                                node.flags |= CLUSTER_NODE_NOADDR;
                                 break;
                             case "noflags":
-                                // NOP
                                 break;
                             default:
                                 throw new UnsupportedOperationException("Unknown flag in redis cluster config file");
@@ -113,31 +113,31 @@ public class ClusterConfigManager {
                     }
 
                     ClusterNode master;
-                    if (!list.get(3).equals("-")) {
-                        master = managers.nodes.clusterLookupNode(list.get(3));
+                    if (!args.get(3).equals("-")) {
+                        master = managers.nodes.clusterLookupNode(args.get(3));
                         if (master == null) {
-                            master = managers.nodes.createClusterNode(list.get(3), 0);
+                            master = managers.nodes.createClusterNode(args.get(3), 0);
                             managers.nodes.clusterAddNode(master);
                         }
-                        n.slaveof = master;
-                        managers.nodes.clusterNodeAddSlave(master, n);
+                        node.master = master;
+                        managers.nodes.clusterNodeAddSlave(master, node);
                     }
 
-                    if (parseLong(list.get(4)) > 0) n.pingSent = System.currentTimeMillis();
-                    if (parseLong(list.get(5)) > 0) n.pongReceived = System.currentTimeMillis();
-                    n.configEpoch = parseInt(list.get(6));
+                    if (parseLong(args.get(4)) > 0) node.pingTime = now;
+                    if (parseLong(args.get(5)) > 0) node.pongTime = now;
+                    node.configEpoch = parseInt(args.get(6));
 
-                    for (int i = 8; i < list.size(); i++) {
-                        int start, stop;
-                        String argi = list.get(i);
-                        if (argi.contains("-")) {
-                            int idx = argi.indexOf("-");
-                            start = parseInt(argi.substring(0, idx));
-                            stop = parseInt(argi.substring(idx + 1));
+                    for (int i = 8; i < args.size(); i++) {
+                        int st, ed;
+                        String arg = args.get(i);
+                        if (arg.contains("-")) {
+                            int idx = arg.indexOf("-");
+                            st = parseInt(arg.substring(0, idx));
+                            ed = parseInt(arg.substring(idx + 1));
                         } else {
-                            start = stop = parseInt(argi);
+                            st = ed = parseInt(arg);
                         }
-                        while (start <= stop) managers.slots.clusterAddSlot(n, start++);
+                        while (st <= ed) managers.slots.clusterAddSlot(node, st++);
                     }
                 }
             }
@@ -162,10 +162,10 @@ public class ClusterConfigManager {
             File file = new File(managers.configuration.getClusterConfigFile());
             if (!file.exists() && !file.createNewFile()) return false;
             r = new BufferedWriter(new FileWriter(file));
-            String ci = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE) +
+            String line = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE) +
                     "vars currentEpoch " + info.currentEpoch +
                     " lastVoteEpoch " + info.lastVoteEpoch;
-            r.write(ci);
+            r.write(line);
             r.flush();
             return true;
         } catch (IOException e) {
@@ -187,54 +187,53 @@ public class ClusterConfigManager {
     }
 
     public String clusterGenNodeDescription(NodeInfo node) {
-        StringBuilder ci = new StringBuilder();
+        StringBuilder builder = new StringBuilder();
 
-        ci.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip).append(":").append(node.port).append("@").append(node.cport).append(" ");
-        ci.append(representClusterNodeFlags(node.flags));
-        if (node.slaveof != null)
-            ci.append(" ").append(node.slaveof).append(" ");
-        else
-            ci.append(" - ");
+        builder.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip);
+        builder.append(":").append(node.port).append("@").append(node.busPort).append(" ");
+        builder.append(representClusterNodeFlags(node.flags)).append(" ");
+        builder.append(node.master == null ? "-" : node.master).append(" ");
+        builder.append(node.pingTime).append(" ").append(node.pongTime);
+        builder.append(" ").append(node.configEpoch).append(" ");
+        builder.append((node.link != null || (node.flags & CLUSTER_NODE_MYSELF) != 0) ? "connected" : "disconnected");
 
-        ci.append(node.pingSent).append(" ").append(node.pongReceived).append(" ").append(node.configEpoch).append(" ").append((node.link != null || (node.flags & CLUSTER_NODE_MYSELF) != 0) ? "connected" : "disconnected");
-
-        int start = -1;
+        int st = -1;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             boolean bit;
 
-            if ((bit = ClusterSlotManger.bitmapTestBit(node.slots, i))) {
-                if (start == -1) start = i;
+            if ((bit = ClusterSlotManger.bitmapTestBit(node.slots, i)) && st == -1) {
+                st = i;
             }
-            if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
+            if (st != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
                 if (bit) i++;
-                if (start == i - 1) {
-                    ci.append(" ").append(start);
+                if (st == i - 1) {
+                    builder.append(" ").append(st);
                 } else {
-                    ci.append(" ").append(start).append("-").append(i - 1);
+                    builder.append(" ").append(st).append("-").append(i - 1);
                 }
-                start = -1;
+                st = -1;
             }
         }
 
-        return ci.toString();
+        return builder.toString();
     }
 
     public String clusterGenNodesDescription(ConfigInfo info, int filter) {
-        StringBuilder ci = new StringBuilder();
+        StringBuilder builder = new StringBuilder();
         for (NodeInfo node : info.nodes.values()) {
             if ((node.flags & filter) != 0) continue;
-            ci.append(clusterGenNodeDescription(node));
-            ci.append("\n");
+            builder.append(clusterGenNodeDescription(node));
+            builder.append("\n");
         }
-        return ci.toString();
+        return builder.toString();
     }
 
     public String clusterGetMessageTypeString(int type) {
         switch (type) {
             case CLUSTERMSG_TYPE_PING:
-                return "ping";
+                return "pingTime";
             case CLUSTERMSG_TYPE_PONG:
-                return "pong";
+                return "pongTime";
             case CLUSTERMSG_TYPE_MEET:
                 return "meet";
             case CLUSTERMSG_TYPE_FAIL:
@@ -254,48 +253,49 @@ public class ClusterConfigManager {
     }
 
     public static List<String> parseLine(String line) {
+        List<String> args = new ArrayList<>();
+        if (line.length() == 0 || line.equals("\n")) return args;
         char[] ary = line.toCharArray();
-        List<String> list = new ArrayList<>();
         StringBuilder s = new StringBuilder();
-        boolean inq = false, insq = false;
+        boolean dq = false, q = false;
         for (int i = 0; i < ary.length; i++) {
             char c = ary[i];
             switch (c) {
                 case ' ':
-                    if (inq || insq) s.append(' ');
+                    if (dq || q) s.append(' ');
                     else if (s.length() > 0) {
-                        list.add(s.toString());
+                        args.add(s.toString());
                         s.setLength(0);
                     }
                     break;
                 case '"':
-                    if (!inq && !insq) {
-                        inq = true;
-                    } else if (insq) {
+                    if (!dq && !q) {
+                        dq = true;
+                    } else if (q) {
                         s.append('"');
                     } else {
-                        list.add(s.toString());
+                        args.add(s.toString());
                         s.setLength(0);
-                        inq = false;
+                        dq = false;
                         if (i + 1 < ary.length && ary[i + 1] != ' ')
                             throw new UnsupportedOperationException("parse file error.");
                     }
                     break;
                 case '\'':
-                    if (!inq && !insq) {
-                        insq = true;
-                    } else if (inq) {
+                    if (!dq && !q) {
+                        q = true;
+                    } else if (dq) {
                         s.append('\'');
                     } else {
-                        list.add(s.toString());
+                        args.add(s.toString());
                         s.setLength(0);
-                        insq = false;
+                        q = false;
                         if (i + 1 < ary.length && ary[i + 1] != ' ')
                             throw new UnsupportedOperationException("parse file error.");
                     }
                     break;
                 case '\\':
-                    if (!inq) s.append('\\');
+                    if (!dq) s.append('\\');
                     else {
                         i++;
                         if (i < ary.length) {
@@ -339,11 +339,10 @@ public class ClusterConfigManager {
                 default:
                     s.append(c);
                     break;
-
             }
         }
-        if (inq || insq) throw new UnsupportedOperationException("parse line[" + line + "] error.");
-        if (s.length() > 0) list.add(s.toString());
-        return list;
+        if (dq || q) throw new UnsupportedOperationException("parse line[" + line + "] error.");
+        if (s.length() > 0) args.add(s.toString());
+        return args;
     }
 }

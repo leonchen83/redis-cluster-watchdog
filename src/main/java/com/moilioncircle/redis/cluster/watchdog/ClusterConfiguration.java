@@ -1,7 +1,8 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterConfiguration {
 
@@ -14,12 +15,21 @@ public class ClusterConfiguration {
     private int clusterMigrationBarrier = 1;
     private boolean clusterRequireFullCoverage = true;
 
+    private ClusterConfiguration() {
+    }
+
+    public static ClusterConfiguration defaultSetting() {
+        return new ClusterConfiguration();
+    }
+
     public boolean isVerbose() {
         return verbose;
     }
 
-    public void setVerbose(boolean verbose) {
+    public ClusterConfiguration setVerbose(boolean verbose) {
         this.verbose = verbose;
+        validate();
+        return this;
     }
 
     public String getClusterAnnounceIp() {
@@ -28,6 +38,7 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterAnnounceIp(String clusterAnnounceIp) {
         this.clusterAnnounceIp = clusterAnnounceIp;
+        validate();
         return this;
     }
 
@@ -37,6 +48,7 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterNodeTimeout(long clusterNodeTimeout) {
         this.clusterNodeTimeout = clusterNodeTimeout;
+        validate();
         return this;
     }
 
@@ -46,6 +58,7 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterAnnouncePort(int clusterAnnouncePort) {
         this.clusterAnnouncePort = clusterAnnouncePort;
+        validate();
         return this;
     }
 
@@ -55,6 +68,7 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterConfigFile(String clusterConfigFile) {
         this.clusterConfigFile = clusterConfigFile;
+        validate();
         return this;
     }
 
@@ -64,6 +78,7 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterMigrationBarrier(int clusterMigrationBarrier) {
         this.clusterMigrationBarrier = clusterMigrationBarrier;
+        validate();
         return this;
     }
 
@@ -73,6 +88,7 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterAnnounceBusPort(int clusterAnnounceBusPort) {
         this.clusterAnnounceBusPort = clusterAnnounceBusPort;
+        validate();
         return this;
     }
 
@@ -82,10 +98,11 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterRequireFullCoverage(boolean clusterRequireFullCoverage) {
         this.clusterRequireFullCoverage = clusterRequireFullCoverage;
+        validate();
         return this;
     }
 
-    public void validate() {
+    private void validate() {
         if (clusterAnnouncePort <= 0 || clusterAnnouncePort > 65535) {
             throw new ConfigurationException("illegal port" + clusterAnnouncePort);
         }

@@ -2,51 +2,52 @@ package com.moilioncircle.redis.cluster.watchdog.message;
 
 import java.util.Arrays;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS_BYTES;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessage implements RCmbMessage {
-    public String sig;
-    public int totlen;
-    public int ver;
     public int type;
-    public String myip;
     public int port;
-    public int cport;
+    public String ip;
     public int flags;
     public int count;
     public byte state;
-    public long currentEpoch;
-    public long configEpoch;
+    public int length;
+    public int version;
+    public String name;
+    public int busPort;
     public long offset;
-    public String sender;
-    public byte[] myslots = new byte[CLUSTER_SLOTS / 8];
-    public String slaveof;
-    public byte[] notused = new byte[34];
-    public byte[] mflags = new byte[3];
+    public String master;
+    public String signature;
+    public long configEpoch;
+    public long currentEpoch;
     public ClusterMessageData data;
+    public byte[] reserved = new byte[34];
+    public byte[] messageFlags = new byte[3];
+    public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
 
     @Override
     public String toString() {
         return "ClusterMessage{" +
-                "sig='" + sig + '\'' +
-                ", totlen=" + totlen +
-                ", ver=" + ver +
+                "signature='" + signature + '\'' +
+                ", length=" + length +
+                ", version=" + version +
                 ", port=" + port +
                 ", type=" + type +
                 ", count=" + count +
                 ", currentEpoch=" + currentEpoch +
                 ", configEpoch=" + configEpoch +
                 ", offset=" + offset +
-                ", sender='" + sender + '\'' +
-                ", slaveof='" + slaveof + '\'' +
-                ", myip='" + myip + '\'' +
-                ", cport=" + cport +
+                ", name='" + name + '\'' +
+                ", master='" + master + '\'' +
+                ", ip='" + ip + '\'' +
+                ", busPort=" + busPort +
                 ", flags=" + flags +
                 ", state=" + state +
-                ", mflags=" + Arrays.toString(mflags) +
+                ", messageFlags=" + Arrays.toString(messageFlags) +
                 ", data=" + data +
                 '}';
     }

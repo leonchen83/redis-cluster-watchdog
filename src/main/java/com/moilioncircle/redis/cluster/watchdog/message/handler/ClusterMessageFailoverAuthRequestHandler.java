@@ -1,44 +1,42 @@
 package com.moilioncircle.redis.cluster.watchdog.message.handler;
 
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
-import com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_FLAG0_FORCEACK;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 
 /**
- * Created by Baoyi Chen on 2017/7/13.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMessageHandler {
-    public ClusterMessageFailoverAuthRequestHandler(ClusterManagers gossip) {
-        super(gossip);
+    public ClusterMessageFailoverAuthRequestHandler(ClusterManagers managers) {
+        super(managers);
     }
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Failover auth request packet received: node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+            logger.debug("Failover auth request packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
         }
         if (sender == null) return true;
         clusterSendFailoverAuthIfNeeded(sender, hdr);
         return true;
     }
 
-    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMessage request) {
-        ClusterNode master = node.slaveof;
-        long requestCurrentEpoch = request.currentEpoch;
-        long requestConfigEpoch = request.configEpoch;
-        byte[] claimedSlots = request.myslots;
-        boolean forceAck = (request.mflags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
+    public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMessage hdr) {
 
-        if (nodeIsSlave(server.myself) || server.myself.numslots == 0) return;
+        boolean force = (hdr.messageFlags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
 
-        if (requestCurrentEpoch < server.cluster.currentEpoch) {
-            logger.warn("Failover auth denied to " + node.name + ": reqEpoch " + requestCurrentEpoch + " < curEpoch(" + server.cluster.currentEpoch + ")");
+        if (nodeIsSlave(server.myself) || server.myself.assignedSlots == 0) return;
+
+        if (hdr.currentEpoch < server.cluster.currentEpoch) {
+            logger.warn("Failover auth denied to " + node.name + ": reqEpoch " + hdr.currentEpoch + " < curEpoch(" + server.cluster.currentEpoch + ")");
             return;
         }
 
@@ -47,34 +45,35 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
             return;
         }
 
-        if (nodeIsMaster(node) || master == null || (!nodeFailed(master) && !forceAck)) {
+        if (nodeIsMaster(node) || node.master == null || (!nodeFailed(node.master) && !force)) {
             if (nodeIsMaster(node)) {
                 logger.warn("Failover auth denied to " + node.name + ": it is a master node");
-            } else if (master == null) {
+            } else if (node.master == null) {
                 logger.warn("Failover auth denied to " + node.name + ": I don't know its master");
-            } else if (!nodeFailed(master)) {
+            } else if (!nodeFailed(node.master)) {
                 logger.warn("Failover auth denied to " + node.name + ": its master is up");
             }
             return;
         }
 
-        if (System.currentTimeMillis() - node.slaveof.votedTime < managers.configuration.getClusterNodeTimeout() * 2) {
-            logger.warn("Failover auth denied to " + node.name + ": can't vote about this master before " + (managers.configuration.getClusterNodeTimeout() * 2 - (System.currentTimeMillis() - node.slaveof.votedTime)) + " milliseconds");
+        long now = System.currentTimeMillis();
+        if (now - node.master.votedTime < managers.configuration.getClusterNodeTimeout() * 2) {
+            logger.warn("Failover auth denied to " + node.name + ": can't vote fail this master before " + (managers.configuration.getClusterNodeTimeout() * 2 - (now - node.master.votedTime)) + " milliseconds");
             return;
         }
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (!ClusterSlotManger.bitmapTestBit(claimedSlots, i)) continue;
-            if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= requestConfigEpoch)
+            if (!bitmapTestBit(hdr.slots, i)) continue;
+            if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= hdr.configEpoch)
                 continue;
 
-            logger.warn("Failover auth denied to " + node.name + ": slot %d epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + requestConfigEpoch + ")");
+            logger.warn("Failover auth denied to " + node.name + ": slot %d epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + hdr.configEpoch + ")");
             return;
         }
 
         managers.messages.clusterSendFailoverAuth(node);
         server.cluster.lastVoteEpoch = server.cluster.currentEpoch;
-        node.slaveof.votedTime = System.currentTimeMillis();
+        node.master.votedTime = System.currentTimeMillis();
         logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
     }
 }

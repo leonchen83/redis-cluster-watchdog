@@ -7,7 +7,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -17,7 +16,8 @@ import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 import static java.util.Comparator.comparingLong;
 
 /**
- * Created by Baoyi Chen on 2017/7/12.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterNodeManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
@@ -29,73 +29,69 @@ public class ClusterNodeManager {
         this.server = managers.server;
     }
 
-    public void freeClusterNode(ClusterNode n) {
-        if (nodeIsSlave(n) && n.slaveof != null) clusterNodeRemoveSlave(n.slaveof, n);
-        server.cluster.nodes.remove(n.name);
-        if (n.link != null) managers.connections.freeClusterLink(n.link);
-        n.failReports.clear();
-        n.slaves.clear();
+    public void freeClusterNode(ClusterNode node) {
+        if (nodeIsSlave(node) && node.master != null) clusterNodeRemoveSlave(node.master, node);
+        server.cluster.nodes.remove(node.name);
+        if (node.link != null) managers.connections.freeClusterLink(node.link);
     }
 
     public boolean clusterAddNode(ClusterNode node) {
         return server.cluster.nodes.put(node.name, node) == null;
     }
 
-    public void clusterDelNode(ClusterNode delnode) {
+    public void clusterDelNode(ClusterNode node) {
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (server.cluster.slots[i] != null && !server.cluster.slots[i].equals(delnode)) continue;
+            if (server.cluster.slots[i] != null && !server.cluster.slots[i].equals(node)) continue;
             managers.slots.clusterDelSlot(i);
         }
 
         server.cluster.nodes.values().stream().
-                filter(x -> !x.equals(delnode)).
-                forEach(x -> clusterNodeDelFailureReport(x, delnode));
-        freeClusterNode(delnode);
+                filter(e -> !e.equals(node)).
+                forEach(e -> clusterNodeDelFailureReport(e, node));
+        freeClusterNode(node);
     }
 
     public ClusterNode clusterLookupNode(String name) {
         return server.cluster.nodes.get(name);
     }
 
-    public void clusterRenameNode(ClusterNode node, String newname) {
-        logger.info("Renaming node " + node.name + " into " + newname);
+    public void clusterRenameNode(ClusterNode node, String name) {
+        logger.info("Renaming node " + node.name + " into " + name);
         server.cluster.nodes.remove(node.name);
-        node.name = newname;
+        node.name = name;
         clusterAddNode(node);
     }
 
-    public ClusterNode createClusterNode(String nodename, int flags) {
+    public ClusterNode createClusterNode(String name, int flags) {
         ClusterNode node = new ClusterNode();
-        if (nodename != null) {
-            node.name = nodename;
+        if (name != null) {
+            node.name = name;
         } else {
             node.name = getRandomHexChars();
         }
 
-        node.ctime = System.currentTimeMillis();
-        node.configEpoch = 0;
-        node.flags = flags;
-        node.numslots = 0;
-        node.numslaves = 0;
-        node.slaves = new ArrayList<>();
-        node.slaveof = null;
-        node.pingSent = 0;
-        node.pongReceived = 0;
-        node.failTime = 0;
-        node.link = null;
-        node.ip = null;
         node.port = 0;
-        node.cport = 0;
+        node.ip = null;
+        node.offset = 0;
+        node.link = null;
+        node.busPort = 0;
+        node.flags = flags;
+        node.master = null;
+        node.pingTime = 0;
+        node.pongTime = 0;
+        node.failTime = 0;
+        node.configEpoch = 0;
+        node.isolatedTime = 0;
+        node.assignedSlots = 0;
+        node.slaves = new ArrayList<>();
         node.failReports = new ArrayList<>();
-        node.orphanedTime = 0;
-        node.replOffset = 0;
         return node;
     }
 
     public boolean clusterNodeAddFailureReport(ClusterNode failing, ClusterNode sender) {
-        for (ClusterNodeFailReport n : failing.failReports) {
-            if (!n.node.equals(sender)) continue;
-            n.time = System.currentTimeMillis();
+        for (ClusterNodeFailReport report : failing.failReports) {
+            if (!report.node.equals(sender)) continue;
+            report.createTime = System.currentTimeMillis();
             return false;
         }
         failing.failReports.add(new ClusterNodeFailReport(sender));
@@ -103,16 +99,16 @@ public class ClusterNodeManager {
     }
 
     public void clusterNodeCleanupFailureReports(ClusterNode node) {
-        List<ClusterNodeFailReport> list = node.failReports;
-        long max = managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_REPORT_VALIDITY_MULT;
+        List<ClusterNodeFailReport> reports = node.failReports;
+        long max = managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_REPORT_VALIDITY_MULTI;
         long now = System.currentTimeMillis();
-        list.removeIf(e -> now - e.time > max);
+        reports.removeIf(e -> now - e.createTime > max);
     }
 
     public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
-        Optional<ClusterNodeFailReport> fr = node.failReports.stream().filter(x -> x.node.equals(sender)).findFirst();
-        if (!fr.isPresent()) return false;
-        node.failReports.remove(fr.get());
+        Optional<ClusterNodeFailReport> report = node.failReports.stream().filter(x -> x.node.equals(sender)).findFirst();
+        if (!report.isPresent()) return false;
+        node.failReports.remove(report.get());
         clusterNodeCleanupFailureReports(node);
         return true;
     }
@@ -123,79 +119,73 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterNodeRemoveSlave(ClusterNode master, ClusterNode slave) {
-        Iterator<ClusterNode> it = master.slaves.iterator();
-        while (it.hasNext()) {
-            if (!it.next().equals(slave)) continue;
-            it.remove();
-            if (--master.numslaves == 0) {
-                master.flags &= ~CLUSTER_NODE_MIGRATE_TO;
-            }
-            return true;
+        boolean rs = master.slaves.remove(slave);
+        if (rs && master.slaves.size() == 0) {
+            master.flags &= ~CLUSTER_NODE_MIGRATE_TO;
         }
-        return false;
+        return rs;
     }
 
     public boolean clusterNodeAddSlave(ClusterNode master, ClusterNode slave) {
         if (master.slaves.stream().anyMatch(e -> e.equals(slave))) return false;
         master.slaves.add(slave);
-        master.numslaves++;
         master.flags |= CLUSTER_NODE_MIGRATE_TO;
         return true;
     }
 
-    public int clusterCountNonFailingSlaves(ClusterNode n) {
-        return (int) n.slaves.stream().filter(x -> !nodeFailed(x)).count();
+    public int clusterCountNonFailingSlaves(ClusterNode node) {
+        return (int) node.slaves.stream().filter(e -> !nodeFailed(e)).count();
     }
 
-    public void clusterSetNodeAsMaster(ClusterNode n) {
-        if (nodeIsMaster(n)) return;
+    public void clusterSetNodeAsMaster(ClusterNode node) {
+        if (nodeIsMaster(node)) return;
 
-        if (n.slaveof != null) {
-            clusterNodeRemoveSlave(n.slaveof, n);
-            if (n.equals(server.myself)) n.flags |= CLUSTER_NODE_MIGRATE_TO;
+        if (node.master != null) {
+            clusterNodeRemoveSlave(node.master, node);
+            if (node.equals(server.myself)) node.flags |= CLUSTER_NODE_MIGRATE_TO;
         }
 
-        n.flags &= ~CLUSTER_NODE_SLAVE;
-        n.flags |= CLUSTER_NODE_MASTER;
-        n.slaveof = null;
+        node.flags &= ~CLUSTER_NODE_SLAVE;
+        node.flags |= CLUSTER_NODE_MASTER;
+        node.master = null;
     }
 
     public long clusterGetMaxEpoch() {
         return server.cluster.nodes.values().stream().
-                max(comparingLong(x -> x.configEpoch)).
+                max(comparingLong(e -> e.configEpoch)).
                 map(e -> e.configEpoch).orElse(server.cluster.currentEpoch);
     }
 
-    public boolean clusterStartHandshake(String ip, int port, int cport) {
+    public boolean clusterStartHandshake(String ip, int port, int busPort) {
         boolean inHandshake = server.cluster.nodes.values().stream().
-                anyMatch(x -> nodeInHandshake(x) && x.ip.equalsIgnoreCase(ip) && x.port == port && x.cport == cport);
+                anyMatch(e -> nodeInHandshake(e) && e.ip.equalsIgnoreCase(ip) && e.port == port && e.busPort == busPort);
         if (inHandshake) return false;
 
-        ClusterNode n = createClusterNode(null, CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_MEET);
-        n.ip = ip;
-        n.port = port;
-        n.cport = cport;
-        clusterAddNode(n);
+        ClusterNode node = createClusterNode(null, CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_MEET);
+        node.ip = ip;
+        node.port = port;
+        node.busPort = busPort;
+        clusterAddNode(node);
         return true;
     }
 
-    public void clusterSetMyMaster(ClusterNode n) {
+    public void clusterSetMyMasterTo(ClusterNode node) {
         if (nodeIsMaster(server.myself)) {
             server.myself.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
             server.myself.flags |= CLUSTER_NODE_SLAVE;
-        } else if (server.myself.slaveof != null) {
-            clusterNodeRemoveSlave(server.myself.slaveof, server.myself);
+        } else if (server.myself.master != null) {
+            clusterNodeRemoveSlave(server.myself.master, server.myself);
         }
-        server.myself.slaveof = n;
-        clusterNodeAddSlave(n, server.myself);
-        managers.replications.replicationSetMaster(n);
+        server.myself.master = node;
+        clusterNodeAddSlave(node, server.myself);
+        managers.replications.replicationSetMaster(node);
     }
 
     public static final char[] chars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
     public static String getRandomHexChars() {
         StringBuilder r = new StringBuilder();
-        for (int i = 0; i < CLUSTER_NAMELEN; i++) {
+        for (int i = 0; i < CLUSTER_NAME_LEN; i++) {
             r.append(chars[ThreadLocalRandom.current().nextInt(chars.length)]);
         }
         return r.toString();

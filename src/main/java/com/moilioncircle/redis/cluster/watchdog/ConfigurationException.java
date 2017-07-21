@@ -1,7 +1,8 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
 /**
- * Created by Baoyi Chen on 2017/7/17.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ConfigurationException extends RuntimeException {
     private static final long serialVersionUID = 1L;

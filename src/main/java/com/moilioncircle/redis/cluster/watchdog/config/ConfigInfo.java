@@ -7,7 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Created by Baoyi Chen on 2017/7/17.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ConfigInfo {
     public long currentEpoch;

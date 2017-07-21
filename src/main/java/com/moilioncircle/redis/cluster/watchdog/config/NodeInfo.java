@@ -4,23 +4,24 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
 import java.util.Arrays;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS_BYTES;
 
 /**
- * Created by Baoyi Chen on 2017/7/17.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class NodeInfo {
     public int port;
-    public int cport;
     public String ip;
     public int flags;
+    public int busPort;
     public String name;
     public String link;
-    public long pingSent;
-    public String slaveof;
+    public long pingTime;
+    public long pongTime;
+    public String master;
     public long configEpoch;
-    public long pongReceived;
-    public byte[] slots = new byte[CLUSTER_SLOTS / 8];
+    public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
 
     @Override
     public boolean equals(Object o) {
@@ -30,12 +31,12 @@ public class NodeInfo {
         NodeInfo nodeInfo = (NodeInfo) o;
 
         if (port != nodeInfo.port) return false;
-        if (cport != nodeInfo.cport) return false;
+        if (busPort != nodeInfo.busPort) return false;
         if (flags != nodeInfo.flags) return false;
         if (configEpoch != nodeInfo.configEpoch) return false;
         if (!name.equals(nodeInfo.name)) return false;
         if (ip != null ? !ip.equals(nodeInfo.ip) : nodeInfo.ip != null) return false;
-        if (slaveof != null ? !slaveof.equals(nodeInfo.slaveof) : nodeInfo.slaveof != null) return false;
+        if (master != null ? !master.equals(nodeInfo.master) : nodeInfo.master != null) return false;
         if (link != null ? !link.equals(nodeInfo.link) : nodeInfo.link != null) return false;
         return Arrays.equals(slots, nodeInfo.slots);
     }
@@ -45,9 +46,9 @@ public class NodeInfo {
         int result = name.hashCode();
         result = 31 * result + (ip != null ? ip.hashCode() : 0);
         result = 31 * result + port;
-        result = 31 * result + cport;
+        result = 31 * result + busPort;
         result = 31 * result + flags;
-        result = 31 * result + (slaveof != null ? slaveof.hashCode() : 0);
+        result = 31 * result + (master != null ? master.hashCode() : 0);
         result = 31 * result + (int) (configEpoch ^ (configEpoch >>> 32));
         result = 31 * result + (link != null ? link.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(slots);
@@ -59,12 +60,12 @@ public class NodeInfo {
         n.ip = node.ip;
         n.name = node.name;
         n.port = node.port;
-        n.cport = node.cport;
         n.flags = node.flags;
-        n.pingSent = node.pingSent;
+        n.busPort = node.busPort;
+        n.pingTime = node.pingTime;
+        n.pongTime = node.pongTime;
         n.configEpoch = node.configEpoch;
-        n.pongReceived = node.pongReceived;
-        n.slaveof = node.slaveof == null ? null : node.slaveof.name;
+        n.master = node.master == null ? null : node.master.name;
         System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
         n.link = node.link != null || node.equals(myself) ? "connected" : "disconnected";
         return n;

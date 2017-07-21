@@ -110,13 +110,13 @@ public class NioInitiator<T> extends AbstractNioBootstrap<T> {
                 if (configuration.isAutoReconnect())
                     reconnect(configuration.getReconnectInterval(), future, host, port);
                 else {
-                    logger.debug("failed to connected to host: " + host + ", port: " + port + ", elapsed time: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
+                    logger.debug("failed to connected to host: " + host + ", port: " + port + ", elapsed createTime: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
                     future.failure(f.cause());
                 }
             } else {
                 transport.setChannel(f.channel());
                 future.success(null);
-                logger.debug("connected to host: " + host + ", port: " + port + ", elapsed time: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
+                logger.debug("connected to host: " + host + ", port: " + port + ", elapsed createTime: " + TimeUnit.NANOSECONDS.toMillis(et) + " ms");
             }
         }
     }

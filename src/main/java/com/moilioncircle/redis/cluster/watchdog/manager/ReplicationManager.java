@@ -27,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
  */
 public class ReplicationManager {
     private static final Log logger = LogFactory.getLog(ReplicationManager.class);
+
     private ServerState server;
     private ClusterManagers managers;
 

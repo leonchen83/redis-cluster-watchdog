@@ -4,21 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessageData {
-    public List<ClusterMessageDataGossip> gossip = new ArrayList<>();
-    public ClusterMessageDataFail about;
-    public ClusterMessageDataPublish msg;
-    public ClusterMessageDataUpdate nodecfg;
+    public ClusterMessageDataFail fail;
+    public ClusterMessageDataUpdate config;
+    public ClusterMessageDataPublish publish;
+    public List<ClusterMessageDataGossip> gossips = new ArrayList<>();
 
     @Override
     public String toString() {
         return "ClusterMessageData{" +
-                "gossip=" + gossip +
-                ", about=" + about +
-                ", msg=" + msg +
-                ", nodecfg=" + nodecfg +
+                "gossips=" + gossips +
+                ", fail=" + fail +
+                ", publish=" + publish +
+                ", config=" + config +
                 '}';
     }
 }

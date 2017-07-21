@@ -4,17 +4,23 @@ import com.moilioncircle.redis.cluster.watchdog.message.RCmbMessage;
 import com.moilioncircle.redis.cluster.watchdog.util.net.session.Session;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterLink {
-    public volatile long ctime;
+
+    public volatile long createTime;
     public volatile ClusterNode node;
     public volatile Session<RCmbMessage> fd;
+
+    public ClusterLink() {
+        this.createTime = System.currentTimeMillis();
+    }
 
     @Override
     public String toString() {
         return "ClusterLink{" +
-                "ctime=" + ctime +
+                "createTime=" + createTime +
                 ", node=" + node +
                 ", fd=" + fd +
                 '}';

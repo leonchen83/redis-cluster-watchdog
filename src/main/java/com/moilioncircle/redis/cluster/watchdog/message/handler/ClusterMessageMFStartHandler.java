@@ -6,17 +6,18 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
 /**
- * Created by Baoyi Chen on 2017/7/13.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessageMFStartHandler extends AbstractClusterMessageHandler {
-    public ClusterMessageMFStartHandler(ClusterManagers gossip) {
-        super(gossip);
+    public ClusterMessageMFStartHandler(ClusterManagers managers) {
+        super(managers);
     }
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         if (logger.isDebugEnabled()) {
-            logger.debug("MFStart packet received: node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+            logger.debug("MFStart packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
         }
         return true;
     }

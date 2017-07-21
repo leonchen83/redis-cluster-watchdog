@@ -11,7 +11,8 @@ import io.netty.handler.codec.redis.RedisMessage;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Baoyi Chen on 2017/7/7.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class NioInitiatorTest {
     public static void main(String[] args) throws ExecutionException, InterruptedException {

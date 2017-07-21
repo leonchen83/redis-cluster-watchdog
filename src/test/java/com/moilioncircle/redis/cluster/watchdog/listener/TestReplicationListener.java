@@ -29,7 +29,7 @@ import java.io.IOException;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class TestReplicationListener implements ReplicationListener {
     private static final Log logger = LogFactory.getLog(TestReplicationListener.class);

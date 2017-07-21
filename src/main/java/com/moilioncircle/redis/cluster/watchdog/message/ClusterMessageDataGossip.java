@@ -1,27 +1,28 @@
 package com.moilioncircle.redis.cluster.watchdog.message;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessageDataGossip {
-    public String nodename;
-    public long pingSent;
-    public long pongReceived;
-    public String ip;
     public int port;
-    public int cport;
     public int flags;
-    public byte[] notused1 = new byte[4];
+    public String ip;
+    public String name;
+    public int busPort;
+    public long pingTime;
+    public long pongTime;
+    public byte[] reserved = new byte[4];
 
     @Override
     public String toString() {
         return "ClusterMessageDataGossip{" +
-                "nodename='" + nodename + '\'' +
-                ", pingSent=" + pingSent +
-                ", pongReceived=" + pongReceived +
+                "name='" + name + '\'' +
+                ", pingTime=" + pingTime +
+                ", pongTime=" + pongTime +
                 ", ip='" + ip + '\'' +
                 ", port=" + port +
-                ", cport=" + cport +
+                ", busPort=" + busPort +
                 ", flags=" + flags +
                 '}';
     }

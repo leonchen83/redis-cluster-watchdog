@@ -6,7 +6,8 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.ConnectionStatus;
 import java.net.SocketAddress;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public interface Transport<T> {
 

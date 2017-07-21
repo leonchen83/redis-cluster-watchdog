@@ -9,7 +9,8 @@ import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsSlave;
 import static com.moilioncircle.redis.cluster.watchdog.util.CRC16.crc16;
 
 /**
- * Created by Baoyi Chen on 2017/7/12.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterSlotManger {
     private ServerState server;
@@ -40,48 +41,48 @@ public class ClusterSlotManger {
         int slaves = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (nodeIsSlave(node)) continue;
-            slaves += node.numslaves;
+            slaves += node.slaves.size();
         }
         return slaves != 0;
     }
 
-    public boolean clusterNodeSetSlotBit(ClusterNode n, int slot) {
-        boolean old = bitmapTestBit(n.slots, slot);
-        bitmapSetBit(n.slots, slot);
-        if (old) return old;
-        n.numslots++;
-        if (n.numslots == 1 && clusterMastersHaveSlaves())
-            n.flags |= CLUSTER_NODE_MIGRATE_TO;
-        return old;
+    public boolean clusterNodeSetSlotBit(ClusterNode node, int slot) {
+        boolean previous = bitmapTestBit(node.slots, slot);
+        bitmapSetBit(node.slots, slot);
+        if (previous) return true;
+        node.assignedSlots++;
+        if (node.assignedSlots == 1 && clusterMastersHaveSlaves())
+            node.flags |= CLUSTER_NODE_MIGRATE_TO;
+        return false;
     }
 
-    public boolean clusterNodeClearSlotBit(ClusterNode n, int slot) {
-        boolean old = bitmapTestBit(n.slots, slot);
-        bitmapClearBit(n.slots, slot);
-        if (old) n.numslots--;
-        return old;
+    public boolean clusterNodeClearSlotBit(ClusterNode node, int slot) {
+        boolean previous = bitmapTestBit(node.slots, slot);
+        bitmapClearBit(node.slots, slot);
+        if (previous) node.assignedSlots--;
+        return previous;
     }
 
-    public boolean clusterAddSlot(ClusterNode n, int slot) {
+    public boolean clusterAddSlot(ClusterNode node, int slot) {
         if (server.cluster.slots[slot] != null) return false;
-        clusterNodeSetSlotBit(n, slot);
-        server.cluster.slots[slot] = n;
+        clusterNodeSetSlotBit(node, slot);
+        server.cluster.slots[slot] = node;
         return true;
     }
 
     public boolean clusterDelSlot(int slot) {
-        ClusterNode n = server.cluster.slots[slot];
-        if (n == null) return false;
-        clusterNodeClearSlotBit(n, slot);
+        ClusterNode node = server.cluster.slots[slot];
+        if (node == null) return false;
+        clusterNodeClearSlotBit(node, slot);
         server.cluster.slots[slot] = null;
         return true;
     }
 
     public int clusterDelNodeSlots(ClusterNode node) {
         int deleted = 0;
-        for (int j = 0; j < CLUSTER_SLOTS; j++) {
-            if (!bitmapTestBit(node.slots, j)) continue;
-            clusterDelSlot(j);
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            if (!bitmapTestBit(node.slots, i)) continue;
+            clusterDelSlot(i);
             deleted++;
         }
         return deleted;

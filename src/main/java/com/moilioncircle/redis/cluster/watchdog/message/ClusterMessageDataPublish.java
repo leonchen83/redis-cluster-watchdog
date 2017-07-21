@@ -3,18 +3,19 @@ package com.moilioncircle.redis.cluster.watchdog.message;
 import java.util.Arrays;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessageDataPublish {
-    public int channelLen;
-    public int messageLen;
+    public int channelLength;
+    public int messageLength;
     public byte[] bulkData = new byte[8];
 
     @Override
     public String toString() {
         return "ClusterMessageDataPublish{" +
-                "channelLen=" + channelLen +
-                ", messageLen=" + messageLen +
+                "channelLength=" + channelLength +
+                ", messageLength=" + messageLength +
                 ", bulkData=" + Arrays.toString(bulkData) +
                 '}';
     }

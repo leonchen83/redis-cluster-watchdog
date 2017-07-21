@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Created by Baoyi Chen on 2017/7/7.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public abstract class AbstractCompletableFuture<T> implements CompletableFuture<T> {
 

@@ -8,7 +8,8 @@ import java.util.Map;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 
 /**
- * Created by Baoyi Chen on 2017/7/13.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessageHandlerManager {
 

@@ -37,7 +37,7 @@ public class Arrays {
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
-    private static void deepToString(Object[] a, StringBuilder buf, Set<Object[]> dejaVu) {
+    private static void deepToString(Object[] a, StringBuilder buf, Set<Object[]> set) {
         if (a == null) {
             buf.append("null");
             return;
@@ -48,7 +48,7 @@ public class Arrays {
             return;
         }
 
-        dejaVu.add(a);
+        set.add(a);
         buf.append('[');
         for (int i = 0; ; i++) {
             Object element = a[i];
@@ -75,10 +75,10 @@ public class Arrays {
                     else if (eClass == boolean[].class)
                         buf.append(java.util.Arrays.toString((boolean[]) element));
                     else { // element is an array of object references
-                        if (dejaVu.contains(element))
+                        if (set.contains(element))
                             buf.append("[...]");
                         else
-                            deepToString((Object[]) element, buf, dejaVu);
+                            deepToString((Object[]) element, buf, set);
                     }
                 } else {  // element is non-null and not an array
                     buf.append(element.toString());
@@ -88,7 +88,7 @@ public class Arrays {
             buf.append(", ");
         }
         buf.append(']');
-        dejaVu.remove(a);
+        set.remove(a);
     }
 
     public static String toString(char[] a) {

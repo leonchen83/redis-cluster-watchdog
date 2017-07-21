@@ -8,29 +8,30 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsSlave;
 
 /**
- * Created by Baoyi Chen on 2017/7/13.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessageUpdateHandler extends AbstractClusterMessageHandler {
-    public ClusterMessageUpdateHandler(ClusterManagers gossip) {
-        super(gossip);
+    public ClusterMessageUpdateHandler(ClusterManagers managers) {
+        super(managers);
     }
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Update packet received: node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+            logger.debug("Update packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
         }
-        long reportedConfigEpoch = hdr.data.nodecfg.configEpoch;
+        long configEpoch = hdr.data.config.configEpoch;
         if (sender == null) return true;
-        ClusterNode n = managers.nodes.clusterLookupNode(hdr.data.nodecfg.nodename);
+        ClusterNode n = managers.nodes.clusterLookupNode(hdr.data.config.name);
         if (n == null) return true;
-        if (n.configEpoch >= reportedConfigEpoch) return true;
+        if (n.configEpoch >= configEpoch) return true;
 
         if (nodeIsSlave(n)) managers.nodes.clusterSetNodeAsMaster(n);
 
-        n.configEpoch = reportedConfigEpoch;
+        n.configEpoch = configEpoch;
 
-        clusterUpdateSlotsConfigWith(n, reportedConfigEpoch, hdr.data.nodecfg.slots);
+        clusterUpdateSlotsConfigWith(n, configEpoch, hdr.data.config.slots);
         return true;
     }
 }

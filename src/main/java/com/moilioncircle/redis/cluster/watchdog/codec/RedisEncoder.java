@@ -5,7 +5,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
- * Created by Baoyi Chen on 2017/7/14.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class RedisEncoder extends MessageToByteEncoder<Object> {
     @Override

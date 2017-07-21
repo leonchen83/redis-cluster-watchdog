@@ -1,7 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog.message.handler;
 
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
-import com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
@@ -14,10 +13,12 @@ import java.util.List;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.representClusterNodeFlags;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 
 /**
- * Created by Baoyi Chen on 2017/7/13.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public abstract class AbstractClusterMessageHandler implements ClusterMessageHandler {
 
@@ -34,15 +35,13 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
     @Override
     public boolean handle(ClusterLink link, ClusterMessage hdr) {
         long st = System.nanoTime();
-        int type = hdr.type;
-
-        if (type < CLUSTERMSG_TYPE_COUNT) {
-            server.cluster.statsBusMessagesReceived[type]++;
+        if (hdr.type < CLUSTERMSG_TYPE_COUNT) {
+            server.cluster.messagesReceived[hdr.type]++;
         }
 
-        if (hdr.ver != CLUSTER_PROTO_VER) return true;
+        if (hdr.version != CLUSTER_PROTOCOL_VERSION) return true;
 
-        ClusterNode sender = managers.nodes.clusterLookupNode(hdr.sender);
+        ClusterNode sender = managers.nodes.clusterLookupNode(hdr.name);
         if (sender != null && !nodeInHandshake(sender)) {
             if (hdr.currentEpoch > server.cluster.currentEpoch) {
                 server.cluster.currentEpoch = hdr.currentEpoch;
@@ -55,51 +54,51 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         handle(sender, link, hdr);
         managers.states.clusterUpdateState();
         long ed = System.nanoTime();
-        logger.info("request type: " + type + ", elapsed nano-time: " + (ed - st));
+        logger.info("request type: " + hdr.type + ", elapsed time: " + (ed - st));
         return true;
     }
 
     public abstract boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr);
 
     public void clusterUpdateSlotsConfigWith(ClusterNode sender, long senderConfigEpoch, byte[] slots) {
-        ClusterNode newmaster = null;
-        ClusterNode curmaster = nodeIsMaster(server.myself) ? server.myself : server.myself.slaveof;
+        ClusterNode next = null;
+        ClusterNode previous = nodeIsMaster(server.myself) ? server.myself : server.myself.master;
         if (sender.equals(server.myself)) {
-            logger.info("Discarding UPDATE message about myself.");
+            logger.info("Discarding UPDATE message fail myself.");
             return;
         }
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (!ClusterSlotManger.bitmapTestBit(slots, i)) continue;
+            if (!bitmapTestBit(slots, i)) continue;
             if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(sender)) continue;
             if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
-                if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(curmaster))
-                    newmaster = sender;
+                if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(previous))
+                    next = sender;
                 managers.slots.clusterDelSlot(i);
                 managers.slots.clusterAddSlot(sender, i);
             }
         }
 
-        if (newmaster != null && curmaster.numslots == 0) {
+        if (next != null && previous.assignedSlots == 0) {
             logger.info("Configuration change detected. Reconfiguring myself as a replica of " + sender.name);
-            managers.nodes.clusterSetMyMaster(sender);
+            managers.nodes.clusterSetMyMasterTo(sender);
         }
     }
 
     public void clusterProcessGossipSection(ClusterMessage hdr, ClusterLink link) {
-        List<ClusterMessageDataGossip> gs = hdr.data.gossip;
-        ClusterNode sender = link.node != null ? link.node : managers.nodes.clusterLookupNode(hdr.sender);
-        for (ClusterMessageDataGossip g : gs) {
-            int flags = g.flags;
+        List<ClusterMessageDataGossip> gossips = hdr.data.gossips;
+        ClusterNode sender = link.node != null ? link.node : managers.nodes.clusterLookupNode(hdr.name);
+        for (ClusterMessageDataGossip gossip : gossips) {
+            int flags = gossip.flags;
             if (logger.isDebugEnabled()) {
-                logger.debug("GOSSIP " + g.nodename + " " + g.ip + ":" + g.port + "@" + g.cport + " " + representClusterNodeFlags(flags));
+                logger.debug("GOSSIP " + gossip.name + " " + gossip.ip + ":" + gossip.port + "@" + gossip.busPort + " " + representClusterNodeFlags(flags));
             }
 
-            ClusterNode node = managers.nodes.clusterLookupNode(g.nodename);
+            ClusterNode node = managers.nodes.clusterLookupNode(gossip.name);
 
             if (node == null) {
-                if (sender != null && (flags & CLUSTER_NODE_NOADDR) == 0 && !managers.blacklists.clusterBlacklistExists(g.nodename)) {
-                    managers.nodes.clusterStartHandshake(g.ip, g.port, g.cport);
+                if (sender != null && (flags & CLUSTER_NODE_NOADDR) == 0 && !managers.blacklists.clusterBlacklistExists(gossip.name)) {
+                    managers.nodes.clusterStartHandshake(gossip.ip, gossip.port, gossip.busPort);
                 }
                 continue;
             }
@@ -117,55 +116,51 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
                 }
             }
 
-            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && node.pingSent == 0 && managers.nodes.clusterNodeFailureReportsCount(node) == 0) {
-                long pongtime = g.pongReceived;
-                if (pongtime <= (System.currentTimeMillis() + 500) && pongtime > node.pongReceived) {
-                    node.pongReceived = pongtime;
+            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && node.pingTime == 0 && managers.nodes.clusterNodeFailureReportsCount(node) == 0) {
+                long pongTime = gossip.pongTime;
+                if (pongTime <= (System.currentTimeMillis() + 500) && pongTime > node.pongTime) {
+                    node.pongTime = pongTime;
                 }
             }
 
             if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && (flags & CLUSTER_NODE_NOADDR) == 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 &&
-                    (!node.ip.equalsIgnoreCase(g.ip) || node.port != g.port || node.cport != g.cport)) {
+                    (!node.ip.equalsIgnoreCase(gossip.ip) || node.port != gossip.port || node.busPort != gossip.busPort)) {
                 if (node.link != null) managers.connections.freeClusterLink(node.link);
-                node.ip = g.ip;
-                node.port = g.port;
-                node.cport = g.cport;
+                node.ip = gossip.ip;
+                node.port = gossip.port;
+                node.busPort = gossip.busPort;
                 node.flags &= ~CLUSTER_NODE_NOADDR;
             }
         }
     }
 
     public boolean nodeUpdateAddressIfNeeded(ClusterNode node, ClusterLink link, ClusterMessage hdr) {
-        int port = hdr.port;
-        int cport = hdr.cport;
         if (link.equals(node.link)) return false;
 
-        String ip = link.fd.getRemoteAddress(hdr.myip);
-
-        if (node.port == port && node.cport == cport && ip.equals(node.ip)) return false;
-
+        String ip = link.fd.getRemoteAddress(hdr.ip);
+        if (node.port == hdr.port && node.busPort == hdr.busPort && ip.equals(node.ip)) return false;
         node.ip = ip;
-        node.port = port;
-        node.cport = cport;
+        node.port = hdr.port;
+        node.busPort = hdr.busPort;
 
         if (node.link != null) managers.connections.freeClusterLink(node.link);
         logger.info("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
 
-        if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(node)) {
+        if (nodeIsSlave(server.myself) && server.myself.master.equals(node)) {
             managers.replications.replicationSetMaster(node);
         }
         return true;
     }
 
     public void markNodeAsFailingIfNeeded(ClusterNode node) {
-        int neededQuorum = server.cluster.size / 2 + 1;
+        int quorum = server.cluster.size / 2 + 1;
 
         if (!nodePFailed(node) || nodeFailed(node)) return;
 
         int failures = managers.nodes.clusterNodeFailureReportsCount(node);
 
         if (nodeIsMaster(server.myself)) failures++;
-        if (failures < neededQuorum) return;
+        if (failures < quorum) return;
 
         logger.info("Marking node " + node.name + " as failing (quorum reached).");
 

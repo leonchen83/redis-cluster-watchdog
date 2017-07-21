@@ -1,7 +1,8 @@
 package com.moilioncircle.redis.cluster.watchdog.util;
 
 /**
- * Created by Baoyi Chen on 2017/7/12.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class CRC16 {
     public static final int[] LOOKUP_TABLE = {

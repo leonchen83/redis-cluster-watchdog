@@ -12,17 +12,18 @@ import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger
 import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 
 /**
- * Created by Baoyi Chen on 2017/7/13.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
-    public ClusterMessagePongHandler(ClusterManagers gossip) {
-        super(gossip);
+    public ClusterMessagePongHandler(ClusterManagers managers) {
+        super(managers);
     }
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Pong packet received: node:" + link.node + ",sender:" + sender + ",message:" + hdr);
+            logger.debug("Pong packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
         }
 
         if (link.node != null) {
@@ -35,23 +36,23 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
                     return false;
                 }
 
-                managers.nodes.clusterRenameNode(link.node, hdr.sender);
+                managers.nodes.clusterRenameNode(link.node, hdr.name);
                 if (managers.configuration.isVerbose())
                     logger.info("Handshake with node " + link.node.name + " completed.");
                 link.node.flags &= ~CLUSTER_NODE_HANDSHAKE;
                 link.node.flags |= hdr.flags & (CLUSTER_NODE_MASTER | CLUSTER_NODE_SLAVE);
-            } else if (!link.node.name.equals(hdr.sender)) {
-                logger.debug("PONG contains mismatching sender ID. About node " + link.node.name + " added " + (System.currentTimeMillis() - link.node.ctime) + " ms ago, having flags " + link.node.flags);
+            } else if (!link.node.name.equals(hdr.name)) {
+                logger.debug("PONG contains mismatching name ID. About node " + link.node.name + " added " + (System.currentTimeMillis() - link.node.createTime) + " ms ago, having flags " + link.node.flags);
                 link.node.flags |= CLUSTER_NODE_NOADDR;
                 link.node.ip = null;
                 link.node.port = 0;
-                link.node.cport = 0;
+                link.node.busPort = 0;
                 managers.connections.freeClusterLink(link);
                 return false;
             }
 
-            link.node.pongReceived = System.currentTimeMillis();
-            link.node.pingSent = 0;
+            link.node.pongTime = System.currentTimeMillis();
+            link.node.pingTime = 0;
 
             if (nodePFailed(link.node)) {
                 link.node.flags &= ~CLUSTER_NODE_PFAIL;
@@ -62,10 +63,10 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
 
         if (sender == null) return true;
 
-        if (hdr.slaveof == null) {
+        if (hdr.master == null) {
             managers.nodes.clusterSetNodeAsMaster(sender);
         } else {
-            ClusterNode master = managers.nodes.clusterLookupNode(hdr.slaveof);
+            ClusterNode master = managers.nodes.clusterLookupNode(hdr.master);
 
             if (nodeIsMaster(sender)) {
                 managers.slots.clusterDelNodeSlots(sender);
@@ -73,30 +74,30 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
                 sender.flags |= CLUSTER_NODE_SLAVE;
             }
 
-            if (master != null && (sender.slaveof == null || !sender.slaveof.equals(master))) {
-                if (sender.slaveof != null) managers.nodes.clusterNodeRemoveSlave(sender.slaveof, sender);
+            if (master != null && (sender.master == null || !sender.master.equals(master))) {
+                if (sender.master != null) managers.nodes.clusterNodeRemoveSlave(sender.master, sender);
                 managers.nodes.clusterNodeAddSlave(master, sender);
-                sender.slaveof = master;
+                sender.master = master;
             }
         }
 
-        boolean dirtySlots = false;
-        ClusterNode senderMaster = nodeIsMaster(sender) ? sender : sender.slaveof;
+        boolean dirty = false;
+        ClusterNode senderMaster = nodeIsMaster(sender) ? sender : sender.master;
         if (senderMaster != null) {
-            dirtySlots = !Arrays.equals(senderMaster.slots, hdr.myslots);
+            dirty = !Arrays.equals(senderMaster.slots, hdr.slots);
         }
 
-        if (nodeIsMaster(sender) && dirtySlots) {
-            clusterUpdateSlotsConfigWith(sender, hdr.configEpoch, hdr.myslots);
+        if (nodeIsMaster(sender) && dirty) {
+            clusterUpdateSlotsConfigWith(sender, hdr.configEpoch, hdr.slots);
         }
 
-        if (dirtySlots) {
+        if (dirty) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                if (!bitmapTestBit(hdr.myslots, i)) continue;
+                if (!bitmapTestBit(hdr.slots, i)) continue;
                 if (server.cluster.slots[i] == null || server.cluster.slots[i].equals(sender)) continue;
                 if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
                     if (managers.configuration.isVerbose())
-                        logger.info("Node " + sender.name + " has old slots configuration, sending an UPDATE message about " + server.cluster.slots[i].name);
+                        logger.info("Node " + sender.name + " has old slots configuration, sending an UPDATE message fail " + server.cluster.slots[i].name);
                     managers.messages.clusterSendUpdate(sender.link, server.cluster.slots[i]);
                     break;
                 }
@@ -114,13 +115,13 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
     public void clearNodeFailureIfNeeded(ClusterNode node) {
         long now = System.currentTimeMillis();
 
-        if (nodeIsSlave(node) || node.numslots == 0) {
+        if (nodeIsSlave(node) || node.assignedSlots == 0) {
             logger.info("Clear FAIL state for node " + node.name + ": " + (nodeIsSlave(node) ? "slave" : "master without slots") + " is reachable again.");
             node.flags &= ~CLUSTER_NODE_FAIL;
         }
 
-        if (nodeIsMaster(node) && node.numslots > 0 && now - node.failTime > managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_UNDO_TIME_MULT) {
-            logger.info("Clear FAIL state for node " + node.name + ": is reachable again and nobody is serving its slots after some time.");
+        if (nodeIsMaster(node) && node.assignedSlots > 0 && now - node.failTime > managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_UNDO_TIME_MULTI) {
+            logger.info("Clear FAIL state for node " + node.name + ": is reachable again and nobody is serving its slots after some createTime.");
             node.flags &= ~CLUSTER_NODE_FAIL;
         }
     }

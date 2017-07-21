@@ -5,8 +5,10 @@ import java.util.*;
 import static java.util.Arrays.fill;
 
 /**
- * Created by Baoyi Chen on 2017/7/20.
+ * @author Leon Chen
+ * @since 1.0.0
  */
+@SuppressWarnings("unchecked")
 public class ByteMap<V> implements Map<Byte, V> {
     //
     private static final int MASK = 0x000000FF;
@@ -105,7 +107,7 @@ public class ByteMap<V> implements Map<Byte, V> {
 
     protected int index(Object key) {
         final Byte index = (Byte) key;
-        return index.byteValue() & MASK;
+        return index & MASK;
     }
 
     protected Iterator<V> valueIterator() {
@@ -193,7 +195,7 @@ public class ByteMap<V> implements Map<Byte, V> {
         }
     }
 
-    private abstract class AbstractIterator<V> implements Iterator<V> {
+    private abstract class AbstractIterator<T> implements Iterator<T> {
 
         protected int index = prefetch(0);
         protected int prev = index;

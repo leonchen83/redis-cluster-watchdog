@@ -3,7 +3,8 @@ package com.moilioncircle.redis.cluster.watchdog.state;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 
 /**
- * Created by Baoyi Chen on 2017/7/19.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class States {
     public static boolean nodeIsMaster(ClusterNode n) {

@@ -72,11 +72,11 @@ public class ThinServer {
             @Override
             public void onMessage(Transport<Object> transport, Object message) {
                 managers.executor.execute(() -> {
-                    ConfigInfo oldInfo = valueOf(managers.server.cluster);
+                    ConfigInfo previous = valueOf(managers.server.cluster);
                     clusterCommand(transport, (byte[][]) message);
-                    ConfigInfo newInfo = valueOf(managers.server.cluster);
-                    if (!oldInfo.equals(newInfo))
-                        managers.file.submit(() -> managers.configs.clusterSaveConfig(newInfo));
+                    ConfigInfo next = valueOf(managers.server.cluster);
+                    if (!previous.equals(next))
+                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
                 });
             }
 
@@ -108,15 +108,15 @@ public class ThinServer {
             argv[i] = new String(message[i]);
         }
         if (argv[1].equalsIgnoreCase("meet") && (argv.length == 4 || argv.length == 5)) {
-            int cport;
+            int busPort;
             int port = parseInt(argv[3]);
             if (argv.length == 5) {
-                cport = parseInt(argv[4]);
+                busPort = parseInt(argv[4]);
             } else {
-                cport = port + CLUSTER_PORT_INCR;
+                busPort = port + CLUSTER_PORT_INCR;
             }
 
-            if (managers.nodes.clusterStartHandshake(argv[2], port, cport)) {
+            if (managers.nodes.clusterStartHandshake(argv[2], port, busPort)) {
                 t.write("+OK\r\n".getBytes(), true);
             } else {
                 t.write(("-ERR Invalid node address specified:" + argv[2] + ":" + argv[3] + "\r\n").getBytes(), true);
@@ -187,7 +187,7 @@ public class ThinServer {
 //                }
 //                ClusterNode n = managers.nodes.clusterLookupNode(argv[4]);
 //                if (n == null) {
-//                    t.write(("-ERR I don't know about node " + argv[4] + "\r\n").getBytes(), true);
+//                    t.write(("-ERR I don't know fail node " + argv[4] + "\r\n").getBytes(), true);
 //                    return;
 //                }
 //                server.cluster.migratingSlotsTo[slot] = n;
@@ -198,7 +198,7 @@ public class ThinServer {
 //                }
 //                ClusterNode n = managers.nodes.clusterLookupNode(argv[4]);
 //                if (n == null) {
-//                    t.write(("-ERR I don't know about node " + argv[4] + "\r\n").getBytes(), true);
+//                    t.write(("-ERR I don't know fail node " + argv[4] + "\r\n").getBytes(), true);
 //                    return;
 //                }
 //                server.cluster.importingSlotsFrom[slot] = n;
@@ -234,58 +234,58 @@ public class ThinServer {
 //            t.write(("+OK\r\n").getBytes(), true);
             t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("bumpepoch") && argv.length == 2) {
-            boolean retval = clusterBumpConfigEpochWithoutConsensus();
-            String reply = "+" + (retval ? "BUMPED" : "STILL") + " " + server.myself.configEpoch + "\r\n";
+            boolean rs = clusterBumpConfigEpochWithoutConsensus();
+            String reply = "+" + (rs ? "BUMPED" : "STILL") + " " + server.myself.configEpoch + "\r\n";
             t.write(reply.getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("info") && argv.length == 2) {
-            String[] statestr = {"ok", "fail", "needhelp"};
-            int slotsAssigned = 0, slotsOk = 0, slotsFail = 0, slotsPfail = 0;
+            String[] stats = {"ok", "fail", "needhelp"};
+            int assigned = 0, normal = 0, fail = 0, pFail = 0;
 
             for (int j = 0; j < CLUSTER_SLOTS; j++) {
-                ClusterNode n = server.cluster.slots[j];
+                ClusterNode node = server.cluster.slots[j];
 
-                if (n == null) continue;
-                slotsAssigned++;
-                if (nodeFailed(n)) {
-                    slotsFail++;
-                } else if (nodePFailed(n)) {
-                    slotsPfail++;
+                if (node == null) continue;
+                assigned++;
+                if (nodeFailed(node)) {
+                    fail++;
+                } else if (nodePFailed(node)) {
+                    pFail++;
                 } else {
-                    slotsOk++;
+                    normal++;
                 }
             }
 
-            long myepoch = (nodeIsSlave(server.myself) && server.myself.slaveof != null) ? server.myself.slaveof.configEpoch : server.myself.configEpoch;
+            long epoch = (nodeIsSlave(server.myself) && server.myself.master != null) ? server.myself.master.configEpoch : server.myself.configEpoch;
 
-            StringBuilder info = new StringBuilder("cluster_state:").append(statestr[server.cluster.state]).append("\r\n")
-                    .append("cluster_slots_assigned:").append(slotsAssigned).append("\r\n")
-                    .append("cluster_slots_ok:").append(slotsOk).append("\r\n")
-                    .append("cluster_slots_pfail:").append(slotsPfail).append("\r\n")
-                    .append("cluster_slots_fail:").append(slotsFail).append("\r\n")
+            StringBuilder info = new StringBuilder("cluster_state:").append(stats[server.cluster.state]).append("\r\n")
+                    .append("cluster_slots_assigned:").append(assigned).append("\r\n")
+                    .append("cluster_slots_ok:").append(normal).append("\r\n")
+                    .append("cluster_slots_pfail:").append(pFail).append("\r\n")
+                    .append("cluster_slots_fail:").append(fail).append("\r\n")
                     .append("cluster_known_nodes:").append(server.cluster.nodes.size()).append("\r\n")
                     .append("cluster_size:").append(server.cluster.size).append("\r\n")
                     .append("cluster_current_epoch:").append(server.cluster.currentEpoch).append("\r\n")
-                    .append("cluster_my_epoch:").append(myepoch).append("\r\n");
+                    .append("cluster_my_epoch:").append(epoch).append("\r\n");
 
 
-            long totMsgSent = 0;
-            long totMsgReceived = 0;
-
-            for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
-                if (server.cluster.statsBusMessagesSent[i] == 0) continue;
-                totMsgSent += server.cluster.statsBusMessagesSent[i];
-                info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_sent:").append(server.cluster.statsBusMessagesSent[i]).append("\r\n");
-            }
-
-            info.append("cluster_stats_messages_sent:").append(totMsgSent).append("\r\n");
+            long sent = 0;
+            long received = 0;
 
             for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
-                if (server.cluster.statsBusMessagesReceived[i] == 0) continue;
-                totMsgReceived += server.cluster.statsBusMessagesReceived[i];
-                info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_received:").append(server.cluster.statsBusMessagesReceived[i]).append("\r\n");
+                if (server.cluster.messagesSent[i] == 0) continue;
+                sent += server.cluster.messagesSent[i];
+                info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_sent:").append(server.cluster.messagesSent[i]).append("\r\n");
             }
 
-            info.append("cluster_stats_messages_received:").append(totMsgReceived).append("\r\n");
+            info.append("cluster_stats_messages_sent:").append(sent).append("\r\n");
+
+            for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
+                if (server.cluster.messagesReceived[i] == 0) continue;
+                received += server.cluster.messagesReceived[i];
+                info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_received:").append(server.cluster.messagesReceived[i]).append("\r\n");
+            }
+
+            info.append("cluster_stats_messages_received:").append(received).append("\r\n");
             t.write(("$" + info.length() + "\r\n" + info.toString() + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("saveconfig") && argv.length == 2) {
             if (!managers.configs.clusterSaveConfig(valueOf(server.cluster))) {
@@ -297,74 +297,74 @@ public class ThinServer {
         } else if (argv[1].equalsIgnoreCase("countkeysinslot") && argv.length == 3) {
             t.write(("-ERR Unsupported operation [cluster " + argv[1] + "]\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("forget") && argv.length == 3) {
-            ClusterNode n = managers.nodes.clusterLookupNode(argv[2]);
+            ClusterNode node = managers.nodes.clusterLookupNode(argv[2]);
 
-            if (n == null) {
+            if (node == null) {
                 t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
                 return;
-            } else if (n.equals(server.myself)) {
+            } else if (node.equals(server.myself)) {
                 t.write(("-ERR I tried hard but I can't forget myself...\r\n").getBytes(), true);
                 return;
-            } else if (nodeIsSlave(server.myself) && server.myself.slaveof.equals(n)) {
+            } else if (nodeIsSlave(server.myself) && server.myself.master.equals(node)) {
                 t.write(("-ERR Can't forget my master!\r\n").getBytes(), true);
                 return;
             }
-            managers.blacklists.clusterBlacklistAddNode(n);
-            managers.nodes.clusterDelNode(n);
+            managers.blacklists.clusterBlacklistAddNode(node);
+            managers.nodes.clusterDelNode(node);
             managers.states.clusterUpdateState();
             t.write("+OK\r\n".getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("replicate") && argv.length == 3) {
-            ClusterNode n = managers.nodes.clusterLookupNode(argv[2]);
+            ClusterNode node = managers.nodes.clusterLookupNode(argv[2]);
 
-            if (n == null) {
+            if (node == null) {
                 t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
                 return;
             }
 
-            if (n.equals(server.myself)) {
+            if (node.equals(server.myself)) {
                 t.write(("-ERR Can't replicate myself\r\n").getBytes(), true);
                 return;
             }
 
-            if (nodeIsSlave(n)) {
+            if (nodeIsSlave(node)) {
                 t.write(("-ERR I can only replicate a master, not a slave.\r\n").getBytes(), true);
                 return;
             }
 
-            if (nodeIsMaster(server.myself) && (server.myself.numslots != 0)) {
+            if (nodeIsMaster(server.myself) && (server.myself.assignedSlots != 0)) {
                 t.write(("-ERR To set a master the node must be empty and without assigned slots.\r\n").getBytes(), true);
                 return;
             }
 
-            managers.nodes.clusterSetMyMaster(n);
+            managers.nodes.clusterSetMyMasterTo(node);
             managers.states.clusterUpdateState();
             t.write("+OK\r\n".getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("slaves") && argv.length == 3) {
-            ClusterNode n = managers.nodes.clusterLookupNode(argv[2]);
+            ClusterNode node = managers.nodes.clusterLookupNode(argv[2]);
 
-            if (n == null) {
+            if (node == null) {
                 t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
                 return;
             }
 
-            if (nodeIsSlave(n)) {
+            if (nodeIsSlave(node)) {
                 t.write(("-ERR The specified node is not a master\r\n").getBytes(), true);
                 return;
             }
 
-            StringBuilder ci = new StringBuilder();
-            for (int j = 0; j < n.numslaves; j++) {
-                ci.append(managers.configs.clusterGenNodeDescription(NodeInfo.valueOf(n.slaves.get(j), server.cluster.myself)));
+            StringBuilder builder = new StringBuilder();
+            for (ClusterNode slave : node.slaves) {
+                builder.append(managers.configs.clusterGenNodeDescription(NodeInfo.valueOf(slave, server.cluster.myself)));
             }
-            t.write(("$" + ci.length() + "\r\n" + ci.toString() + "\r\n").getBytes(), true);
+            t.write(("$" + builder.length() + "\r\n" + builder.toString() + "\r\n").getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("count-failure-reports") && argv.length == 3) {
             /* CLUSTER COUNT-FAILURE-REPORTS <NODE ID> */
-            ClusterNode n = managers.nodes.clusterLookupNode(argv[2]);
+            ClusterNode node = managers.nodes.clusterLookupNode(argv[2]);
 
-            if (n == null) {
+            if (node == null) {
                 t.write(("-ERR Unknown node " + argv[2] + "\r\n").getBytes(), true);
             } else {
-                t.write((":" + String.valueOf(managers.nodes.clusterNodeFailureReportsCount(n)) + "\r\n").getBytes(), true);
+                t.write((":" + String.valueOf(managers.nodes.clusterNodeFailureReportsCount(node)) + "\r\n").getBytes(), true);
             }
         } else if (argv[1].equalsIgnoreCase("set-config-epoch") && argv.length == 3) {
             long epoch = parseLong(argv[2]);
@@ -398,8 +398,8 @@ public class ThinServer {
     }
 
     public boolean clusterBumpConfigEpochWithoutConsensus() {
-        long maxEpoch = managers.nodes.clusterGetMaxEpoch();
-        if (server.myself.configEpoch == 0 || server.myself.configEpoch != maxEpoch) {
+        long max = managers.nodes.clusterGetMaxEpoch();
+        if (server.myself.configEpoch == 0 || server.myself.configEpoch != max) {
             server.cluster.currentEpoch++;
             server.myself.configEpoch = server.cluster.currentEpoch;
             logger.info("New configEpoch set to " + server.myself.configEpoch);
@@ -409,20 +409,20 @@ public class ThinServer {
     }
 
     public String clusterReplyMultiBulkSlots() {
-        int numMasters = 0;
-        StringBuilder ci = new StringBuilder();
+        int masters = 0;
+        StringBuilder r = new StringBuilder();
         for (ClusterNode node : server.cluster.nodes.values()) {
             int start = -1;
-            if (!nodeIsMaster(node) || node.numslots == 0) continue;
+            if (!nodeIsMaster(node) || node.assignedSlots == 0) continue;
 
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 boolean bit;
-                if ((bit = bitmapTestBit(node.slots, i))) {
-                    if (start == -1) start = i;
+                if ((bit = bitmapTestBit(node.slots, i)) && start == -1) {
+                    start = i;
                 }
                 if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
                     StringBuilder builder = new StringBuilder();
-                    int nestedElements = 3;
+                    int elements = 3;
                     if (bit) i++;
                     if (start == i - 1) {
                         builder.append(":").append(start).append("\r\n");
@@ -436,23 +436,22 @@ public class ThinServer {
                     builder.append("$").append(node.ip.length()).append("\r\n").append(node.ip).append("\r\n");
                     builder.append(":").append(node.port).append("\r\n");
                     builder.append("$").append(node.name.length()).append("\r\n").append(node.name).append("\r\n");
-                    for (int j = 0; j < node.numslaves; j++) {
-                        if (nodeFailed(node.slaves.get(j))) continue;
-                        ClusterNode n = node.slaves.get(j);
+                    for (ClusterNode slave : node.slaves) {
+                        if (nodeFailed(slave)) continue;
                         builder.append("*3\r\n");
-                        builder.append("$").append(n.ip.length()).append("\r\n").append(n.ip).append("\r\n");
-                        builder.append(":").append(n.port).append("\r\n");
-                        builder.append("$").append(n.name.length()).append("\r\n").append(n.name).append("\r\n");
-                        nestedElements++;
+                        builder.append("$").append(slave.ip.length()).append("\r\n").append(slave.ip).append("\r\n");
+                        builder.append(":").append(slave.port).append("\r\n");
+                        builder.append("$").append(slave.name.length()).append("\r\n").append(slave.name).append("\r\n");
+                        elements++;
                     }
-                    builder.insert(0, "*" + nestedElements + "\r\n");
-                    ci.append(builder.toString());
-                    numMasters++;
+                    builder.insert(0, "*" + elements + "\r\n");
+                    r.append(builder.toString());
+                    masters++;
                 }
             }
         }
-        ci.insert(0, "*" + numMasters + "\r\n");
-        return ci.toString();
+        r.insert(0, "*" + masters + "\r\n");
+        return r.toString();
     }
 
     public void clusterReset(boolean hard) {
@@ -475,8 +474,8 @@ public class ThinServer {
         server.cluster.lastVoteEpoch = 0;
         server.myself.configEpoch = 0;
         logger.info("configEpoch set to 0 via CLUSTER RESET HARD");
-        String old = server.myself.name;
-        server.cluster.nodes.remove(old);
+        String previous = server.myself.name;
+        server.cluster.nodes.remove(previous);
         server.myself.name = getRandomHexChars();
         managers.nodes.clusterAddNode(server.myself);
         logger.info("Node hard reset, now I'm " + server.myself.name);

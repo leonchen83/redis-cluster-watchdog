@@ -4,17 +4,16 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CHARSET;
 import static java.lang.Integer.parseInt;
 
 /**
- * Created by Baoyi Chen on 2017/7/14.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class RedisDecoder extends ByteToMessageDecoder {
-
-    public static final Charset CHARSET = Charset.forName("UTF-8");
 
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         in.markReaderIndex();

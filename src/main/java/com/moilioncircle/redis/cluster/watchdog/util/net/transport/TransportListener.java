@@ -1,7 +1,8 @@
 package com.moilioncircle.redis.cluster.watchdog.util.net.transport;
 
 /**
- * Created by Baoyi Chen on 2017/7/7.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public interface TransportListener<T> {
     default void onConnected(Transport<T> transport) {

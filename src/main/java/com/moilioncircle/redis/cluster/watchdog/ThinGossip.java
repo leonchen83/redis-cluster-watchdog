@@ -28,7 +28,8 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 
 /**
- * Created by Baoyi Chen on 2017/7/19.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ThinGossip {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
@@ -42,10 +43,10 @@ public class ThinGossip {
     public void start() {
         this.clusterInit();
         managers.executor.scheduleAtFixedRate(() -> {
-            ConfigInfo oldInfo = ConfigInfo.valueOf(managers.server.cluster);
+            ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
             clusterCron();
-            ConfigInfo newInfo = ConfigInfo.valueOf(managers.server.cluster);
-            if (!oldInfo.equals(newInfo)) managers.file.submit(() -> managers.configs.clusterSaveConfig(newInfo));
+            ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+            if (!previous.equals(next)) managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -55,8 +56,8 @@ public class ThinGossip {
             managers.server.myself = managers.server.cluster.myself = managers.nodes.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
             logger.info("No cluster configuration found, I'm " + managers.server.myself.name);
             managers.nodes.clusterAddNode(managers.server.myself);
-            ConfigInfo info = ConfigInfo.valueOf(managers.server.cluster);
-            managers.file.submit(() -> managers.configs.clusterSaveConfig(info));
+            ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+            managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
         }
 
         NioBootstrapImpl<RCmbMessage> cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
@@ -75,11 +76,11 @@ public class ThinGossip {
             @Override
             public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                 managers.executor.execute(() -> {
-                    ConfigInfo oldInfo = ConfigInfo.valueOf(managers.server.cluster);
+                    ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
                     clusterProcessPacket(managers.server.cfd.get(transport), (ClusterMessage) message);
-                    ConfigInfo newInfo = ConfigInfo.valueOf(managers.server.cluster);
-                    if (!oldInfo.equals(newInfo))
-                        managers.file.submit(() -> managers.configs.clusterSaveConfig(newInfo));
+                    ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+                    if (!previous.equals(next))
+                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
                 });
             }
 
@@ -91,7 +92,7 @@ public class ThinGossip {
             }
         });
         try {
-            cfd.connect(null, managers.configuration.getClusterAnnounceBusPort()).get();
+            cfd.connect(managers.configuration.getClusterAnnounceIp(), managers.configuration.getClusterAnnounceBusPort()).get();
         } catch (InterruptedException | ExecutionException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -101,7 +102,7 @@ public class ThinGossip {
         }
 
         managers.server.myself.port = managers.configuration.getClusterAnnouncePort();
-        managers.server.myself.cport = managers.configuration.getClusterAnnounceBusPort();
+        managers.server.myself.busPort = managers.configuration.getClusterAnnounceBusPort();
     }
 
     public void clusterCron() {
@@ -109,25 +110,25 @@ public class ThinGossip {
             long now = System.currentTimeMillis();
             managers.server.iteration++;
 
-            String currIp = managers.configuration.getClusterAnnounceIp();
-            if (!Objects.equals(managers.server.prevIp, currIp)) {
-                managers.server.prevIp = currIp;
-                if (currIp != null) managers.server.myself.ip = currIp;
+            String nextAddress = managers.configuration.getClusterAnnounceIp();
+            if (!Objects.equals(managers.server.previousAddress, nextAddress)) {
+                managers.server.previousAddress = nextAddress;
+                if (nextAddress != null) managers.server.myself.ip = nextAddress;
                 else managers.server.myself.ip = null;
             }
 
             long handshakeTimeout = managers.configuration.getClusterNodeTimeout();
             if (handshakeTimeout < 1000) handshakeTimeout = 1000;
-            managers.server.cluster.statsPfailNodes = 0;
+            managers.server.cluster.pFailNodes = 0;
             List<ClusterNode> nodes = new ArrayList<>(managers.server.cluster.nodes.values());
             for (ClusterNode node : nodes) {
                 if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0)
                     continue;
 
                 if ((node.flags & CLUSTER_NODE_PFAIL) != 0)
-                    managers.server.cluster.statsPfailNodes++;
+                    managers.server.cluster.pFailNodes++;
 
-                if (nodeInHandshake(node) && now - node.ctime > handshakeTimeout) {
+                if (nodeInHandshake(node) && now - node.createTime > handshakeTimeout) {
                     managers.nodes.clusterDelNode(node);
                     continue;
                 }
@@ -147,11 +148,11 @@ public class ThinGossip {
                         @Override
                         public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                             managers.executor.execute(() -> {
-                                ConfigInfo oldInfo = ConfigInfo.valueOf(managers.server.cluster);
+                                ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
                                 clusterProcessPacket(link, (ClusterMessage) message);
-                                ConfigInfo newInfo = ConfigInfo.valueOf(managers.server.cluster);
-                                if (!oldInfo.equals(newInfo))
-                                    managers.file.submit(() -> managers.configs.clusterSaveConfig(newInfo));
+                                ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+                                if (!previous.equals(next))
+                                    managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
                             });
                         }
 
@@ -163,38 +164,38 @@ public class ThinGossip {
                         }
                     });
                     try {
-                        fd.connect(node.ip, node.cport).get();
+                        fd.connect(node.ip, node.busPort).get();
                         link.fd = new SessionImpl<>(fd.getTransport());
                     } catch (InterruptedException | ExecutionException e) {
                         if (e instanceof InterruptedException) {
                             Thread.currentThread().interrupt();
                         }
-                        if (node.pingSent == 0) node.pingSent = System.currentTimeMillis();
+                        if (node.pingTime == 0) node.pingTime = System.currentTimeMillis();
                         fd.shutdown();
                         continue;
                     }
                     node.link = link;
-                    link.ctime = System.currentTimeMillis();
-                    long oldPingSent = node.pingSent;
+                    link.createTime = System.currentTimeMillis();
+                    long previousPing = node.pingTime;
                     managers.messages.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
-                    if (oldPingSent != 0) node.pingSent = oldPingSent;
+                    if (previousPing != 0) node.pingTime = previousPing;
                     node.flags &= ~CLUSTER_NODE_MEET;
                 }
             }
 
-            long minPong = 0;
+            long minPongTime = 0;
             ClusterNode minPongNode = null;
             if (managers.server.iteration % 10 == 0) {
                 for (int i = 0; i < 5; i++) {
                     List<ClusterNode> list = new ArrayList<>(managers.server.cluster.nodes.values());
                     ClusterNode t = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
-                    if (t.link == null || t.pingSent != 0) continue;
+                    if (t.link == null || t.pingTime != 0) continue;
                     if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0)
                         continue;
-                    if (minPongNode == null || minPong > t.pongReceived) {
+                    if (minPongNode == null || minPongTime > t.pongTime) {
                         minPongNode = t;
-                        minPong = t.pongReceived;
+                        minPongTime = t.pongTime;
                     }
                 }
                 if (minPongNode != null) {
@@ -204,7 +205,7 @@ public class ThinGossip {
             }
 
             boolean update = false;
-            int maxSlaves = 0, thisSlaves = 0, orphanedMasters = 0;
+            int maxSlaves = 0, mySlaves = 0, isolatedMasters = 0;
             for (ClusterNode node : managers.server.cluster.nodes.values()) {
                 now = System.currentTimeMillis();
 
@@ -214,40 +215,40 @@ public class ThinGossip {
                 if (nodeIsSlave(managers.server.myself) && nodeIsMaster(node) && !nodeFailed(node)) {
                     int slaves = managers.nodes.clusterCountNonFailingSlaves(node);
 
-                    if (slaves == 0 && node.numslots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) {
-                        orphanedMasters++;
+                    if (slaves == 0 && node.assignedSlots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) {
+                        isolatedMasters++;
                     }
                     if (slaves > maxSlaves) maxSlaves = slaves;
-                    if (managers.server.myself.slaveof.equals(node))
-                        thisSlaves = slaves;
+                    if (managers.server.myself.master.equals(node))
+                        mySlaves = slaves;
                 }
 
                 if (node.link != null
-                        && now - node.link.ctime > managers.configuration.getClusterNodeTimeout()
-                        && node.pingSent != 0 && node.pongReceived < node.pingSent
-                        && now - node.pingSent > managers.configuration.getClusterNodeTimeout() / 2) {
+                        && now - node.link.createTime > managers.configuration.getClusterNodeTimeout()
+                        && node.pingTime != 0 && node.pongTime < node.pingTime
+                        && now - node.pingTime > managers.configuration.getClusterNodeTimeout() / 2) {
                     managers.connections.freeClusterLink(node.link);
                 }
 
-                if (node.link != null && node.pingSent == 0 && (now - node.pongReceived) > managers.configuration.getClusterNodeTimeout() / 2) {
+                if (node.link != null && node.pingTime == 0 && (now - node.pongTime) > managers.configuration.getClusterNodeTimeout() / 2) {
                     managers.messages.clusterSendPing(node.link, CLUSTERMSG_TYPE_PING);
                     continue;
                 }
 
-                if (node.pingSent == 0) continue;
+                if (node.pingTime == 0) continue;
 
-                if (now - node.pingSent > managers.configuration.getClusterNodeTimeout() && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
+                if (now - node.pingTime > managers.configuration.getClusterNodeTimeout() && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
                     logger.debug("*** NODE " + node.name + " possibly failing");
                     node.flags |= CLUSTER_NODE_PFAIL;
                     update = true;
                 }
             }
 
-            if (nodeIsSlave(managers.server.myself) && managers.server.masterHost == null && managers.server.myself.slaveof != null && nodeHasAddr(managers.server.myself.slaveof)) {
-                managers.replications.replicationSetMaster(managers.server.myself.slaveof);
+            if (nodeIsSlave(managers.server.myself) && managers.server.masterHost == null && managers.server.myself.master != null && nodeHasAddr(managers.server.myself.master)) {
+                managers.replications.replicationSetMaster(managers.server.myself.master);
             }
 
-            if (nodeIsSlave(managers.server.myself) && orphanedMasters != 0 && maxSlaves >= 2 && thisSlaves == maxSlaves) {
+            if (nodeIsSlave(managers.server.myself) && isolatedMasters != 0 && maxSlaves >= 2 && mySlaves == maxSlaves) {
                 clusterHandleSlaveMigration(maxSlaves);
             }
 
@@ -258,40 +259,41 @@ public class ThinGossip {
         }
     }
 
-    public void clusterHandleSlaveMigration(int maxSlaves) {
+    public void clusterHandleSlaveMigration(int max) {
         if (managers.server.cluster.state != CLUSTER_OK) return;
-        if (managers.server.myself.slaveof == null) return;
-        int slaves = (int) managers.server.myself.slaveof.slaves.stream().
-                filter(x -> !nodeFailed(x) && !nodePFailed(x)).count();
+        if (managers.server.myself.master == null) return;
+        int slaves = (int) managers.server.myself.master.slaves.stream().
+                filter(e -> !nodeFailed(e) && !nodePFailed(e)).count();
         if (slaves <= managers.configuration.getClusterMigrationBarrier()) return;
 
         ClusterNode target = null;
+        long now = System.currentTimeMillis();
         ClusterNode candidate = managers.server.myself;
         for (ClusterNode node : managers.server.cluster.nodes.values()) {
             slaves = 0;
-            boolean isOrphaned = true;
+            boolean isolated = true;
 
-            if (nodeIsSlave(node) || nodeFailed(node)) isOrphaned = false;
-            if ((node.flags & CLUSTER_NODE_MIGRATE_TO) == 0) isOrphaned = false;
+            if (nodeIsSlave(node) || nodeFailed(node)) isolated = false;
+            if ((node.flags & CLUSTER_NODE_MIGRATE_TO) == 0) isolated = false;
 
             if (nodeIsMaster(node)) slaves = managers.nodes.clusterCountNonFailingSlaves(node);
-            if (slaves > 0) isOrphaned = false;
+            if (slaves > 0) isolated = false;
 
-            if (isOrphaned) {
-                if (target == null && node.numslots > 0) target = node;
-                if (node.orphanedTime == 0) node.orphanedTime = System.currentTimeMillis();
+            if (isolated) {
+                if (target == null && node.assignedSlots > 0) target = node;
+                if (node.isolatedTime == 0) node.isolatedTime = now;
             } else {
-                node.orphanedTime = 0;
+                node.isolatedTime = 0;
             }
 
-            if (slaves == maxSlaves) {
+            if (slaves == max) {
                 candidate = node.slaves.stream().reduce(managers.server.myself, (a, b) -> a.name.compareTo(b.name) >= 0 ? b : a);
             }
         }
 
-        if (target != null && candidate.equals(managers.server.myself) && (System.currentTimeMillis() - target.orphanedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
+        if (target != null && candidate.equals(managers.server.myself) && (now - target.isolatedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
             logger.info("Migrating to orphaned master " + target.name);
-            managers.nodes.clusterSetMyMaster(target);
+            managers.nodes.clusterSetMyMasterTo(target);
         }
     }
 

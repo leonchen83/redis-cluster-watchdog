@@ -4,7 +4,8 @@ import com.moilioncircle.redis.cluster.watchdog.util.concurrent.future.Completab
 import com.moilioncircle.redis.cluster.watchdog.util.net.ConnectionStatus;
 
 /**
- * Created by Baoyi Chen on 2017/7/7.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public interface Session<T> {
 

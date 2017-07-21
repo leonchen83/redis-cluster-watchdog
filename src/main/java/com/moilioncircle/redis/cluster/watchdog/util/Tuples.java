@@ -6,7 +6,8 @@ import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple4;
 import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple5;
 
 /**
- * Created by Baoyi Chen on 2017/7/20.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class Tuples {
 

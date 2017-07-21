@@ -1,25 +1,32 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
+import java.nio.charset.Charset;
+
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ClusterConstants {
 
+    public static final Charset CHARSET = Charset.forName("UTF-8");
+
     public static final int CLUSTER_SLOTS = 16384;
+
+    public static final int CLUSTER_SLOTS_BYTES = 16384 / 8;
 
     public static final byte CLUSTER_OK = 0;
 
     public static final byte CLUSTER_FAIL = 1;
 
-    public static final int CLUSTER_NAMELEN = 40;
+    public static final int CLUSTER_NAME_LEN = 40;
 
     public static final int CLUSTER_PORT_INCR = 10000;
 
-    public static final int CLUSTER_PROTO_VER = 1;
+    public static final int CLUSTER_PROTOCOL_VERSION = 1;
 
-    public static final int CLUSTER_FAIL_REPORT_VALIDITY_MULT = 2;
+    public static final int CLUSTER_FAIL_REPORT_VALIDITY_MULTI = 2;
 
-    public static final int CLUSTER_FAIL_UNDO_TIME_MULT = 2;
+    public static final int CLUSTER_FAIL_UNDO_TIME_MULTI = 2;
 
     public static final int CLUSTER_SLAVE_MIGRATION_DELAY = 5000;
 

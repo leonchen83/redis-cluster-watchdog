@@ -3,7 +3,8 @@ package com.moilioncircle.redis.cluster.watchdog.util.type;
 import java.util.function.Function;
 
 /**
- * Created by Baoyi Chen on 2017/7/20.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class Tuple2<T1, T2> {
     private final T1 v1;

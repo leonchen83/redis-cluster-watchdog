@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by Baoyi Chen on 2017/7/6.
+ * @author Leon Chen
+ * @since 1.0.0
  */
 public class ServerState {
     public int masterPort;
@@ -16,8 +17,8 @@ public class ServerState {
     public ClusterState cluster;
     public Map<Transport<RCmbMessage>, ClusterLink> cfd = new ConcurrentHashMap<>();
 
-    public String prevIp;
     public long iteration = 0;
-    public long firstCallTime = 0;
+    public String previousAddress;
+    public long stateSaveTime = 0;
     public long amongMinorityTime = 0;
 }
