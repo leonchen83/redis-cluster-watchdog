@@ -34,6 +34,11 @@ public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler 
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length != 3) {
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            return;
+        }
+
         long epoch;
         try {
             epoch = parseLong(message[2]);

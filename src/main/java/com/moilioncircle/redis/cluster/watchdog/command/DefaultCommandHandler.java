@@ -38,18 +38,25 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-        if (message.length > 0 && message[1].equalsIgnoreCase("cluster")) {
-            get("cluster").handle(t, message, rawMessage);
-        } else {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+        if (message.length <= 0 || message[0] == null) {
+            t.write(("-ERR Unsupported COMMAND\r\n").getBytes(), true);
+            return;
         }
+
+        CommandHandler handler = get(message[0]);
+        if (handler == null) {
+            t.write(("-ERR Unsupported COMMAND\r\n").getBytes(), true);
+            return;
+        }
+
+        handler.handle(t, message, rawMessage);
     }
 
     public void register(String name, CommandHandler handler) {
-        handlers.put(name, handler);
+        handlers.put(name.toLowerCase(), handler);
     }
 
     public CommandHandler get(String name) {
-        return handlers.get(name);
+        return handlers.get(name.toLowerCase());
     }
 }

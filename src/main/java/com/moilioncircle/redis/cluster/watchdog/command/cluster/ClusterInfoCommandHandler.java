@@ -37,6 +37,11 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length != 2) {
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            return;
+        }
+
         String[] stats = {"ok", "fail", "needhelp"};
         int assigned = 0, normal = 0, fail = 0, pFail = 0;
 

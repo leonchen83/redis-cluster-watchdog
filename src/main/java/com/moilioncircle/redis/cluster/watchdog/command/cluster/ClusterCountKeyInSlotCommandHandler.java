@@ -32,6 +32,11 @@ public class ClusterCountKeyInSlotCommandHandler extends AbstractCommandHandler 
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length != 3) {
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            return;
+        }
+
         t.write(("-ERR Unsupported operation [cluster " + message[1] + "]\r\n").getBytes(), true);
     }
 }

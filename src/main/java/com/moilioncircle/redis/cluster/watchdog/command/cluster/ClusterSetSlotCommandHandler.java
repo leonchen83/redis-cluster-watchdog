@@ -32,6 +32,10 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length < 4) {
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            return;
+        }
 //            /* SETSLOT 10 MIGRATING <node ID> */
 //            /* SETSLOT 10 IMPORTING <node ID> */
 //            /* SETSLOT 10 STABLE */

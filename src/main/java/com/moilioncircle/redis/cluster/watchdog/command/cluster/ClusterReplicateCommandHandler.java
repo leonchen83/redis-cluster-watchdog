@@ -36,6 +36,11 @@ public class ClusterReplicateCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length != 3) {
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            return;
+        }
+
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
 
         if (node == null) {

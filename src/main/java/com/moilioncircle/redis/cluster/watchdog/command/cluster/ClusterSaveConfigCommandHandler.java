@@ -34,8 +34,14 @@ public class ClusterSaveConfigCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length != 2) {
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            return;
+        }
+
         if (!managers.configs.clusterSaveConfig(valueOf(server.cluster))) {
             t.write(("-ERR Error saving the cluster node config\r\n").getBytes(), true);
+            return;
         }
         t.write("+OK\r\n".getBytes(), true);
     }

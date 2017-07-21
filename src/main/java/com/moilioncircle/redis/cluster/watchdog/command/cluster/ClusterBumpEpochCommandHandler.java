@@ -32,6 +32,11 @@ public class ClusterBumpEpochCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length != 2) {
+            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            return;
+        }
+
         boolean rs = clusterBumpConfigEpochWithoutConsensus();
         String reply = "+" + (rs ? "BUMPED" : "STILL") + " " + server.myself.configEpoch + "\r\n";
         t.write(reply.getBytes(), true);
