@@ -14,9 +14,9 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
  */
 public class ClusterState {
     public int size = 1;
+    public long pFailNodes = 0;
     public long currentEpoch = 0;
     public long lastVoteEpoch = 0;
-    public long pFailNodes = 0;
     public byte state = CLUSTER_FAIL;
     public ClusterNode myself = null;
     public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];

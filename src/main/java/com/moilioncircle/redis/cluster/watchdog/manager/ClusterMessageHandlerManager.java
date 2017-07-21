@@ -15,16 +15,16 @@ public class ClusterMessageHandlerManager {
 
     private Map<Byte, ClusterMessageHandler> handlers = new ByteMap<>();
 
-    public ClusterMessageHandlerManager(ClusterManagers gossip) {
-        register((byte) CLUSTERMSG_TYPE_PING, new ClusterMessagePingHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_PONG, new ClusterMessagePongHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_MEET, new ClusterMessageMeetHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_FAIL, new ClusterMessageFailHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_UPDATE, new ClusterMessageUpdateHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_PUBLISH, new ClusterMessagePublishHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_MFSTART, new ClusterMessageMFStartHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK, new ClusterMessageFailoverAuthAckHandler(gossip));
-        register((byte) CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST, new ClusterMessageFailoverAuthRequestHandler(gossip));
+    public ClusterMessageHandlerManager(ClusterManagers managers) {
+        register((byte) CLUSTERMSG_TYPE_PING, new ClusterMessagePingHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_PONG, new ClusterMessagePongHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_MEET, new ClusterMessageMeetHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_FAIL, new ClusterMessageFailHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_UPDATE, new ClusterMessageUpdateHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_PUBLISH, new ClusterMessagePublishHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_MFSTART, new ClusterMessageMFStartHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK, new ClusterMessageFailoverAuthAckHandler(managers));
+        register((byte) CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST, new ClusterMessageFailoverAuthRequestHandler(managers));
     }
 
     public void register(byte type, ClusterMessageHandler handler) {

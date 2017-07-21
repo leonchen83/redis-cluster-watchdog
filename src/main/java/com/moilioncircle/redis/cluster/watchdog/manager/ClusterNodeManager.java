@@ -13,6 +13,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
+import static java.lang.Math.max;
 import static java.util.Comparator.comparingLong;
 
 /**
@@ -151,15 +152,15 @@ public class ClusterNodeManager {
     }
 
     public long clusterGetMaxEpoch() {
-        return server.cluster.nodes.values().stream().
+        return max(server.cluster.nodes.values().stream().
                 max(comparingLong(e -> e.configEpoch)).
-                map(e -> e.configEpoch).orElse(server.cluster.currentEpoch);
+                map(e -> e.configEpoch).orElse(0L), server.cluster.currentEpoch);
     }
 
     public boolean clusterStartHandshake(String ip, int port, int busPort) {
-        boolean inHandshake = server.cluster.nodes.values().stream().
+        boolean handshaking = server.cluster.nodes.values().stream().
                 anyMatch(e -> nodeInHandshake(e) && e.ip.equalsIgnoreCase(ip) && e.port == port && e.busPort == busPort);
-        if (inHandshake) return false;
+        if (handshaking) return false;
 
         ClusterNode node = createClusterNode(null, CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_MEET);
         node.ip = ip;
