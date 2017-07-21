@@ -1,10 +1,10 @@
-# redis-cluster-watchdog
+# Redis-cluster-watchdog
 
 `redis-cluster-watchdog` can pretend as a redis cluster node which accept `RCmb(Redis Cluster message bus)` message and play with redis cluster.
 
-# run an example
+# Run an example
 
-## create a redis cluster
+## Create a redis cluster
 
 ```java  
 
@@ -20,7 +20,7 @@ $./create-cluster create
 
 ```
 
-## run redis-cluster-watchdog
+## Run redis-cluster-watchdog
 
 ```java  
 
@@ -34,7 +34,7 @@ $./create-cluster create
 
 ```
 
-## add redis-cluster-watchdog to redis cluster as a normal node
+## Add redis-cluster-watchdog to redis cluster as a normal node
 
 ```java  
 
@@ -44,7 +44,7 @@ $./redis-cli -p 10001
 
 ```
 
-## supported commands
+## Supported commands
 
 `CLUSTER MEET ip port <cport>`  
 `CLUSTER NODES`  
@@ -61,7 +61,7 @@ $./redis-cli -p 10001
 `CLUSTER SET-CONFIG-EPOCH epoch`  
 `CLUSTER RESET <HARD | SOFT>`  
 
-## listeners  
+## Listeners  
 
 `ReplicationListener`  
 
