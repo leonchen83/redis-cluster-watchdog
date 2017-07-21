@@ -353,10 +353,12 @@ public class ThinServer {
             }
 
             StringBuilder builder = new StringBuilder();
+            builder.append("*").append(node.slaves.size()).append("\r\n");
             for (ClusterNode slave : node.slaves) {
-                builder.append(managers.configs.clusterGenNodeDescription(NodeInfo.valueOf(slave, server.cluster.myself)));
+                String str = managers.configs.clusterGenNodeDescription(NodeInfo.valueOf(slave, server.cluster.myself));
+                builder.append("$").append(str.length()).append("\r\n").append(str).append("\r\n");
             }
-            t.write(("$" + builder.length() + "\r\n" + builder.toString() + "\r\n").getBytes(), true);
+            t.write(builder.toString().getBytes(), true);
         } else if (argv[1].equalsIgnoreCase("count-failure-reports") && argv.length == 3) {
             /* CLUSTER COUNT-FAILURE-REPORTS <NODE ID> */
             ClusterNode node = managers.nodes.clusterLookupNode(argv[2]);
