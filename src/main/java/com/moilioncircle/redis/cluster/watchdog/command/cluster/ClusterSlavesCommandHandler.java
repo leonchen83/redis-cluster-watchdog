@@ -16,8 +16,8 @@
 
 package com.moilioncircle.redis.cluster.watchdog.command.cluster;
 
+import com.moilioncircle.redis.cluster.watchdog.NodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
-import com.moilioncircle.redis.cluster.watchdog.config.NodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;

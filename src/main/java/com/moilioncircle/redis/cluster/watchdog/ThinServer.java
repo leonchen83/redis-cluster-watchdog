@@ -18,7 +18,6 @@ package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.cluster.watchdog.codec.RedisDecoder;
 import com.moilioncircle.redis.cluster.watchdog.codec.RedisEncoder;
-import com.moilioncircle.redis.cluster.watchdog.config.ConfigInfo;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
@@ -29,7 +28,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.concurrent.ExecutionException;
 
-import static com.moilioncircle.redis.cluster.watchdog.config.ConfigInfo.valueOf;
+import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
 
 /**
  * @author Leon Chen

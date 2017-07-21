@@ -1,7 +1,7 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
-import com.moilioncircle.redis.cluster.watchdog.config.ConfigInfo;
-import com.moilioncircle.redis.cluster.watchdog.config.NodeInfo;
+import com.moilioncircle.redis.cluster.watchdog.ConfigInfo;
+import com.moilioncircle.redis.cluster.watchdog.NodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import com.moilioncircle.redis.cluster.watchdog.util.collection.ByteMap;

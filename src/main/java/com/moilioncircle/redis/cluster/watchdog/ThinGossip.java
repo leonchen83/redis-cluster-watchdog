@@ -2,7 +2,6 @@ package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.cluster.watchdog.codec.ClusterMessageDecoder;
 import com.moilioncircle.redis.cluster.watchdog.codec.ClusterMessageEncoder;
-import com.moilioncircle.redis.cluster.watchdog.config.ConfigInfo;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.message.RCmbMessage;

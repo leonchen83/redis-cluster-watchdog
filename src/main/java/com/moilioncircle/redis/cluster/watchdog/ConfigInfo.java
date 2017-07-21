@@ -1,4 +1,4 @@
-package com.moilioncircle.redis.cluster.watchdog.config;
+package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;

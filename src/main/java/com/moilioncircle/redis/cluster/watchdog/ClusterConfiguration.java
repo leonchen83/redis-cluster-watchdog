@@ -106,7 +106,7 @@ public class ClusterConfiguration {
 
     private void validate() {
         if (clusterAnnouncePort <= 0 || clusterAnnouncePort > 65535) {
-            throw new ConfigurationException("illegal port" + clusterAnnouncePort);
+            throw new ClusterConfigurationException("illegal port" + clusterAnnouncePort);
         }
 
         if (clusterAnnounceBusPort == 0) {
@@ -114,7 +114,7 @@ public class ClusterConfiguration {
         }
 
         if (clusterAnnounceBusPort <= 0 || clusterAnnounceBusPort > 65535) {
-            throw new ConfigurationException("illegal bus port" + clusterAnnounceBusPort);
+            throw new ClusterConfigurationException("illegal bus port" + clusterAnnounceBusPort);
         }
 
         if (clusterConfigFile == null) {
@@ -122,11 +122,11 @@ public class ClusterConfiguration {
         }
 
         if (clusterMigrationBarrier < 1) {
-            throw new ConfigurationException("illegal migration barrier" + clusterMigrationBarrier);
+            throw new ClusterConfigurationException("illegal migration barrier" + clusterMigrationBarrier);
         }
 
         if (clusterNodeTimeout <= 0) {
-            throw new ConfigurationException("illegal node timeout" + clusterNodeTimeout);
+            throw new ClusterConfigurationException("illegal node timeout" + clusterNodeTimeout);
         }
     }
 }
