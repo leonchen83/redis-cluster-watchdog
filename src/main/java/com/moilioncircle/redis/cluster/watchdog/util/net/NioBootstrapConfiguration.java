@@ -24,6 +24,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class NioBootstrapConfiguration {
 
+    private NioBootstrapConfiguration() {
+    }
+
+    public static NioBootstrapConfiguration defaultSetting() {
+        return new NioBootstrapConfiguration();
+    }
+
     protected int soLinger = 0;
 
     protected int soTimeout = 0;
@@ -50,87 +57,98 @@ public class NioBootstrapConfiguration {
         return soLinger;
     }
 
-    public void setSoLinger(int soLinger) {
+    public NioBootstrapConfiguration setSoLinger(int soLinger) {
         this.soLinger = soLinger;
+        return this;
     }
 
     public int getSoTimeout() {
         return soTimeout;
     }
 
-    public void setSoTimeout(int soTimeout) {
+    public NioBootstrapConfiguration setSoTimeout(int soTimeout) {
         this.soTimeout = soTimeout;
+        return this;
     }
 
     public int getSoBacklog() {
         return soBacklog;
     }
 
-    public void setSoBacklog(int soBacklog) {
+    public NioBootstrapConfiguration setSoBacklog(int soBacklog) {
         this.soBacklog = soBacklog;
+        return this;
     }
 
     public int getSoSendBufferSize() {
         return soSendBufferSize;
     }
 
-    public void setSoSendBufferSize(int soSendBufferSize) {
+    public NioBootstrapConfiguration setSoSendBufferSize(int soSendBufferSize) {
         this.soSendBufferSize = soSendBufferSize;
+        return this;
     }
 
     public int getSoRecvBufferSize() {
         return soRecvBufferSize;
     }
 
-    public void setSoRecvBufferSize(int soRecvBufferSize) {
+    public NioBootstrapConfiguration setSoRecvBufferSize(int soRecvBufferSize) {
         this.soRecvBufferSize = soRecvBufferSize;
+        return this;
     }
 
     public boolean isTcpNoDelay() {
         return tcpNoDelay;
     }
 
-    public void setTcpNoDelay(boolean tcpNoDelay) {
+    public NioBootstrapConfiguration setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
+        return this;
     }
 
     public boolean isSoKeepAlive() {
         return soKeepAlive;
     }
 
-    public void setSoKeepAlive(boolean soKeepAlive) {
+    public NioBootstrapConfiguration setSoKeepAlive(boolean soKeepAlive) {
         this.soKeepAlive = soKeepAlive;
+        return this;
     }
 
     public boolean isSoReuseAddr() {
         return soReuseAddr;
     }
 
-    public void setSoReuseAddr(boolean soReuseAddr) {
+    public NioBootstrapConfiguration setSoReuseAddr(boolean soReuseAddr) {
         this.soReuseAddr = soReuseAddr;
+        return this;
     }
 
     public boolean isAutoReconnect() {
         return autoReconnect;
     }
 
-    public void setAutoReconnect(boolean autoReconnect) {
+    public NioBootstrapConfiguration setAutoReconnect(boolean autoReconnect) {
         this.autoReconnect = autoReconnect;
+        return this;
     }
 
     public long getConnectTimeout() {
         return connectTimeout;
     }
 
-    public void setConnectTimeout(long connectTimeout) {
+    public NioBootstrapConfiguration setConnectTimeout(long connectTimeout) {
         this.connectTimeout = connectTimeout;
+        return this;
     }
 
     public long getReconnectInterval() {
         return reconnectInterval;
     }
 
-    public void setReconnectInterval(long reconnectInterval) {
+    public NioBootstrapConfiguration setReconnectInterval(long reconnectInterval) {
         this.reconnectInterval = reconnectInterval;
+        return this;
     }
 }

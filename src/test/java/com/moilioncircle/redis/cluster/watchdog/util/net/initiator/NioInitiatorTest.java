@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class NioInitiatorTest {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        NioBootstrapConfiguration configuration = new NioBootstrapConfiguration();
+        NioBootstrapConfiguration configuration = NioBootstrapConfiguration.defaultSetting();
         NioBootstrapImpl<RedisMessage> client = new NioBootstrapImpl<>(false, configuration);
         client.setEncoder(RedisEncoder::new);
         client.setDecoder(RedisDecoder::new);

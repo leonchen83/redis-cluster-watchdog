@@ -1,5 +1,7 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -14,6 +16,7 @@ public class ClusterConfiguration {
     private long clusterNodeTimeout = 15000;
     private int clusterMigrationBarrier = 1;
     private boolean clusterRequireFullCoverage = true;
+    private NioBootstrapConfiguration networkConfiguration = NioBootstrapConfiguration.defaultSetting();
 
     private ClusterConfiguration() {
     }
@@ -100,6 +103,16 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterRequireFullCoverage(boolean clusterRequireFullCoverage) {
         this.clusterRequireFullCoverage = clusterRequireFullCoverage;
+        validate();
+        return this;
+    }
+
+    public NioBootstrapConfiguration getNetworkConfiguration() {
+        return networkConfiguration;
+    }
+
+    public ClusterConfiguration setNetworkConfiguration(NioBootstrapConfiguration networkConfiguration) {
+        this.networkConfiguration = networkConfiguration;
         validate();
         return this;
     }

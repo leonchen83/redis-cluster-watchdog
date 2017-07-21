@@ -105,7 +105,7 @@ public class ThinGossip {
             managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
         }
 
-        cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
+        cfd = new NioBootstrapImpl<>(true, NioBootstrapConfiguration.defaultSetting());
         cfd.setEncoder(ClusterMessageEncoder::new);
         cfd.setDecoder(ClusterMessageDecoder::new);
         cfd.setup();
@@ -182,7 +182,7 @@ public class ThinGossip {
                     continue;
 
                 final ClusterLink link = managers.connections.createClusterLink(node);
-                NioBootstrapImpl<RCmbMessage> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration());
+                NioBootstrapImpl<RCmbMessage> fd = new NioBootstrapImpl<>(false, managers.configuration.getNetworkConfiguration());
                 fd.setEncoder(ClusterMessageEncoder::new);
                 fd.setDecoder(ClusterMessageDecoder::new);
                 fd.setup();

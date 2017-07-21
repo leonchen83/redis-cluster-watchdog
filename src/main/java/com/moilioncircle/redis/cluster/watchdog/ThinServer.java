@@ -47,7 +47,7 @@ public class ThinServer {
     }
 
     public void start() {
-        cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
+        cfd = new NioBootstrapImpl<>(true, NioBootstrapConfiguration.defaultSetting());
         cfd.setEncoder(RedisEncoder::new);
         cfd.setDecoder(RedisDecoder::new);
         cfd.setup();
