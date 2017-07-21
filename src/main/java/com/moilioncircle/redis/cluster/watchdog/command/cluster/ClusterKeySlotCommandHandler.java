@@ -35,10 +35,10 @@ public class ClusterKeySlotCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
-        t.write((":" + String.valueOf(keyHashSlot(rawMessage[2])) + "\r\n").getBytes(), true);
+        replyNumber(t, String.valueOf(keyHashSlot(rawMessage[2])));
     }
 }

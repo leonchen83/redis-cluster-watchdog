@@ -33,7 +33,7 @@ public class ClusterDelSlotsCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length < 3) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 //            /* CLUSTER ADDSLOTS <slot> [slot] ... */
@@ -66,6 +66,6 @@ public class ClusterDelSlotsCommandHandler extends AbstractCommandHandler {
 //            }
 //            managers.clusterUpdateState();
 //            t.write(("+OK\r\n").getBytes(), true);
-        t.write(("-ERR Unsupported operation [cluster " + message[1] + "]\r\n").getBytes(), true);
+        replyError(t, "Unsupported operation [cluster " + message[1] + "]");
     }
 }

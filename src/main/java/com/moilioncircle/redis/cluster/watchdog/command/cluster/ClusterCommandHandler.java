@@ -57,13 +57,13 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
 
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length < 2 || message[1] == null) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
         CommandHandler handler = get(message[1]);
         if (handler == null) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
         handler.handle(t, message, rawMessage);

@@ -41,7 +41,7 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2 && message.length != 3) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
@@ -51,12 +51,12 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             if (message[2] != null && message[2].equalsIgnoreCase("hard")) hard = true;
             else if (message[2] != null && message[2].equalsIgnoreCase("soft")) hard = false;
             else {
-                t.write("-ERR Syntax error.\r\n".getBytes(), true);
+                replyError(t, "Syntax error.");
                 return;
             }
         }
         clusterReset(hard);
-        t.write(("+OK\r\n").getBytes(), true);
+        reply(t, "OK");
     }
 
     public void clusterReset(boolean hard) {

@@ -37,7 +37,7 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 4 && message.length != 5) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
@@ -45,7 +45,7 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
         try {
             port = parseInt(message[3]);
         } catch (Exception e) {
-            t.write(("-ERR invalid port:" + message[3]).getBytes(), true);
+            replyError(t, "Invalid port:" + message[3]);
             return;
         }
 
@@ -53,7 +53,7 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
             try {
                 busPort = parseInt(message[4]);
             } catch (Exception e) {
-                t.write(("-ERR invalid cport:" + message[4]).getBytes(), true);
+                replyError(t, "Invalid cport:" + message[4]);
                 return;
             }
         } else {
@@ -61,24 +61,24 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
         }
 
         if (port <= 0 || port > 65535) {
-            t.write(("-ERR invalid port:" + port).getBytes(), true);
+            replyError(t, "Invalid port:" + port);
             return;
         }
 
         if (busPort <= 0 || busPort > 65535) {
-            t.write(("-ERR invalid cport:" + busPort).getBytes(), true);
+            replyError(t, "Invalid cport:" + busPort);
             return;
         }
 
         if (message[2] == null || message[2].length() == 0) {
-            t.write(("-ERR invalid ip address:" + message[2]).getBytes(), true);
+            replyError(t, "Invalid ip address:" + message[2]);
             return;
         }
 
         if (managers.nodes.clusterStartHandshake(message[2], port, busPort)) {
-            t.write("+OK\r\n".getBytes(), true);
+            reply(t, "OK");
         } else {
-            t.write(("-ERR Invalid node address specified:" + message[2] + ":" + message[3] + "\r\n").getBytes(), true);
+            replyError(t, "Invalid node address specified:" + message[2] + ":" + message[3]);
         }
     }
 }

@@ -35,7 +35,7 @@ public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
@@ -43,23 +43,23 @@ public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler 
         try {
             epoch = parseLong(message[2]);
         } catch (Exception e) {
-            t.write(("-ERR Invalid config epoch specified: " + message[2] + "\r\n").getBytes(), true);
+            replyError(t, "Invalid config epoch specified: " + message[2]);
             return;
         }
 
         if (epoch < 0) {
-            t.write(("-ERR Invalid config epoch specified: " + epoch + "\r\n").getBytes(), true);
+            replyError(t, "Invalid config epoch specified: " + epoch);
         } else if (server.cluster.nodes.size() > 1) {
-            t.write(("-ERR The user can assign a config epoch only when the node does not know any other node.\r\n").getBytes(), true);
+            replyError(t, "The user can assign a config epoch only when the node does not know any other node.");
         } else if (server.myself.configEpoch != 0) {
-            t.write(("-ERR Node config epoch is already non-zero\r\n").getBytes(), true);
+            replyError(t, "Node config epoch is already non-zero");
         } else {
             server.myself.configEpoch = epoch;
             logger.info("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
             if (server.cluster.currentEpoch < epoch)
                 server.cluster.currentEpoch = epoch;
             managers.states.clusterUpdateState();
-            t.write("+OK\r\n".getBytes(), true);
+            reply(t, "OK");
         }
     }
 }

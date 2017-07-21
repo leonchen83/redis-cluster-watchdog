@@ -39,13 +39,13 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length <= 0 || message[0] == null) {
-            t.write(("-ERR Unsupported COMMAND\r\n").getBytes(), true);
+            replyError(t, "Unsupported COMMAND");
             return;
         }
 
         CommandHandler handler = get(message[0]);
         if (handler == null) {
-            t.write(("-ERR Unsupported COMMAND\r\n").getBytes(), true);
+            replyError(t, "Unsupported COMMAND");
             return;
         }
 

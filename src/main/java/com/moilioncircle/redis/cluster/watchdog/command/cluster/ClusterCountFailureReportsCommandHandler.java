@@ -34,7 +34,7 @@ public class ClusterCountFailureReportsCommandHandler extends AbstractCommandHan
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
@@ -42,9 +42,9 @@ public class ClusterCountFailureReportsCommandHandler extends AbstractCommandHan
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
 
         if (node == null) {
-            t.write(("-ERR Unknown node " + message[2] + "\r\n").getBytes(), true);
+            replyError(t, "Unknown node " + message[2]);
         } else {
-            t.write((":" + String.valueOf(managers.nodes.clusterNodeFailureReportsCount(node)) + "\r\n").getBytes(), true);
+            replyNumber(t, String.valueOf(managers.nodes.clusterNodeFailureReportsCount(node)));
         }
     }
 }

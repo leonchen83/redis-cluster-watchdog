@@ -37,34 +37,34 @@ public class ClusterReplicateCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
 
         if (node == null) {
-            t.write(("-ERR Unknown node " + message[2] + "\r\n").getBytes(), true);
+            replyError(t, "Unknown node " + message[2]);
             return;
         }
 
         if (node.equals(server.myself)) {
-            t.write(("-ERR Can't replicate myself\r\n").getBytes(), true);
+            replyError(t, "Can't replicate myself");
             return;
         }
 
         if (nodeIsSlave(node)) {
-            t.write(("-ERR I can only replicate a master, not a slave.\r\n").getBytes(), true);
+            replyError(t, "I can only replicate a master, not a slave.");
             return;
         }
 
         if (nodeIsMaster(server.myself) && (server.myself.assignedSlots != 0)) {
-            t.write(("-ERR To set a master the node must be empty and without assigned slots.\r\n").getBytes(), true);
+            replyError(t, "To set a master the node must be empty and without assigned slots.");
             return;
         }
 
         managers.nodes.clusterSetMyMasterTo(node);
         managers.states.clusterUpdateState();
-        t.write("+OK\r\n".getBytes(), true);
+        reply(t, "OK");
     }
 }

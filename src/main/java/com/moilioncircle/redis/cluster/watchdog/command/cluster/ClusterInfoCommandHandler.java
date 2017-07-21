@@ -38,7 +38,7 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            t.write(("-ERR Wrong CLUSTER subcommand or number of arguments\r\n").getBytes(), true);
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 
@@ -90,6 +90,6 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
         }
 
         info.append("cluster_stats_messages_received:").append(received).append("\r\n");
-        t.write(("$" + info.length() + "\r\n" + info.toString() + "\r\n").getBytes(), true);
+        replyBulk(t, info.toString());
     }
 }
