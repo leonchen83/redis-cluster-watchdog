@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public interface NioBootstrap<T> extends TransportListener<T> {
 

@@ -35,7 +35,7 @@ import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class ClusterMessageManager {
 

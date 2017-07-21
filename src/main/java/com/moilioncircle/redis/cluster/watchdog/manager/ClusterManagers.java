@@ -26,24 +26,25 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class ClusterManagers {
-    public ExecutorService file;
-    public ExecutorService worker;
-    public ScheduledExecutorService executor;
 
     public ClusterSlotManger slots;
     public ClusterNodeManager nodes;
     public ClusterStateManager states;
     public ClusterConfigManager configs;
-    public ClusterCommandManager commands;
     public ClusterMessageManager messages;
     public ReplicationManager replications;
     public ClusterConfiguration configuration;
     public ClusterBlacklistManager blacklists;
     public ClusterConnectionManager connections;
+    public ClusterCommandHandlerManager commands;
     public ClusterMessageHandlerManager handlers;
+
+    public ExecutorService file;
+    public ExecutorService worker;
+    public ScheduledExecutorService executor;
 
     public ServerState server = new ServerState();
 
@@ -56,10 +57,10 @@ public class ClusterManagers {
         this.states = new ClusterStateManager(this);
         this.configs = new ClusterConfigManager(this);
         this.messages = new ClusterMessageManager(this);
-        this.commands = new ClusterCommandManager(this);
         this.replications = new ReplicationManager(this);
         this.connections = new ClusterConnectionManager();
         this.blacklists = new ClusterBlacklistManager(this);
+        this.commands = new ClusterCommandHandlerManager(this);
         this.handlers = new ClusterMessageHandlerManager(this);
 
         this.file = Executors.newSingleThreadExecutor();

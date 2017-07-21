@@ -32,7 +32,7 @@ import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class ThinServer {
     private static final Log logger = LogFactory.getLog(ThinServer.class);

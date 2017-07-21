@@ -23,10 +23,10 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ClusterCommandManager {
+public class ClusterCommandHandlerManager {
     private DefaultCommandHandler handler;
 
-    public ClusterCommandManager(ClusterManagers managers) {
+    public ClusterCommandHandlerManager(ClusterManagers managers) {
         this.handler = new DefaultCommandHandler(managers);
     }
 

@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
     protected static final Log logger = LogFactory.getLog(AbstractNioBootstrap.class);

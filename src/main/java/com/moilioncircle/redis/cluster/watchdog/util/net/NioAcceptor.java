@@ -30,7 +30,7 @@ import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class NioAcceptor<T> extends AbstractNioBootstrap<T> {
     protected volatile EventLoopGroup eventLoop;

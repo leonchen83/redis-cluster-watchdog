@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class NioBootstrapConfiguration {
 

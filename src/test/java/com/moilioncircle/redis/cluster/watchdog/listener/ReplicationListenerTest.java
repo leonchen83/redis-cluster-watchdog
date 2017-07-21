@@ -7,7 +7,7 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class ReplicationListenerTest {
     public static void main(String[] args) {

@@ -23,7 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class ReplicationManager {
     private static final Log logger = LogFactory.getLog(ReplicationManager.class);
