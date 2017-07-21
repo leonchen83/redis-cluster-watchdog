@@ -41,10 +41,13 @@ public class CRC16 {
     };
 
     public static int crc16(byte[] bytes) {
+        return crc16(bytes, 0, bytes.length);
+    }
+
+    public static int crc16(byte[] bytes, int start, int length) {
         int crc = 0x0000;
-        for (byte b : bytes) {
-            crc = ((crc << 8) ^ LOOKUP_TABLE[((crc >>> 8) ^ (b & 0xFF)) & 0xFF]);
-        }
+        for (int i = start; i < length; i++)
+            crc = ((crc << 8) ^ LOOKUP_TABLE[((crc >>> 8) ^ (bytes[i] & 0xFF)) & 0xFF]);
         return crc & 0xFFFF;
     }
 }

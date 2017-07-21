@@ -37,6 +37,7 @@ public class ClusterManagers {
     public ClusterNodeManager nodes;
     public ClusterStateManager states;
     public ClusterConfigManager configs;
+    public ClusterCommandManager commands;
     public ClusterMessageManager messages;
     public ReplicationManager replications;
     public ClusterConfiguration configuration;
@@ -55,6 +56,7 @@ public class ClusterManagers {
         this.states = new ClusterStateManager(this);
         this.configs = new ClusterConfigManager(this);
         this.messages = new ClusterMessageManager(this);
+        this.commands = new ClusterCommandManager(this);
         this.replications = new ReplicationManager(this);
         this.connections = new ClusterConnectionManager();
         this.blacklists = new ClusterBlacklistManager(this);

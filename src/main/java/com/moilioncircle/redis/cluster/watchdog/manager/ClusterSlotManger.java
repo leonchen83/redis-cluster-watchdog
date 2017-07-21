@@ -88,18 +88,18 @@ public class ClusterSlotManger {
         return deleted;
     }
 
-    public static int keyHashSlot(String key) {
+    public static int keyHashSlot(byte[] key) {
         if (key == null) return 0;
-        int st = key.indexOf('{');
-        if (st >= 0) {
-            int ed = -1;
-            for (int i = st + 1, len = key.length(); i < len; i++) {
-                if (key.charAt(i) != '}') continue;
+        int st = -1, ed = -1;
+        for (int i = 0, len = key.length; i < len; i++) {
+            if (key[i] == '{' && st == -1) st = i;
+            if (key[i] == '}' && st >= 0) {
                 ed = i;
                 break;
             }
-            if (ed > st + 1) key = key.substring(st + 1, ed);
         }
-        return crc16(key.getBytes()) & (CLUSTER_SLOTS - 1);
+        if (st >= 0 && ed >= 0 && ed > st + 1)
+            return crc16(key, st + 1, ed) & (CLUSTER_SLOTS - 1);
+        return crc16(key) & (CLUSTER_SLOTS - 1);
     }
 }
