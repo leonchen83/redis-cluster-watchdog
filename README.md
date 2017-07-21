@@ -44,4 +44,25 @@ $./redis-cli -p 10001
 
 ```
 
+## supported commands
+
+`CLUSTER MEET ip port <cport>`  
+`CLUSTER NODES`  
+`CLUSTER MYID`  
+`CLUSTER SLOTS`  
+`CLUSTER BUMPEPOCH`  
+`CLUSTER INFO`  
+`CLUSTER SAVECONFIG`  
+`CLUSTER KEYSLOT`  
+`CLUSTER FORGET nodename`  
+`CLUSTER REPLICATE nodename`  
+`CLUSTER SLAVES nodename`  
+`CLUSTER COUNT-FAILURE-REPORTS nodename`  
+`CLUSTER SET-CONFIG-EPOCH epoch`  
+`CLUSTER RESET <HARD | SOFT>`  
+
+## listeners  
+
+`ReplicationListener`  
+
 # Have fun!!
