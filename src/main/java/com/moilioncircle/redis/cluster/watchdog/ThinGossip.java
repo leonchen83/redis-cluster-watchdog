@@ -18,10 +18,9 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
@@ -34,6 +33,8 @@ public class ThinGossip {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
 
     public ClusterManagers managers;
+    private volatile NioBootstrapImpl<RCmbMessage> cfd;
+    private Map<Long, Transport<RCmbMessage>> fds = new ConcurrentHashMap<>();
 
     public ThinGossip(ClusterManagers managers) {
         this.managers = managers;
@@ -49,6 +50,51 @@ public class ThinGossip {
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
+    public void stop(long timeout, TimeUnit unit) {
+        try {
+            managers.executor.shutdown();
+            managers.executor.awaitTermination(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        try {
+            cfd.shutdown().get(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            logger.error("unexpected error", e.getCause());
+        } catch (TimeoutException e) {
+            logger.error("stop timeout error", e);
+        }
+
+        fds.values().stream().map(e -> e.disconnect(null)).forEach(e -> {
+            try {
+                e.get(timeout, unit);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException ex) {
+                logger.error("unexpected error", ex.getCause());
+            } catch (TimeoutException ex) {
+                logger.error("stop timeout error", ex);
+            }
+        });
+
+        try {
+            managers.file.shutdown();
+            managers.file.awaitTermination(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        try {
+            managers.worker.shutdown();
+            managers.worker.awaitTermination(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public void clusterInit() {
         managers.server.cluster = new ClusterState();
         if (!managers.configs.clusterLoadConfig()) {
@@ -59,7 +105,7 @@ public class ThinGossip {
             managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
         }
 
-        NioBootstrapImpl<RCmbMessage> cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
+        cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
         cfd.setEncoder(ClusterMessageEncoder::new);
         cfd.setDecoder(ClusterMessageDecoder::new);
         cfd.setup();
@@ -144,6 +190,7 @@ public class ThinGossip {
                     @Override
                     public void onConnected(Transport<RCmbMessage> transport) {
                         logger.info("[initiator] > " + transport.toString());
+                        fds.put(transport.getId(), transport);
                     }
 
                     @Override
@@ -160,6 +207,7 @@ public class ThinGossip {
                     @Override
                     public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
                         logger.info("[initiator] < " + transport.toString());
+                        fds.remove(transport.getId());
                         managers.connections.freeClusterLink(link);
                         fd.shutdown();
                     }

@@ -27,6 +27,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
 
@@ -36,14 +38,16 @@ import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
  */
 public class ThinServer {
     private static final Log logger = LogFactory.getLog(ThinServer.class);
+
     private ClusterManagers managers;
+    private volatile NioBootstrapImpl<Object> cfd;
 
     public ThinServer(ClusterManagers managers) {
         this.managers = managers;
     }
 
     public void start() {
-        NioBootstrapImpl<Object> cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
+        cfd = new NioBootstrapImpl<>(true, new NioBootstrapConfiguration());
         cfd.setEncoder(RedisEncoder::new);
         cfd.setDecoder(RedisDecoder::new);
         cfd.setup();
@@ -76,6 +80,21 @@ public class ThinServer {
                 Thread.currentThread().interrupt();
             } else {
                 throw new UnsupportedOperationException(e.getCause());
+            }
+        }
+    }
+
+    public void stop(long timeout, TimeUnit unit) {
+        NioBootstrapImpl<Object> cfd = this.cfd;
+        if (cfd != null) {
+            try {
+                cfd.shutdown().get(timeout, unit);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                logger.error("unexpected error", e.getCause());
+            } catch (TimeoutException e) {
+                logger.error("stop timeout error", e);
             }
         }
     }
