@@ -133,54 +133,55 @@ public class ThinGossip {
                     continue;
                 }
 
-                if (node.link == null) {
-                    final ClusterLink link = managers.connections.createClusterLink(node);
-                    NioBootstrapImpl<RCmbMessage> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration());
-                    fd.setEncoder(ClusterMessageEncoder::new);
-                    fd.setDecoder(ClusterMessageDecoder::new);
-                    fd.setup();
-                    fd.setTransportListener(new TransportListener<RCmbMessage>() {
-                        @Override
-                        public void onConnected(Transport<RCmbMessage> transport) {
-                            logger.info("[initiator] > " + transport.toString());
-                        }
+                if (node.link != null)
+                    continue;
 
-                        @Override
-                        public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
-                            managers.executor.execute(() -> {
-                                ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
-                                clusterProcessPacket(link, (ClusterMessage) message);
-                                ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
-                                if (!previous.equals(next))
-                                    managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
-                            });
-                        }
-
-                        @Override
-                        public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                            logger.info("[initiator] < " + transport.toString());
-                            managers.connections.freeClusterLink(link);
-                            fd.shutdown();
-                        }
-                    });
-                    try {
-                        fd.connect(node.ip, node.busPort).get();
-                        link.fd = new SessionImpl<>(fd.getTransport());
-                    } catch (InterruptedException | ExecutionException e) {
-                        if (e instanceof InterruptedException) {
-                            Thread.currentThread().interrupt();
-                        }
-                        if (node.pingTime == 0) node.pingTime = System.currentTimeMillis();
-                        fd.shutdown();
-                        continue;
+                final ClusterLink link = managers.connections.createClusterLink(node);
+                NioBootstrapImpl<RCmbMessage> fd = new NioBootstrapImpl<>(false, new NioBootstrapConfiguration());
+                fd.setEncoder(ClusterMessageEncoder::new);
+                fd.setDecoder(ClusterMessageDecoder::new);
+                fd.setup();
+                fd.setTransportListener(new TransportListener<RCmbMessage>() {
+                    @Override
+                    public void onConnected(Transport<RCmbMessage> transport) {
+                        logger.info("[initiator] > " + transport.toString());
                     }
-                    node.link = link;
-                    link.createTime = System.currentTimeMillis();
-                    long previousPing = node.pingTime;
-                    managers.messages.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
-                    if (previousPing != 0) node.pingTime = previousPing;
-                    node.flags &= ~CLUSTER_NODE_MEET;
+
+                    @Override
+                    public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
+                        managers.executor.execute(() -> {
+                            ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
+                            clusterProcessPacket(link, (ClusterMessage) message);
+                            ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+                            if (!previous.equals(next))
+                                managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
+                        });
+                    }
+
+                    @Override
+                    public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
+                        logger.info("[initiator] < " + transport.toString());
+                        managers.connections.freeClusterLink(link);
+                        fd.shutdown();
+                    }
+                });
+                try {
+                    fd.connect(node.ip, node.busPort).get();
+                    link.fd = new SessionImpl<>(fd.getTransport());
+                } catch (InterruptedException | ExecutionException e) {
+                    if (e instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    if (node.pingTime == 0) node.pingTime = System.currentTimeMillis();
+                    fd.shutdown();
+                    continue;
                 }
+                node.link = link;
+                link.createTime = System.currentTimeMillis();
+                long previousPing = node.pingTime;
+                managers.messages.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
+                if (previousPing != 0) node.pingTime = previousPing;
+                node.flags &= ~CLUSTER_NODE_MEET;
             }
 
             long minPongTime = 0;

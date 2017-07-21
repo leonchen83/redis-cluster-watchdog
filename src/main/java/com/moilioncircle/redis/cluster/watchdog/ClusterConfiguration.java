@@ -19,7 +19,9 @@ public class ClusterConfiguration {
     }
 
     public static ClusterConfiguration defaultSetting() {
-        return new ClusterConfiguration();
+        ClusterConfiguration configuration = new ClusterConfiguration();
+        configuration.validate();
+        return configuration;
     }
 
     public boolean isVerbose() {

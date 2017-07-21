@@ -83,18 +83,12 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
             }
         }
 
-        boolean dirty = false;
-
         ClusterNode senderMaster = nodeIsMaster(sender) ? sender : sender.master;
-        if (senderMaster != null) {
-            dirty = !Arrays.equals(senderMaster.slots, hdr.slots);
-        }
 
-        if (nodeIsMaster(sender) && dirty) {
-            clusterUpdateSlotsConfigWith(sender, hdr.configEpoch, hdr.slots);
-        }
+        if (senderMaster != null && !Arrays.equals(senderMaster.slots, hdr.slots)) {
+            if (nodeIsMaster(sender))
+                clusterUpdateSlotsConfigWith(sender, hdr.configEpoch, hdr.slots);
 
-        if (dirty) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 if (!bitmapTestBit(hdr.slots, i)) continue;
                 if (server.cluster.slots[i] == null || server.cluster.slots[i].equals(sender)) continue;

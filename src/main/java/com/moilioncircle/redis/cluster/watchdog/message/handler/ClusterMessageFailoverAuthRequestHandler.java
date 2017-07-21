@@ -33,7 +33,8 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
 
         boolean force = (hdr.messageFlags[0] & CLUSTERMSG_FLAG0_FORCEACK) != 0;
 
-        if (nodeIsSlave(server.myself) || server.myself.assignedSlots == 0) return;
+        if (nodeIsSlave(server.myself) || server.myself.assignedSlots == 0)
+            return;
 
         if (hdr.currentEpoch < server.cluster.currentEpoch) {
             logger.warn("Failover auth denied to " + node.name + ": reqEpoch " + hdr.currentEpoch + " < curEpoch(" + server.cluster.currentEpoch + ")");
@@ -45,14 +46,14 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
             return;
         }
 
-        if (nodeIsMaster(node) || node.master == null || (!nodeFailed(node.master) && !force)) {
-            if (nodeIsMaster(node)) {
-                logger.warn("Failover auth denied to " + node.name + ": it is a master node");
-            } else if (node.master == null) {
-                logger.warn("Failover auth denied to " + node.name + ": I don't know its master");
-            } else if (!nodeFailed(node.master)) {
-                logger.warn("Failover auth denied to " + node.name + ": its master is up");
-            }
+        if (nodeIsMaster(node)) {
+            logger.warn("Failover auth denied to " + node.name + ": it is a master node");
+            return;
+        } else if (node.master == null) {
+            logger.warn("Failover auth denied to " + node.name + ": I don't know its master");
+            return;
+        } else if (!nodeFailed(node.master) && !force) {
+            logger.warn("Failover auth denied to " + node.name + ": its master is up");
             return;
         }
 

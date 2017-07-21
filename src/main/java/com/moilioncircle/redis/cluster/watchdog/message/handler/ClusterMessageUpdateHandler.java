@@ -21,17 +21,13 @@ public class ClusterMessageUpdateHandler extends AbstractClusterMessageHandler {
         if (logger.isDebugEnabled()) {
             logger.debug("Update packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
         }
-        long configEpoch = hdr.data.config.configEpoch;
         if (sender == null) return true;
-        ClusterNode n = managers.nodes.clusterLookupNode(hdr.data.config.name);
-        if (n == null) return true;
-        if (n.configEpoch >= configEpoch) return true;
-
-        if (nodeIsSlave(n)) managers.nodes.clusterSetNodeAsMaster(n);
-
-        n.configEpoch = configEpoch;
-
-        clusterUpdateSlotsConfigWith(n, configEpoch, hdr.data.config.slots);
+        long configEpoch = hdr.data.config.configEpoch;
+        ClusterNode node = managers.nodes.clusterLookupNode(hdr.data.config.name);
+        if (node == null || node.configEpoch >= configEpoch) return true;
+        if (nodeIsSlave(node)) managers.nodes.clusterSetNodeAsMaster(node);
+        node.configEpoch = configEpoch;
+        clusterUpdateSlotsConfigWith(node, configEpoch, hdr.data.config.slots);
         return true;
     }
 }

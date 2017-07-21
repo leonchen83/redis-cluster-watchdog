@@ -89,42 +89,43 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         List<ClusterMessageDataGossip> gossips = hdr.data.gossips;
         ClusterNode sender = link.node != null ? link.node : managers.nodes.clusterLookupNode(hdr.name);
         for (ClusterMessageDataGossip gossip : gossips) {
-            int flags = gossip.flags;
             if (logger.isDebugEnabled()) {
-                logger.debug("GOSSIP " + gossip.name + " " + gossip.ip + ":" + gossip.port + "@" + gossip.busPort + " " + representClusterNodeFlags(flags));
+                logger.debug("GOSSIP " + gossip.name + " " + gossip.ip + ":" + gossip.port + "@" + gossip.busPort + " " + representClusterNodeFlags(gossip.flags));
             }
 
             ClusterNode node = managers.nodes.clusterLookupNode(gossip.name);
 
             if (node == null) {
-                if (sender != null && (flags & CLUSTER_NODE_NOADDR) == 0 && !managers.blacklists.clusterBlacklistExists(gossip.name)) {
+                if (sender != null && (gossip.flags & CLUSTER_NODE_NOADDR) == 0 && !managers.blacklists.clusterBlacklistExists(gossip.name)) {
                     managers.nodes.clusterStartHandshake(gossip.ip, gossip.port, gossip.busPort);
                 }
                 continue;
             }
 
             if (sender != null && nodeIsMaster(sender) && !node.equals(server.myself)) {
-                if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0) {
-                    if (managers.nodes.clusterNodeAddFailureReport(node, sender)) {
-                        if (managers.configuration.isVerbose())
-                            logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
+                if ((gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0) {
+                    if (managers.nodes.clusterNodeAddFailureReport(node, sender) && managers.configuration.isVerbose()) {
+                        logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
                     }
                     markNodeAsFailingIfNeeded(node);
-                } else if (managers.nodes.clusterNodeDelFailureReport(node, sender)) {
-                    if (managers.configuration.isVerbose())
-                        logger.info("Node " + sender.name + " reported node " + node.name + " is back online.");
+                } else if (managers.nodes.clusterNodeDelFailureReport(node, sender) && managers.configuration.isVerbose()) {
+                    logger.info("Node " + sender.name + " reported node " + node.name + " is back online.");
                 }
             }
 
-            if ((flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 && node.pingTime == 0 && managers.nodes.clusterNodeFailureReportsCount(node) == 0) {
-                long pongTime = gossip.pongTime;
-                if (pongTime <= (System.currentTimeMillis() + 500) && pongTime > node.pongTime) {
-                    node.pongTime = pongTime;
-                }
+            if ((gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0
+                    && node.pingTime == 0
+                    && managers.nodes.clusterNodeFailureReportsCount(node) == 0
+                    && gossip.pongTime <= (System.currentTimeMillis() + 500)
+                    && gossip.pongTime > node.pongTime) {
+                node.pongTime = gossip.pongTime;
             }
 
-            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0 && (flags & CLUSTER_NODE_NOADDR) == 0 && (flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0 &&
-                    (!node.ip.equalsIgnoreCase(gossip.ip) || node.port != gossip.port || node.busPort != gossip.busPort)) {
+            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0
+                    && (gossip.flags & CLUSTER_NODE_NOADDR) == 0
+                    && (gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0
+                    && (!node.ip.equalsIgnoreCase(gossip.ip) || node.port != gossip.port || node.busPort != gossip.busPort)) {
+
                 if (node.link != null) managers.connections.freeClusterLink(node.link);
                 node.ip = gossip.ip;
                 node.port = gossip.port;
@@ -172,9 +173,12 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
     }
 
     public void clusterHandleConfigEpochCollision(ClusterNode sender) {
-        if (sender.configEpoch != server.myself.configEpoch || nodeIsSlave(sender) || nodeIsSlave(server.myself))
+        if (sender.configEpoch != server.myself.configEpoch
+                || nodeIsSlave(sender)
+                || nodeIsSlave(server.myself)
+                || sender.name.compareTo(server.myself.name) <= 0)
             return;
-        if (sender.name.compareTo(server.myself.name) <= 0) return;
+
         server.cluster.currentEpoch++;
         server.myself.configEpoch = server.cluster.currentEpoch;
         logger.warn("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + server.myself.configEpoch);
