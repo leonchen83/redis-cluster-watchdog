@@ -17,7 +17,7 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
 import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
-import com.moilioncircle.redis.cluster.watchdog.listener.ReplicationListener;
+import com.moilioncircle.redis.cluster.watchdog.ReplicationListener;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 
 import java.util.concurrent.ExecutorService;
@@ -86,5 +86,11 @@ public class ClusterManagers {
             ReplicationListener r = this.replicationListener;
             if (r != null) r.onUnsetReplication();
         });
+    }
+
+    public long notifyReplicationGetSlaveOffset() {
+        ReplicationListener r = this.replicationListener;
+        if (r == null) return 0L;
+        return r.onGetSlaveOffset();
     }
 }

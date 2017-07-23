@@ -92,12 +92,11 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 if (!bitmapTestBit(hdr.slots, i)) continue;
                 if (server.cluster.slots[i] == null || server.cluster.slots[i].equals(sender)) continue;
-                if (server.cluster.slots[i].configEpoch > hdr.configEpoch) {
-                    if (managers.configuration.isVerbose())
-                        logger.info("Node " + sender.name + " has old slots configuration, sending an UPDATE message fail " + server.cluster.slots[i].name);
-                    managers.messages.clusterSendUpdate(sender.link, server.cluster.slots[i]);
-                    break;
-                }
+                if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue;
+                if (managers.configuration.isVerbose())
+                    logger.info("Node " + sender.name + " has old slots configuration, sending an UPDATE message fail " + server.cluster.slots[i].name);
+                managers.messages.clusterSendUpdate(sender.link, server.cluster.slots[i]);
+                break;
             }
         }
 

@@ -42,8 +42,12 @@ public class ClusterNodeManager {
 
     public void clusterDelNode(ClusterNode node) {
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (server.cluster.slots[i] != null && !server.cluster.slots[i].equals(node)) continue;
-            managers.slots.clusterDelSlot(i);
+            if (server.cluster.importingSlotsFrom[i] != null && server.cluster.importingSlotsFrom[i].equals(node))
+                server.cluster.importingSlotsFrom[i] = null;
+            if (server.cluster.migratingSlotsTo[i] != null && server.cluster.migratingSlotsTo[i].equals(node))
+                server.cluster.migratingSlotsTo[i] = null;
+            if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(node))
+                managers.slots.clusterDelSlot(i);
         }
 
         server.cluster.nodes.values().stream().
@@ -149,6 +153,13 @@ public class ClusterNodeManager {
         node.flags &= ~CLUSTER_NODE_SLAVE;
         node.flags |= CLUSTER_NODE_MASTER;
         node.master = null;
+    }
+
+    public int clusterGetSlaveRank() {
+        ClusterNode master = server.myself.master;
+        if (master == null) return 0;
+        long offset = managers.replications.replicationGetSlaveOffset();
+        return (int) master.slaves.stream().filter(e -> e != null && !e.equals(server.myself) && e.offset > offset).count();
     }
 
     public long clusterGetMaxEpoch() {

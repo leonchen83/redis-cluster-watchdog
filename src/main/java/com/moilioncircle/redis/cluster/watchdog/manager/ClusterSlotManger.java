@@ -88,6 +88,11 @@ public class ClusterSlotManger {
         return deleted;
     }
 
+    public void clusterCloseAllSlots() {
+        server.cluster.migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
+        server.cluster.importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
+    }
+
     public static int keyHashSlot(byte[] key) {
         if (key == null) return 0;
         int st = -1, ed = -1;

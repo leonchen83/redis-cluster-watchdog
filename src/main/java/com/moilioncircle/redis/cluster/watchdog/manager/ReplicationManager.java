@@ -49,4 +49,8 @@ public class ReplicationManager {
         server.masterHost = null;
         server.masterPort = 0;
     }
+
+    public long replicationGetSlaveOffset() {
+        return managers.notifyReplicationGetSlaveOffset();
+    }
 }

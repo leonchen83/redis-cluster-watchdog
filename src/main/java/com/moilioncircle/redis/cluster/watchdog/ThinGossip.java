@@ -122,7 +122,8 @@ public class ThinGossip {
             public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                 managers.executor.execute(() -> {
                     ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
-                    clusterProcessPacket(managers.server.cfd.get(transport), (ClusterMessage) message);
+                    ClusterMessage hdr = (ClusterMessage) message;
+                    managers.handlers.get(hdr.type).handle(managers.server.cfd.get(transport), hdr);
                     ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
                     if (!previous.equals(next))
                         managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
@@ -197,7 +198,8 @@ public class ThinGossip {
                     public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                         managers.executor.execute(() -> {
                             ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
-                            clusterProcessPacket(link, (ClusterMessage) message);
+                            ClusterMessage hdr = (ClusterMessage) message;
+                            managers.handlers.get(hdr.type).handle(link, hdr);
                             ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
                             if (!previous.equals(next))
                                 managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
@@ -343,9 +345,5 @@ public class ThinGossip {
             logger.info("Migrating to orphaned master " + target.name);
             managers.nodes.clusterSetMyMasterTo(target);
         }
-    }
-
-    public boolean clusterProcessPacket(ClusterLink link, ClusterMessage hdr) {
-        return managers.handlers.get(hdr.type).handle(link, hdr);
     }
 }

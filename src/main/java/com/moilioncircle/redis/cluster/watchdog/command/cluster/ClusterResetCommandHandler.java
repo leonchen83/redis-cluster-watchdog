@@ -65,6 +65,8 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             managers.replications.replicationUnsetMaster();
         }
 
+        managers.slots.clusterCloseAllSlots();
+
         for (int i = 0; i < CLUSTER_SLOTS; i++)
             managers.slots.clusterDelSlot(i);
 

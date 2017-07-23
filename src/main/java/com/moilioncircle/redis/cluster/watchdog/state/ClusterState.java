@@ -19,10 +19,17 @@ public class ClusterState {
     public long lastVoteEpoch = 0;
     public byte state = CLUSTER_FAIL;
     public ClusterNode myself = null;
+    public int failoverAuthRank = 0;
+    public long failoverAuthTime = 0;
+    public int failoverAuthCount = 0;
+    public long failoverAuthEpoch = 0;
+    public boolean failoverAuthSent = false;
     public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
     public Map<String, ClusterNode> nodes = new LinkedHashMap<>();
     public long[] messagesSent = new long[CLUSTERMSG_TYPE_COUNT];
     public long[] messagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
+    public ClusterNode[] migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
+    public ClusterNode[] importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
     public Map<String, Tuple2<Long, ClusterNode>> blacklist = new LinkedHashMap<>();
 
     @Override

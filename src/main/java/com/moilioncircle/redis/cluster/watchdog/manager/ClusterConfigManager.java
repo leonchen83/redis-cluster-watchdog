@@ -130,7 +130,23 @@ public class ClusterConfigManager {
                     for (int i = 8; i < args.size(); i++) {
                         int st, ed;
                         String arg = args.get(i);
-                        if (arg.contains("-")) {
+                        if (arg.startsWith("[")) {
+                            int idx = arg.indexOf("-");
+                            char direction = arg.charAt(idx + 1);
+                            int slot = parseInt(arg.substring(1, idx));
+                            String name = arg.substring(idx + 3, idx + 3 + CLUSTER_NAME_LEN);
+                            ClusterNode n = managers.nodes.clusterLookupNode(name);
+                            if (n == null) {
+                                n = managers.nodes.createClusterNode(name, 0);
+                                managers.nodes.clusterAddNode(n);
+                            }
+                            if (direction == '>') {
+                                server.cluster.migratingSlotsTo[slot] = n;
+                            } else {
+                                server.cluster.importingSlotsFrom[slot] = n;
+                            }
+                            continue;
+                        } else if (arg.contains("-")) {
                             int idx = arg.indexOf("-");
                             st = parseInt(arg.substring(0, idx));
                             ed = parseInt(arg.substring(idx + 1));
@@ -212,6 +228,16 @@ public class ClusterConfigManager {
                     builder.append(" ").append(st).append("-").append(i - 1);
                 }
                 st = -1;
+            }
+        }
+
+        if ((node.flags & CLUSTER_NODE_MYSELF) != 0) {
+            for (int j = 0; j < CLUSTER_SLOTS; j++) {
+                if (server.cluster.migratingSlotsTo[j] != null) {
+                    builder.append(" [").append(j).append("->-").append(server.cluster.migratingSlotsTo[j].name).append("]");
+                } else if (server.cluster.importingSlotsFrom[j] != null) {
+                    builder.append(" [").append(j).append("-<-").append(server.cluster.importingSlotsFrom[j].name).append("]");
+                }
             }
         }
 

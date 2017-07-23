@@ -72,6 +72,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(slots, i)) continue;
             if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(sender)) continue;
+            if (server.cluster.importingSlotsFrom[i] != null) continue;
             if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
                 if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(previous))
                     next = sender;

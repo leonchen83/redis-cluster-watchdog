@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.moilioncircle.redis.cluster.watchdog.listener;
+package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.replicator.Configuration;
 import com.moilioncircle.redis.replicator.RedisReplicator;
@@ -67,5 +67,12 @@ public class TestReplicationListener implements ReplicationListener {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public long onGetSlaveOffset() {
+        Replicator replicator = this.replicator;
+        if (replicator == null) return 0L;
+        return replicator.getConfiguration().getReplOffset();
     }
 }

@@ -37,19 +37,8 @@ public class ClusterBumpEpochCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        boolean rs = clusterBumpConfigEpochWithoutConsensus();
+        boolean rs = managers.states.clusterBumpConfigEpochWithoutConsensus();
         String reply = (rs ? "BUMPED" : "STILL") + " " + server.myself.configEpoch;
         reply(t, reply);
-    }
-
-    protected boolean clusterBumpConfigEpochWithoutConsensus() {
-        long max = managers.nodes.clusterGetMaxEpoch();
-        if (server.myself.configEpoch == 0 || server.myself.configEpoch != max) {
-            server.cluster.currentEpoch++;
-            server.myself.configEpoch = server.cluster.currentEpoch;
-            logger.info("New configEpoch set to " + server.myself.configEpoch);
-            return true;
-        }
-        return false;
     }
 }

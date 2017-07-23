@@ -158,6 +158,18 @@ public class ClusterMessageManager {
         clusterSendMessage(link, hdr);
     }
 
+    public void clusterBroadcastPong(int target) {
+        for (ClusterNode node : server.cluster.nodes.values()) {
+            if (node.link == null) continue;
+            if (node == server.myself || nodeInHandshake(node)) continue;
+            if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
+                boolean local = nodeIsSlave(node) && node.master != null && (node.master.equals(server.myself) || node.master.equals(server.myself.master));
+                if (!local) continue;
+            }
+            clusterSendPing(node.link, CLUSTERMSG_TYPE_PONG);
+        }
+    }
+
     public void clusterSendFail(String name) {
         ClusterMessage hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAIL);
         hdr.data.fail.name = name;
@@ -179,4 +191,8 @@ public class ClusterMessageManager {
         clusterSendMessage(node.link, hdr);
     }
 
+    public void clusterRequestFailoverAuth() {
+        ClusterMessage hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST);
+        clusterBroadcastMessage(hdr);
+    }
 }

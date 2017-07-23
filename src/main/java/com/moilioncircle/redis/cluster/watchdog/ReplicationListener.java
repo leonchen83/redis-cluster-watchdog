@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.moilioncircle.redis.cluster.watchdog.listener;
+package com.moilioncircle.redis.cluster.watchdog;
 
 /**
  * @author Leon Chen
@@ -24,4 +24,6 @@ public interface ReplicationListener {
     void onSetReplication(String ip, int port);
 
     void onUnsetReplication();
+
+    long onGetSlaveOffset();
 }

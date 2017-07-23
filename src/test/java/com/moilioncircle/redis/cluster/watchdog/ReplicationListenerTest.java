@@ -1,8 +1,5 @@
-package com.moilioncircle.redis.cluster.watchdog.listener;
+package com.moilioncircle.redis.cluster.watchdog;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
-import com.moilioncircle.redis.cluster.watchdog.ThinGossip;
-import com.moilioncircle.redis.cluster.watchdog.ThinServer;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 
 /**

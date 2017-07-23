@@ -20,6 +20,9 @@ import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static java.lang.Integer.parseInt;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -32,40 +35,45 @@ public class ClusterDelSlotsCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        // CLUSTER DELSLOTS <slot> [slot]
         if (message.length < 3) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
-//            /* CLUSTER ADDSLOTS <slot> [slot] ... */
-//            /* CLUSTER DELSLOTS <slot> [slot] ... */
-//            byte[] slots = new byte[CLUSTER_SLOTS];
-//            boolean del = argv[1].equalsIgnoreCase("delslots");
-//
-//            for (int i = 2; i < argv.length; i++) {
-//                int slot = parseInt(argv[i]);
-//
-//                if (del && server.cluster.slots[slot] == null) {
-//                    t.write(("-ERR Slot " + slot + " is already unassigned\r\n").getBytes(), true);
-//                    return;
-//                } else if (!del && server.cluster.slots[slot] != null) {
-//                    t.write(("-ERR Slot " + slot + " is already busy\r\n").getBytes(), true);
-//                    return;
-//                }
-//                if (slots[slot]++ == 1) {
-//                    t.write(("-ERR Slot " + slot + " specified multiple times\r\n").getBytes(), true);
-//                    return;
-//                }
-//            }
-//            for (int i = 0; i < CLUSTER_SLOTS; i++) {
-//                if (slots[i] != 0) {
-//                    if (server.cluster.importingSlotsFrom[i] != null)
-//                        server.cluster.importingSlotsFrom[i] = null;
-//                    if (del) managers.slots.clusterDelSlot(i);
-//                    else managers.slots.clusterAddSlot(managers.server.myself, i);
-//                }
-//            }
-//            managers.clusterUpdateState();
-//            t.write(("+OK\r\n").getBytes(), true);
-        replyError(t, "Unsupported operation [cluster " + message[1] + "]");
+        byte[] slots = new byte[CLUSTER_SLOTS];
+
+        for (int i = 2; i < message.length; i++) {
+            int slot;
+            try {
+                slot = parseInt(message[i]);
+            } catch (Exception e) {
+                replyError(t, "Invalid slot:" + message[i]);
+                return;
+            }
+
+            if (slot < 0 || slot > 16384) {
+                replyError(t, "Invalid slot:" + slot);
+                return;
+            }
+
+            if (server.cluster.slots[slot] == null) {
+                replyError(t, "Slot " + slot + " is already unassigned");
+                return;
+            }
+
+            if (slots[slot]++ == 1) {
+                replyError(t, "Slot " + slot + " specified multiple times");
+                return;
+            }
+        }
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            if (slots[i] != 0) {
+                if (server.cluster.importingSlotsFrom[i] != null)
+                    server.cluster.importingSlotsFrom[i] = null;
+                managers.slots.clusterDelSlot(i);
+            }
+        }
+        managers.states.clusterUpdateState();
+        reply(t, "OK");
     }
 }

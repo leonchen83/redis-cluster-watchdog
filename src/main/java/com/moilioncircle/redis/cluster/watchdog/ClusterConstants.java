@@ -81,4 +81,8 @@ public class ClusterConstants {
     public static final int CLUSTER_WRITABLE_DELAY = 2000;
 
     public static final int CLUSTERMSG_FLAG0_FORCEACK = (1 << 1);
+
+    public static final int CLUSTER_BROADCAST_ALL = 0;
+
+    public static final int CLUSTER_BROADCAST_LOCAL_SLAVES = 1;
 }

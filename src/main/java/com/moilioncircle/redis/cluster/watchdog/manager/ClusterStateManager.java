@@ -75,4 +75,15 @@ public class ClusterStateManager {
             server.cluster.state = state;
         }
     }
+
+    public boolean clusterBumpConfigEpochWithoutConsensus() {
+        long max = managers.nodes.clusterGetMaxEpoch();
+        if (server.myself.configEpoch == 0 || server.myself.configEpoch != max) {
+            server.cluster.currentEpoch++;
+            server.myself.configEpoch = server.cluster.currentEpoch;
+            logger.info("New configEpoch set to " + server.myself.configEpoch);
+            return true;
+        }
+        return false;
+    }
 }
