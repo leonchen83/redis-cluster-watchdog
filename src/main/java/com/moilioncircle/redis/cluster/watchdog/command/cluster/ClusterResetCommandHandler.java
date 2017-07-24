@@ -26,7 +26,7 @@ import java.util.List;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterNodeManager.getRandomHexChars;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsSlave;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
 /**
  * @author Leon Chen

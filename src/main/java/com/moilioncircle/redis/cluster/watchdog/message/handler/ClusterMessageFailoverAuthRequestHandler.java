@@ -8,7 +8,7 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_FLAG0_FORCEACK;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 
 /**
  * @author Leon Chen

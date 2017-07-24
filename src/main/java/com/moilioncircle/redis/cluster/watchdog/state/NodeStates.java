@@ -6,7 +6,7 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class States {
+public class NodeStates {
     public static boolean nodeIsMaster(ClusterNode n) {
         return (n.flags & CLUSTER_NODE_MASTER) != 0;
     }

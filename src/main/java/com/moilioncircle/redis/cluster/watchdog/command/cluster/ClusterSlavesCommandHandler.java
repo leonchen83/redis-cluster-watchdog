@@ -23,7 +23,7 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
-import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsSlave;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
 /**
  * @author Leon Chen

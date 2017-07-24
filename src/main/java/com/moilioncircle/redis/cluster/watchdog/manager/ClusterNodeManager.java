@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 import static java.lang.Math.max;
 import static java.util.Comparator.comparingLong;
 
@@ -69,12 +69,7 @@ public class ClusterNodeManager {
 
     public ClusterNode createClusterNode(String name, int flags) {
         ClusterNode node = new ClusterNode();
-        if (name != null) {
-            node.name = name;
-        } else {
-            node.name = getRandomHexChars();
-        }
-
+        node.name = name == null ? getRandomHexChars() : name;
         node.port = 0;
         node.ip = null;
         node.offset = 0;
@@ -185,6 +180,7 @@ public class ClusterNodeManager {
         if (nodeIsMaster(server.myself)) {
             server.myself.flags &= ~(CLUSTER_NODE_MASTER | CLUSTER_NODE_MIGRATE_TO);
             server.myself.flags |= CLUSTER_NODE_SLAVE;
+            managers.slots.clusterCloseAllSlots();
         } else if (server.myself.master != null) {
             clusterNodeRemoveSlave(server.myself.master, server.myself);
         }
@@ -193,12 +189,10 @@ public class ClusterNodeManager {
         managers.replications.replicationSetMaster(node);
     }
 
-    public static final char[] chars = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
     public static String getRandomHexChars() {
         StringBuilder r = new StringBuilder();
         for (int i = 0; i < CLUSTER_NAME_LEN; i++) {
-            r.append(chars[ThreadLocalRandom.current().nextInt(chars.length)]);
+            r.append(HEX_CHARS[ThreadLocalRandom.current().nextInt(HEX_CHARS.length)]);
         }
         return r.toString();
     }

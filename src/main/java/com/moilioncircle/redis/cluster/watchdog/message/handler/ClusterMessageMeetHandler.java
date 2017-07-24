@@ -9,8 +9,8 @@ import java.util.Arrays;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeInHandshake;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsMaster;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeInHandshake;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
 
 /**
  * @author Leon Chen

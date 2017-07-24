@@ -5,7 +5,7 @@ import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
-import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsSlave;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
 /**
  * @author Leon Chen

@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.*;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 
 /**
  * @author Leon Chen

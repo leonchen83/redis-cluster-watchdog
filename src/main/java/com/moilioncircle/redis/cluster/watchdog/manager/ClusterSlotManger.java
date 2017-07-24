@@ -5,7 +5,7 @@ import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MIGRATE_TO;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsSlave;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 import static com.moilioncircle.redis.cluster.watchdog.util.CRC16.crc16;
 
 /**

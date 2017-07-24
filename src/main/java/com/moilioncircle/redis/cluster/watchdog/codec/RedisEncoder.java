@@ -8,11 +8,9 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class RedisEncoder extends MessageToByteEncoder<Object> {
+public class RedisEncoder extends MessageToByteEncoder<byte[]> {
     @Override
-    protected void encode(ChannelHandlerContext ctx, Object cmd, ByteBuf out) throws Exception {
-        if (cmd instanceof byte[]) {
-            out.writeBytes((byte[]) cmd);
-        }
+    protected void encode(ChannelHandlerContext ctx, byte[] cmd, ByteBuf out) throws Exception {
+        out.writeBytes(cmd);
     }
 }

@@ -7,7 +7,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsMaster;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 

@@ -14,7 +14,7 @@ import java.util.List;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.representClusterNodeFlags;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 
 /**
  * @author Leon Chen

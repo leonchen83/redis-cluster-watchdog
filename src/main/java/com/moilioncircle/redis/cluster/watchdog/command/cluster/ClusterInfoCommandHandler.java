@@ -23,7 +23,7 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_COUNT;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
-import static com.moilioncircle.redis.cluster.watchdog.state.States.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 
 /**
  * @author Leon Chen
