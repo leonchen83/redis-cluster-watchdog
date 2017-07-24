@@ -166,6 +166,7 @@ public class ClusterConfigManager {
             if (maxEpoch > server.cluster.currentEpoch) {
                 server.cluster.currentEpoch = maxEpoch;
             }
+            managers.notifyConfigChanged(ConfigInfo.valueOf(server.cluster));
             return true;
         } catch (Throwable e) {
             return false;
