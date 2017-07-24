@@ -44,10 +44,11 @@ public class ClusterStateManager {
         int reachableMasters = 0;
         server.cluster.size = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
-            if (nodeIsMaster(node) && node.assignedSlots <= 0) continue;
-            server.cluster.size++;
-            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0)
-                reachableMasters++;
+            if (nodeIsMaster(node) && node.assignedSlots != 0) {
+                server.cluster.size++;
+                if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0)
+                    reachableMasters++;
+            }
         }
 
         int quorum = (server.cluster.size / 2) + 1;

@@ -298,8 +298,11 @@ public class ThinGossip {
                 managers.replications.replicationSetMaster(managers.server.myself.master);
             }
 
-            if (nodeIsSlave(managers.server.myself) && isolatedMasters != 0 && maxSlaves >= 2 && mySlaves == maxSlaves) {
-                clusterHandleSlaveMigration(maxSlaves);
+            if (nodeIsSlave(managers.server.myself)) {
+                managers.failovers.clusterHandleSlaveFailover();
+                if (isolatedMasters != 0 && maxSlaves >= 2 && mySlaves == maxSlaves) {
+                    clusterHandleSlaveMigration(maxSlaves);
+                }
             }
 
             if (update || managers.server.cluster.state == CLUSTER_FAIL)

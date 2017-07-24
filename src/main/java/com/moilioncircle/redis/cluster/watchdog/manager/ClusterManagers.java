@@ -36,6 +36,7 @@ public class ClusterManagers {
     public ClusterConfigManager configs;
     public ClusterMessageManager messages;
     public ReplicationManager replications;
+    public ClusterFailoverManager failovers;
     public ClusterConfiguration configuration;
     public ClusterBlacklistManager blacklists;
     public ClusterConnectionManager connections;
@@ -58,6 +59,7 @@ public class ClusterManagers {
         this.configs = new ClusterConfigManager(this);
         this.messages = new ClusterMessageManager(this);
         this.replications = new ReplicationManager(this);
+        this.failovers = new ClusterFailoverManager(this);
         this.connections = new ClusterConnectionManager();
         this.blacklists = new ClusterBlacklistManager(this);
         this.commands = new ClusterCommandHandlerManager(this);
