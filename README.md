@@ -60,9 +60,20 @@ $./redis-cli -p 10001
 `CLUSTER COUNT-FAILURE-REPORTS nodename`  
 `CLUSTER SET-CONFIG-EPOCH epoch`  
 `CLUSTER RESET <HARD | SOFT>`  
+  
+Following command **MUST** open `ClusterConfiguration.asMaster`  
+  
+`CLUSTER ADDSLOTS slot <slot>`  
+`CLUSTER DELSLOTS slot <slot>`  
+`CLUSTER SETSLOT slot MIGRATING nodename`  
+`CLUSTER SETSLOT slot IMPORTING nodename`  
+`CLUSTER SETSLOT slot STABLE`  
+`CLUSTER SETSLOT slot NODE nodename`  
 
 ## Listeners  
 
 `ReplicationListener`  
+`ClusterConfigListener`  
+`ClusterStateListener`  
 
 # Have fun!!
