@@ -6,6 +6,8 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -14,6 +16,8 @@ public class ConfigInfo {
     public long currentEpoch;
     public long lastVoteEpoch;
     public Map<String, NodeInfo> nodes = new LinkedHashMap<>();
+    public String[] migratingSlotsTo = new String[CLUSTER_SLOTS];
+    public String[] importingSlotsFrom = new String[CLUSTER_SLOTS];
 
     public static ConfigInfo valueOf(ClusterState state) {
         ConfigInfo info = new ConfigInfo();
@@ -22,6 +26,15 @@ public class ConfigInfo {
         info.lastVoteEpoch = state.lastVoteEpoch;
         for (ClusterNode node : state.nodes.values()) {
             info.nodes.put(node.name, NodeInfo.valueOf(node, state.myself));
+        }
+
+        for (int i = 0; i < CLUSTER_SLOTS; i++) {
+            if (state.migratingSlotsTo[i] != null) {
+                info.migratingSlotsTo[i] = state.migratingSlotsTo[i].name;
+            }
+            if (state.importingSlotsFrom[i] != null) {
+                info.importingSlotsFrom[i] = state.importingSlotsFrom[i].name;
+            }
         }
         return info;
     }

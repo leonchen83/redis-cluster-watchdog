@@ -202,7 +202,7 @@ public class ClusterConfigManager {
                 map(Map.Entry::getValue).collect(joining(","));
     }
 
-    public String clusterGenNodeDescription(NodeInfo node) {
+    public String clusterGenNodeDescription(ConfigInfo info, NodeInfo node) {
         StringBuilder builder = new StringBuilder();
 
         builder.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip);
@@ -233,10 +233,10 @@ public class ClusterConfigManager {
 
         if ((node.flags & CLUSTER_NODE_MYSELF) != 0) {
             for (int j = 0; j < CLUSTER_SLOTS; j++) {
-                if (server.cluster.migratingSlotsTo[j] != null) {
-                    builder.append(" [").append(j).append("->-").append(server.cluster.migratingSlotsTo[j].name).append("]");
-                } else if (server.cluster.importingSlotsFrom[j] != null) {
-                    builder.append(" [").append(j).append("-<-").append(server.cluster.importingSlotsFrom[j].name).append("]");
+                if (info.migratingSlotsTo[j] != null) {
+                    builder.append(" [").append(j).append("->-").append(info.migratingSlotsTo[j]).append("]");
+                } else if (info.importingSlotsFrom[j] != null) {
+                    builder.append(" [").append(j).append("-<-").append(info.importingSlotsFrom[j]).append("]");
                 }
             }
         }
@@ -248,7 +248,7 @@ public class ClusterConfigManager {
         StringBuilder builder = new StringBuilder();
         for (NodeInfo node : info.nodes.values()) {
             if ((node.flags & filter) != 0) continue;
-            builder.append(clusterGenNodeDescription(node));
+            builder.append(clusterGenNodeDescription(info, node));
             builder.append("\n");
         }
         return builder.toString();
