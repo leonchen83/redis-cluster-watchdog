@@ -36,17 +36,14 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-        /* SETSLOT 10 MIGRATING <node ID> */
-        /* SETSLOT 10 IMPORTING <node ID> */
-        /* SETSLOT 10 STABLE */
-        /* SETSLOT 10 NODE <node ID> */
-        if (message.length < 4) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
-        }
 
         if (!managers.configuration.isAsMaster()) {
             replyError(t, "Unsupported COMMAND");
+            return;
+        }
+
+        if (message.length < 4) {
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
 

@@ -39,27 +39,25 @@ public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler 
             return;
         }
 
-        long epoch;
         try {
-            epoch = parseLong(message[2]);
+            long epoch = parseLong(message[2]);
+            if (epoch < 0) {
+                replyError(t, "Invalid config epoch specified: " + epoch);
+            } else if (server.cluster.nodes.size() > 1) {
+                replyError(t, "The user can assign a config epoch only when the node does not know any other node.");
+            } else if (server.myself.configEpoch != 0) {
+                replyError(t, "Node config epoch is already non-zero");
+            } else {
+                server.myself.configEpoch = epoch;
+                logger.info("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
+                if (server.cluster.currentEpoch < epoch)
+                    server.cluster.currentEpoch = epoch;
+                managers.states.clusterUpdateState();
+                reply(t, "OK");
+            }
         } catch (Exception e) {
             replyError(t, "Invalid config epoch specified: " + message[2]);
             return;
-        }
-
-        if (epoch < 0) {
-            replyError(t, "Invalid config epoch specified: " + epoch);
-        } else if (server.cluster.nodes.size() > 1) {
-            replyError(t, "The user can assign a config epoch only when the node does not know any other node.");
-        } else if (server.myself.configEpoch != 0) {
-            replyError(t, "Node config epoch is already non-zero");
-        } else {
-            server.myself.configEpoch = epoch;
-            logger.info("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
-            if (server.cluster.currentEpoch < epoch)
-                server.cluster.currentEpoch = epoch;
-            managers.states.clusterUpdateState();
-            reply(t, "OK");
         }
     }
 }

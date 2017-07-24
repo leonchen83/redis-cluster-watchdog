@@ -21,6 +21,7 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.keyHashSlot;
+import static java.lang.String.valueOf;
 
 /**
  * @author Leon Chen
@@ -39,6 +40,6 @@ public class ClusterKeySlotCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        replyNumber(t, String.valueOf(keyHashSlot(rawMessage[2])));
+        replyNumber(t, valueOf(keyHashSlot(rawMessage[2])));
     }
 }

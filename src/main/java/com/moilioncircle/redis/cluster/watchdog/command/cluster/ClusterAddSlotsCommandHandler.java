@@ -35,48 +35,44 @@ public class ClusterAddSlotsCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-        //CLUSTER ADDSLOTS <slot> [slot]
-        if (message.length < 3) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
-        }
 
         if (!managers.configuration.isAsMaster()) {
             replyError(t, "Unsupported COMMAND");
             return;
         }
 
-        byte[] slots = new byte[CLUSTER_SLOTS];
+        if (message.length < 3) {
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
+            return;
+        }
 
+        byte[] slots = new byte[CLUSTER_SLOTS];
         for (int i = 2; i < message.length; i++) {
-            int slot;
             try {
-                slot = parseInt(message[i]);
+                int slot = parseInt(message[i]);
+                if (slot < 0 || slot > 16384) {
+                    replyError(t, "Invalid slot:" + slot);
+                    return;
+                }
+
+                if (server.cluster.slots[slot] != null) {
+                    replyError(t, "Slot " + slot + " is already busy");
+                    return;
+                }
+                if (slots[slot]++ == 1) {
+                    replyError(t, "Slot " + slot + " specified multiple times");
+                    return;
+                }
             } catch (Exception e) {
                 replyError(t, "Invalid slot:" + message[i]);
                 return;
             }
-
-            if (slot < 0 || slot > 16384) {
-                replyError(t, "Invalid slot:" + slot);
-                return;
-            }
-
-            if (server.cluster.slots[slot] != null) {
-                replyError(t, "Slot " + slot + " is already busy");
-                return;
-            }
-            if (slots[slot]++ == 1) {
-                replyError(t, "Slot " + slot + " specified multiple times");
-                return;
-            }
         }
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (slots[i] != 0) {
-                if (server.cluster.importingSlotsFrom[i] != null)
-                    server.cluster.importingSlotsFrom[i] = null;
-                managers.slots.clusterAddSlot(managers.server.myself, i);
-            }
+            if (slots[i] == 0) continue;
+            if (server.cluster.importingSlotsFrom[i] != null)
+                server.cluster.importingSlotsFrom[i] = null;
+            managers.slots.clusterAddSlot(managers.server.myself, i);
         }
         managers.states.clusterUpdateState();
         reply(t, "OK");

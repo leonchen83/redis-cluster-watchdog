@@ -23,6 +23,7 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_COUNT;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.clusterGetMessageTypeString;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 
 /**
@@ -44,10 +45,8 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
 
         String[] stats = {"ok", "fail", "needhelp"};
         int assigned = 0, normal = 0, fail = 0, pFail = 0;
-
         for (int j = 0; j < CLUSTER_SLOTS; j++) {
             ClusterNode node = server.cluster.slots[j];
-
             if (node == null) continue;
             assigned++;
             if (nodeFailed(node)) {
@@ -61,7 +60,8 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
 
         long epoch = (nodeIsSlave(server.myself) && server.myself.master != null) ? server.myself.master.configEpoch : server.myself.configEpoch;
 
-        StringBuilder info = new StringBuilder("cluster_state:").append(stats[server.cluster.state]).append("\r\n")
+        StringBuilder info = new StringBuilder();
+        info.append("cluster_state:").append(stats[server.cluster.state]).append("\r\n")
                 .append("cluster_slots_assigned:").append(assigned).append("\r\n")
                 .append("cluster_slots_ok:").append(normal).append("\r\n")
                 .append("cluster_slots_pfail:").append(pFail).append("\r\n")
@@ -71,24 +71,21 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
                 .append("cluster_current_epoch:").append(server.cluster.currentEpoch).append("\r\n")
                 .append("cluster_my_epoch:").append(epoch).append("\r\n");
 
-
-        long sent = 0;
-        long received = 0;
-
+        long sent = 0L, received = 0L;
         for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
             if (server.cluster.messagesSent[i] == 0) continue;
             sent += server.cluster.messagesSent[i];
-            info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_sent:").append(server.cluster.messagesSent[i]).append("\r\n");
+            info.append("cluster_stats_messages_").append(clusterGetMessageTypeString(i)).append("_sent:")
+                    .append(server.cluster.messagesSent[i]).append("\r\n");
         }
-
         info.append("cluster_stats_messages_sent:").append(sent).append("\r\n");
 
         for (int i = 0; i < CLUSTERMSG_TYPE_COUNT; i++) {
             if (server.cluster.messagesReceived[i] == 0) continue;
             received += server.cluster.messagesReceived[i];
-            info.append("cluster_stats_messages_").append(managers.configs.clusterGetMessageTypeString(i)).append("_received:").append(server.cluster.messagesReceived[i]).append("\r\n");
+            info.append("cluster_stats_messages_").append(clusterGetMessageTypeString(i)).append("_received:")
+                    .append(server.cluster.messagesReceived[i]).append("\r\n");
         }
-
         info.append("cluster_stats_messages_received:").append(received).append("\r\n");
         replyBulk(t, info.toString());
     }

@@ -38,7 +38,6 @@ public class ClusterNodesCommandHandler extends AbstractCommandHandler {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
-        String nodes = managers.configs.clusterGenNodesDescription(valueOf(server.cluster), 0);
-        replyBulk(t, nodes);
+        replyBulk(t, managers.configs.clusterGenNodesDescription(valueOf(server.cluster), 0));
     }
 }

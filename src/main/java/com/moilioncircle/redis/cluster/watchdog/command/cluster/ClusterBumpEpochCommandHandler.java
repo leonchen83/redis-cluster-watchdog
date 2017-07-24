@@ -37,8 +37,7 @@ public class ClusterBumpEpochCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        boolean rs = managers.states.clusterBumpConfigEpochWithoutConsensus();
-        String reply = (rs ? "BUMPED" : "STILL") + " " + server.myself.configEpoch;
-        reply(t, reply);
+        boolean bumped = managers.states.clusterBumpConfigEpochWithoutConsensus();
+        reply(t, (bumped ? "BUMPED" : "STILL") + " " + server.myself.configEpoch);
     }
 }

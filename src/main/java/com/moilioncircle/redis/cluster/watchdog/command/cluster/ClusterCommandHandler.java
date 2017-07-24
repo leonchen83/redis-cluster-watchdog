@@ -66,6 +66,7 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
+
         handler.handle(t, message, rawMessage);
     }
 

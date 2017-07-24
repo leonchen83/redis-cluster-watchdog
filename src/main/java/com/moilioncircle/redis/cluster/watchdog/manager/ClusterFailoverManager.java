@@ -46,9 +46,9 @@ public class ClusterFailoverManager {
     public void clusterHandleSlaveFailover() {
         if (!managers.configuration.isAsMaster()) return;
         long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
-        int quorum = (server.cluster.size / 2) + 1;
         long authTimeout = Math.max(managers.configuration.getClusterNodeTimeout() * 2, 2000);
         long authRetryTime = authTimeout * 2;
+        int quorum = (server.cluster.size / 2) + 1;
 
         if (nodeIsMaster(server.myself) || server.myself.master == null ||
                 !nodeFailed(server.myself.master) || server.myself.master.assignedSlots == 0) {
@@ -77,11 +77,7 @@ public class ClusterFailoverManager {
             }
         }
 
-        if (System.currentTimeMillis() < server.cluster.failoverAuthTime) {
-            return;
-        }
-
-        if (authAge > authTimeout) {
+        if (System.currentTimeMillis() < server.cluster.failoverAuthTime || authAge > authTimeout) {
             return;
         }
 

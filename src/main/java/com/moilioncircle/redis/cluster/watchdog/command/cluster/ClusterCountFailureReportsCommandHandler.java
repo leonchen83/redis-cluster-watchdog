@@ -38,7 +38,6 @@ public class ClusterCountFailureReportsCommandHandler extends AbstractCommandHan
             return;
         }
 
-        /* CLUSTER COUNT-FAILURE-REPORTS <NODE ID> */
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
 
         if (node == null) {

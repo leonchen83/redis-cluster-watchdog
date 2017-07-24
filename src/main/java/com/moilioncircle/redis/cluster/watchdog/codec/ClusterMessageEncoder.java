@@ -22,16 +22,24 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
         if (!(msg instanceof ClusterMessage)) return;
         ClusterMessage hdr = (ClusterMessage) msg;
         out.writeBytes(hdr.signature.getBytes());
-        if (hdr.type == CLUSTERMSG_TYPE_PING || hdr.type == CLUSTERMSG_TYPE_PONG || hdr.type == CLUSTERMSG_TYPE_MEET) {
-            out.writeInt(2256 + hdr.count * 104);
-        } else if (hdr.type == CLUSTERMSG_TYPE_FAIL) {
-            out.writeInt(2296);
-        } else if (hdr.type == CLUSTERMSG_TYPE_PUBLISH) {
-            out.writeInt(2272);
-        } else if (hdr.type == CLUSTERMSG_TYPE_UPDATE) {
-            out.writeInt(4352);
-        } else {
-            out.writeInt(2256);
+        switch (hdr.type) {
+            case CLUSTERMSG_TYPE_PING:
+            case CLUSTERMSG_TYPE_PONG:
+            case CLUSTERMSG_TYPE_MEET:
+                out.writeInt(2256 + hdr.count * 104);
+                break;
+            case CLUSTERMSG_TYPE_FAIL:
+                out.writeInt(2296);
+                break;
+            case CLUSTERMSG_TYPE_PUBLISH:
+                out.writeInt(2272);
+                break;
+            case CLUSTERMSG_TYPE_UPDATE:
+                out.writeInt(4352);
+                break;
+            default:
+                out.writeInt(2256);
+                break;
         }
         out.writeShort(hdr.version);
         out.writeShort(hdr.port);
@@ -49,28 +57,37 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
         out.writeShort(hdr.flags);
         out.writeByte(hdr.state);
         out.writeBytes(hdr.messageFlags);
-        if (hdr.type == CLUSTERMSG_TYPE_PING || hdr.type == CLUSTERMSG_TYPE_PONG || hdr.type == CLUSTERMSG_TYPE_MEET) {
-            for (int i = 0; i < hdr.count; i++) {
-                ClusterMessageDataGossip gossip = hdr.data.gossips.get(i);
-                out.writeBytes(extract(gossip.name, CLUSTER_NODE_NULL_NAME));
-                out.writeInt((int) (gossip.pingTime / 1000));
-                out.writeInt((int) (gossip.pongTime / 1000));
-                out.writeBytes(extract(gossip.ip, CLUSTER_NODE_NULL_IP));
-                out.writeShort(gossip.port);
-                out.writeShort(gossip.busPort);
-                out.writeShort(gossip.flags);
-                out.writeBytes(gossip.reserved);
-            }
-        } else if (hdr.type == CLUSTERMSG_TYPE_FAIL) {
-            out.writeBytes(extract(hdr.data.fail.name, CLUSTER_NODE_NULL_NAME));
-        } else if (hdr.type == CLUSTERMSG_TYPE_PUBLISH) {
-            out.writeInt(hdr.data.publish.channelLength);
-            out.writeInt(hdr.data.publish.messageLength);
-            out.writeBytes(hdr.data.publish.bulkData);
-        } else if (hdr.type == CLUSTERMSG_TYPE_UPDATE) {
-            out.writeLong(hdr.data.config.configEpoch);
-            out.writeBytes(extract(hdr.data.config.name, CLUSTER_NODE_NULL_NAME));
-            out.writeBytes(hdr.data.config.slots);
+        switch (hdr.type) {
+            case CLUSTERMSG_TYPE_PING:
+            case CLUSTERMSG_TYPE_PONG:
+            case CLUSTERMSG_TYPE_MEET:
+                for (int i = 0; i < hdr.count; i++) {
+                    ClusterMessageDataGossip gossip = hdr.data.gossips.get(i);
+                    out.writeBytes(extract(gossip.name, CLUSTER_NODE_NULL_NAME));
+                    out.writeInt((int) (gossip.pingTime / 1000));
+                    out.writeInt((int) (gossip.pongTime / 1000));
+                    out.writeBytes(extract(gossip.ip, CLUSTER_NODE_NULL_IP));
+                    out.writeShort(gossip.port);
+                    out.writeShort(gossip.busPort);
+                    out.writeShort(gossip.flags);
+                    out.writeBytes(gossip.reserved);
+                }
+                break;
+            case CLUSTERMSG_TYPE_FAIL:
+                out.writeBytes(extract(hdr.data.fail.name, CLUSTER_NODE_NULL_NAME));
+                break;
+            case CLUSTERMSG_TYPE_PUBLISH:
+                out.writeInt(hdr.data.publish.channelLength);
+                out.writeInt(hdr.data.publish.messageLength);
+                out.writeBytes(hdr.data.publish.bulkData);
+                break;
+            case CLUSTERMSG_TYPE_UPDATE:
+                out.writeLong(hdr.data.config.configEpoch);
+                out.writeBytes(extract(hdr.data.config.name, CLUSTER_NODE_NULL_NAME));
+                out.writeBytes(hdr.data.config.slots);
+                break;
+            default:
+                break;
         }
     }
 

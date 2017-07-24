@@ -45,13 +45,12 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-
         boolean hard = false;
         if (message.length == 3) {
             if (message[2] != null && message[2].equalsIgnoreCase("hard")) hard = true;
             else if (message[2] != null && message[2].equalsIgnoreCase("soft")) hard = false;
             else {
-                replyError(t, "Syntax error.");
+                replyError(t, "Wrong CLUSTER subcommand or number of arguments");
                 return;
             }
         }
@@ -71,16 +70,13 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             managers.slots.clusterDelSlot(i);
 
         List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
-        for (ClusterNode node : nodes) {
-            if (node.equals(server.myself)) continue;
-            managers.nodes.clusterDelNode(node);
-        }
+        nodes.stream().filter(server.myself::equals).forEach(managers.nodes::clusterDelNode);
+
         if (!hard) return;
 
+        server.myself.configEpoch = 0;
         server.cluster.currentEpoch = 0;
         server.cluster.lastVoteEpoch = 0;
-        server.myself.configEpoch = 0;
-        logger.info("configEpoch set to 0 via CLUSTER RESET HARD");
         String previous = server.myself.name;
         server.cluster.nodes.remove(previous);
         server.myself.name = getRandomHexChars();

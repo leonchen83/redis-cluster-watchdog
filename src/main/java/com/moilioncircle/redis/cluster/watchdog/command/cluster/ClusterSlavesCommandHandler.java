@@ -57,7 +57,9 @@ public class ClusterSlavesCommandHandler extends AbstractCommandHandler {
         StringBuilder builder = new StringBuilder();
         builder.append("*").append(node.slaves.size()).append("\r\n");
         for (ClusterNode slave : node.slaves) {
-            String str = managers.configs.clusterGenNodeDescription(ConfigInfo.valueOf(server.cluster), NodeInfo.valueOf(slave, server.cluster.myself));
+            ConfigInfo configInfo = ConfigInfo.valueOf(server.cluster);
+            NodeInfo nodeInfo = NodeInfo.valueOf(slave, server.cluster.myself);
+            String str = managers.configs.clusterGenNodeDescription(configInfo, nodeInfo);
             builder.append("$").append(str.length()).append("\r\n").append(str).append("\r\n");
         }
         t.write(builder.toString().getBytes(), true);

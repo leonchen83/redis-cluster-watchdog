@@ -106,7 +106,7 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
-        Optional<ClusterNodeFailReport> report = node.failReports.stream().filter(x -> x.node.equals(sender)).findFirst();
+        Optional<ClusterNodeFailReport> report = node.failReports.stream().filter(e -> e.node.equals(sender)).findFirst();
         if (!report.isPresent()) return false;
         node.failReports.remove(report.get());
         clusterNodeCleanupFailureReports(node);

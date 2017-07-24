@@ -256,7 +256,7 @@ public class ClusterConfigManager {
         return builder.toString();
     }
 
-    public String clusterGetMessageTypeString(int type) {
+    public static String clusterGetMessageTypeString(int type) {
         switch (type) {
             case CLUSTERMSG_TYPE_PING:
                 return "pingTime";
