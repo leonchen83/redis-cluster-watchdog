@@ -1,5 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterState;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import org.apache.commons.logging.Log;
@@ -69,6 +70,7 @@ public class ClusterStateManager {
 
             logger.info("Cluster state changed: " + (state == CLUSTER_OK ? "ok" : "fail"));
             server.cluster.state = state;
+            managers.notifyStateChanged(ClusterState.valueOf(state));
         }
     }
 

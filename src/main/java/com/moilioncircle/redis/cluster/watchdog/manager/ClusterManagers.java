@@ -16,10 +16,7 @@
 
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
-import com.moilioncircle.redis.cluster.watchdog.ClusterConfigListener;
-import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
-import com.moilioncircle.redis.cluster.watchdog.ConfigInfo;
-import com.moilioncircle.redis.cluster.watchdog.ReplicationListener;
+import com.moilioncircle.redis.cluster.watchdog.*;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 
 import java.util.concurrent.ExecutorService;
@@ -52,6 +49,7 @@ public class ClusterManagers {
     public ServerState server = new ServerState();
 
     private volatile ReplicationListener replicationListener;
+    private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
 
     public ClusterManagers(ClusterConfiguration configuration) {
@@ -76,6 +74,12 @@ public class ClusterManagers {
     public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
         ReplicationListener r = this.replicationListener;
         this.replicationListener = replicationListener;
+        return r;
+    }
+
+    public synchronized ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener) {
+        ClusterStateListener r = this.clusterStateListener;
+        this.clusterStateListener = clusterStateListener;
         return r;
     }
 
@@ -109,6 +113,13 @@ public class ClusterManagers {
         worker.submit(() -> {
             ClusterConfigListener r = this.clusterConfigListener;
             if (r != null) r.onConfigChanged(info);
+        });
+    }
+
+    public void notifyStateChanged(ClusterState state) {
+        worker.submit(() -> {
+            ClusterStateListener r = this.clusterStateListener;
+            if (r != null) r.onStateChanged(state);
         });
     }
 }
