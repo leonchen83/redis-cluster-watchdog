@@ -7,6 +7,8 @@ import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.state.States.nodeIsMaster;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /**
  * @author Leon Chen
@@ -41,34 +43,27 @@ public class ClusterStateManager {
             }
         }
 
-        int reachableMasters = 0;
+        int masters = 0;
         server.cluster.size = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (nodeIsMaster(node) && node.assignedSlots != 0) {
                 server.cluster.size++;
                 if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0)
-                    reachableMasters++;
+                    masters++;
             }
         }
 
         int quorum = (server.cluster.size / 2) + 1;
 
-        if (reachableMasters < quorum) {
+        if (masters < quorum) {
             state = CLUSTER_FAIL;
             server.amongMinorityTime = now;
         }
 
         if (state != server.cluster.state) {
-            long rejoinDelay = managers.configuration.getClusterNodeTimeout();
+            long rejoin = max(min(managers.configuration.getClusterNodeTimeout(), CLUSTER_MAX_REJOIN_DELAY), CLUSTER_MIN_REJOIN_DELAY);
 
-            if (rejoinDelay > CLUSTER_MAX_REJOIN_DELAY)
-                rejoinDelay = CLUSTER_MAX_REJOIN_DELAY;
-            if (rejoinDelay < CLUSTER_MIN_REJOIN_DELAY)
-                rejoinDelay = CLUSTER_MIN_REJOIN_DELAY;
-
-            if (state == CLUSTER_OK
-                    && nodeIsMaster(server.myself)
-                    && now - server.amongMinorityTime < rejoinDelay) {
+            if (state == CLUSTER_OK && nodeIsMaster(server.myself) && now - server.amongMinorityTime < rejoin) {
                 return;
             }
 

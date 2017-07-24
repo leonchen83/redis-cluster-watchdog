@@ -19,6 +19,8 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 import com.moilioncircle.redis.cluster.watchdog.command.DefaultCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CHARSET;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -33,9 +35,8 @@ public class ClusterCommandHandlerManager {
     public void handleCommand(Transport<Object> t, byte[][] rawMessage) {
         String[] message = new String[rawMessage.length];
         for (int i = 0; i < message.length; i++) {
-            message[i] = new String(rawMessage[i]);
+            message[i] = new String(rawMessage[i], CHARSET);
         }
         this.handler.handle(t, message, rawMessage);
-
     }
 }
