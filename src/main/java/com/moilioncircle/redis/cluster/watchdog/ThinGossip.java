@@ -46,7 +46,7 @@ public class ThinGossip {
             ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
             clusterCron();
             ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
-            if (!previous.equals(next)) managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
+            if (!previous.equals(next)) managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -102,7 +102,7 @@ public class ThinGossip {
             logger.info("No cluster configuration found, I'm " + managers.server.myself.name);
             managers.nodes.clusterAddNode(managers.server.myself);
             ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
-            managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
+            managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }
 
         cfd = new NioBootstrapImpl<>(true, NioBootstrapConfiguration.defaultSetting());
@@ -126,7 +126,7 @@ public class ThinGossip {
                     managers.handlers.get(hdr.type).handle(managers.server.cfd.get(transport), hdr);
                     ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
                     if (!previous.equals(next))
-                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
+                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
                 });
             }
 
@@ -202,7 +202,7 @@ public class ThinGossip {
                             managers.handlers.get(hdr.type).handle(link, hdr);
                             ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
                             if (!previous.equals(next))
-                                managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
+                                managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
                         });
                     }
 

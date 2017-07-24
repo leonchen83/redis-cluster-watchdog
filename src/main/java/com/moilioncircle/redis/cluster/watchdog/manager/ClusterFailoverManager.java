@@ -118,7 +118,7 @@ public class ClusterFailoverManager {
         }
 
         managers.states.clusterUpdateState();
-        managers.configs.clusterSaveConfig(valueOf(server.cluster));
+        managers.configs.clusterSaveConfig(valueOf(server.cluster), false);
         managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_ALL);
     }
 }

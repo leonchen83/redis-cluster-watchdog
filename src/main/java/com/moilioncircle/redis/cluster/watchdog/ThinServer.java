@@ -64,7 +64,7 @@ public class ThinServer {
                     managers.commands.handleCommand(transport, (byte[][]) message);
                     ConfigInfo next = valueOf(managers.server.cluster);
                     if (!previous.equals(next))
-                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next));
+                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
                 });
             }
 

@@ -66,4 +66,13 @@ public class ConfigInfo {
         result = 31 * result + Arrays.hashCode(importingSlotsFrom);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "ConfigInfo{" +
+                "currentEpoch=" + currentEpoch +
+                ", lastVoteEpoch=" + lastVoteEpoch +
+                ", nodes=" + nodes +
+                '}';
+    }
 }

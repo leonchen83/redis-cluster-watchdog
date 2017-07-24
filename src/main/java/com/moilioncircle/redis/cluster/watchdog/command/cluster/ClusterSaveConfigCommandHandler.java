@@ -39,7 +39,7 @@ public class ClusterSaveConfigCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        if (!managers.configs.clusterSaveConfig(valueOf(server.cluster))) {
+        if (!managers.configs.clusterSaveConfig(valueOf(server.cluster), true)) {
             replyError(t, "Error saving the cluster node config");
             return;
         }

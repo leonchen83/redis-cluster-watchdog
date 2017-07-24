@@ -16,7 +16,9 @@
 
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfigListener;
 import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
+import com.moilioncircle.redis.cluster.watchdog.ConfigInfo;
 import com.moilioncircle.redis.cluster.watchdog.ReplicationListener;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 
@@ -50,6 +52,7 @@ public class ClusterManagers {
     public ServerState server = new ServerState();
 
     private volatile ReplicationListener replicationListener;
+    private volatile ClusterConfigListener clusterConfigListener;
 
     public ClusterManagers(ClusterConfiguration configuration) {
         this.configuration = configuration;
@@ -76,6 +79,12 @@ public class ClusterManagers {
         return r;
     }
 
+    public synchronized ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener) {
+        ClusterConfigListener r = this.clusterConfigListener;
+        this.clusterConfigListener = clusterConfigListener;
+        return r;
+    }
+
     public void notifySetReplication(String ip, int host) {
         worker.submit(() -> {
             ReplicationListener r = this.replicationListener;
@@ -94,5 +103,12 @@ public class ClusterManagers {
         ReplicationListener r = this.replicationListener;
         if (r == null) return 0L;
         return r.onGetSlaveOffset();
+    }
+
+    public void notifyConfigChanged(ConfigInfo info) {
+        worker.submit(() -> {
+            ClusterConfigListener r = this.clusterConfigListener;
+            if (r != null) r.onConfigChanged(info);
+        });
     }
 }

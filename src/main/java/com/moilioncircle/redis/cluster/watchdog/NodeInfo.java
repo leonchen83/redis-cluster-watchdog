@@ -70,4 +70,20 @@ public class NodeInfo {
         n.link = node.link != null || node.equals(myself) ? "connected" : "disconnected";
         return n;
     }
+
+    @Override
+    public String toString() {
+        return "NodeInfo{" +
+                "port=" + port +
+                ", ip='" + ip + '\'' +
+                ", flags=" + flags +
+                ", busPort=" + busPort +
+                ", name='" + name + '\'' +
+                ", link='" + link + '\'' +
+                ", pingTime=" + pingTime +
+                ", pongTime=" + pongTime +
+                ", master='" + master + '\'' +
+                ", configEpoch=" + configEpoch +
+                '}';
+    }
 }

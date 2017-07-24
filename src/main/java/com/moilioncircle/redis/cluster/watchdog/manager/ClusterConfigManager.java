@@ -172,7 +172,7 @@ public class ClusterConfigManager {
         }
     }
 
-    public boolean clusterSaveConfig(ConfigInfo info) {
+    public boolean clusterSaveConfig(ConfigInfo info, boolean force) {
         BufferedWriter r = null;
         try {
             File file = new File(managers.configuration.getClusterConfigFile());
@@ -183,6 +183,7 @@ public class ClusterConfigManager {
                     " lastVoteEpoch " + info.lastVoteEpoch;
             r.write(line);
             r.flush();
+            if (!force) managers.notifyConfigChanged(info);
             return true;
         } catch (IOException e) {
             return false;
