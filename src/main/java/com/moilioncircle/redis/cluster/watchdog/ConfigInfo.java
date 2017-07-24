@@ -3,6 +3,7 @@ package com.moilioncircle.redis.cluster.watchdog;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,6 +25,9 @@ public class ConfigInfo {
         info.nodes = new LinkedHashMap<>();
         info.currentEpoch = state.currentEpoch;
         info.lastVoteEpoch = state.lastVoteEpoch;
+        info.migratingSlotsTo = new String[CLUSTER_SLOTS];
+        info.importingSlotsFrom = new String[CLUSTER_SLOTS];
+
         for (ClusterNode node : state.nodes.values()) {
             info.nodes.put(node.name, NodeInfo.valueOf(node, state.myself));
         }
@@ -48,7 +52,9 @@ public class ConfigInfo {
 
         if (currentEpoch != that.currentEpoch) return false;
         if (lastVoteEpoch != that.lastVoteEpoch) return false;
-        return nodes.equals(that.nodes);
+        if (!nodes.equals(that.nodes)) return false;
+        if (!Arrays.equals(migratingSlotsTo, that.migratingSlotsTo)) return false;
+        return Arrays.equals(importingSlotsFrom, that.importingSlotsFrom);
     }
 
     @Override
@@ -56,6 +62,8 @@ public class ConfigInfo {
         int result = (int) (currentEpoch ^ (currentEpoch >>> 32));
         result = 31 * result + (int) (lastVoteEpoch ^ (lastVoteEpoch >>> 32));
         result = 31 * result + nodes.hashCode();
+        result = 31 * result + Arrays.hashCode(migratingSlotsTo);
+        result = 31 * result + Arrays.hashCode(importingSlotsFrom);
         return result;
     }
 }
