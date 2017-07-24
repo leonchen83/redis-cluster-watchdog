@@ -42,6 +42,7 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
         }
 
         int port, busPort;
+
         try {
             port = parseInt(message[3]);
         } catch (Exception e) {
@@ -53,7 +54,7 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
             try {
                 busPort = parseInt(message[4]);
             } catch (Exception e) {
-                replyError(t, "Invalid cport:" + message[4]);
+                replyError(t, "Invalid bus port:" + message[4]);
                 return;
             }
         } else {
@@ -66,12 +67,12 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
         }
 
         if (busPort <= 0 || busPort > 65535) {
-            replyError(t, "Invalid cport:" + busPort);
+            replyError(t, "Invalid bus port:" + busPort);
             return;
         }
 
         if (message[2] == null || message[2].length() == 0) {
-            replyError(t, "Invalid ip address:" + message[2]);
+            replyError(t, "Invalid address:" + message[2]);
             return;
         }
 

@@ -9,6 +9,7 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfigurati
 public class ClusterConfiguration {
 
     private boolean verbose = false;
+    private boolean asMaster = false;
     private String clusterAnnounceIp;
     private String clusterConfigFile;
     private int clusterAnnounceBusPort;
@@ -33,6 +34,16 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setVerbose(boolean verbose) {
         this.verbose = verbose;
+        validate();
+        return this;
+    }
+
+    public boolean isAsMaster() {
+        return asMaster;
+    }
+
+    public ClusterConfiguration setAsMaster(boolean asMaster) {
+        this.asMaster = asMaster;
         validate();
         return this;
     }

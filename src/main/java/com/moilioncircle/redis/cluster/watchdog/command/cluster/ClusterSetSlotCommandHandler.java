@@ -44,6 +44,12 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
+
+        if (!managers.configuration.isAsMaster()) {
+            replyError(t, "Unsupported COMMAND");
+            return;
+        }
+
         if (nodeIsSlave(server.myself)) {
             replyError(t, "Please use SETSLOT only with masters.");
             return;

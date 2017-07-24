@@ -40,6 +40,12 @@ public class ClusterDelSlotsCommandHandler extends AbstractCommandHandler {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
+
+        if (!managers.configuration.isAsMaster()) {
+            replyError(t, "Unsupported COMMAND");
+            return;
+        }
+
         byte[] slots = new byte[CLUSTER_SLOTS];
 
         for (int i = 2; i < message.length; i++) {

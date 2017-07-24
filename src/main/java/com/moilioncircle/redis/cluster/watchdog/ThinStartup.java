@@ -15,6 +15,5 @@ public class ThinStartup {
         final ThinGossip gossip = new ThinGossip(managers);
         client.start();
         gossip.start();
-
     }
 }
