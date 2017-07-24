@@ -62,11 +62,14 @@ $./redis-cli -p 10001
 `CLUSTER RESET <HARD | SOFT>`  
 `CLUSTER ADDSLOTS slot <slot>`  
 `CLUSTER DELSLOTS slot <slot>`  
-following command **MUST** open `ClusterConfiguration.asMaster`  
+  
+Following command **MUST** open `ClusterConfiguration.asMaster`  
+  
 `CLUSTER SETSLOT slot MIGRATING nodename`  
 `CLUSTER SETSLOT slot IMPORTING nodename`  
 `CLUSTER SETSLOT slot STABLE`  
 `CLUSTER SETSLOT slot NODE nodename`  
+
 ## Listeners  
 
 `ReplicationListener`  
