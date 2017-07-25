@@ -71,7 +71,7 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             managers.slots.clusterDelSlot(i);
 
         List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
-        nodes.stream().filter(e -> Objects.equals(e, server.myself)).forEach(managers.nodes::clusterDelNode);
+        nodes.stream().filter(e -> !Objects.equals(e, server.myself)).forEach(managers.nodes::clusterDelNode);
 
         if (!hard) return;
 

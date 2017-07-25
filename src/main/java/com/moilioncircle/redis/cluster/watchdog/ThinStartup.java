@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class ThinStartup {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        ClusterManagers managers = new ClusterManagers(ClusterConfiguration.defaultSetting());
+        ClusterManagers managers = new ClusterManagers(ClusterConfiguration.defaultSetting().setAsMaster(true));
         final ThinServer client = new ThinServer(managers);
         final ThinGossip gossip = new ThinGossip(managers);
         client.start();
