@@ -6,6 +6,7 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
@@ -74,8 +75,9 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
                 sender.flags |= CLUSTER_NODE_SLAVE;
             }
 
-            if (master != null && (sender.master == null || !sender.master.equals(master))) {
-                if (sender.master != null) managers.nodes.clusterNodeRemoveSlave(sender.master, sender);
+            if (master != null && (sender.master == null || !Objects.equals(sender.master, master))) {
+                if (sender.master != null)
+                    managers.nodes.clusterNodeRemoveSlave(sender.master, sender);
                 managers.nodes.clusterNodeAddSlave(master, sender);
                 sender.master = master;
             }
@@ -89,7 +91,8 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
 
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 if (!bitmapTestBit(hdr.slots, i)) continue;
-                if (server.cluster.slots[i] == null || server.cluster.slots[i].equals(sender)) continue;
+                if (server.cluster.slots[i] == null) continue;
+                if (Objects.equals(server.cluster.slots[i], sender)) continue;
                 if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue;
                 if (managers.configuration.isVerbose())
                     logger.info("Node " + sender.name + " has old slots configuration, sending an UPDATE message fail " + server.cluster.slots[i].name);

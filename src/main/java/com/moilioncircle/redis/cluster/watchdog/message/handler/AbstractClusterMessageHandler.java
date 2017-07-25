@@ -10,6 +10,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.List;
+import java.util.Objects;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.representClusterNodeFlags;
@@ -46,6 +47,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
             if (hdr.currentEpoch > server.cluster.currentEpoch) {
                 server.cluster.currentEpoch = hdr.currentEpoch;
             }
+
             if (hdr.configEpoch > sender.configEpoch) {
                 sender.configEpoch = hdr.configEpoch;
             }
@@ -64,17 +66,17 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
     public void clusterUpdateSlotsConfigWith(ClusterNode sender, long senderConfigEpoch, byte[] slots) {
         ClusterNode next = null;
         ClusterNode previous = nodeIsMaster(server.myself) ? server.myself : server.myself.master;
-        if (sender.equals(server.myself)) {
+        if (Objects.equals(sender, server.myself)) {
             logger.info("Discarding UPDATE message fail myself.");
             return;
         }
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(slots, i)) continue;
-            if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(sender)) continue;
+            if (Objects.equals(server.cluster.slots[i], sender)) continue;
             if (server.cluster.importingSlotsFrom[i] != null) continue;
             if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
-                if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(previous))
+                if (Objects.equals(server.cluster.slots[i], previous))
                     next = sender;
                 managers.slots.clusterDelSlot(i);
                 managers.slots.clusterAddSlot(sender, i);
@@ -104,7 +106,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
                 continue;
             }
 
-            if (sender != null && nodeIsMaster(sender) && !node.equals(server.myself)) {
+            if (sender != null && nodeIsMaster(sender) && !Objects.equals(node, server.myself)) {
                 if ((gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0) {
                     if (managers.nodes.clusterNodeAddFailureReport(node, sender) && managers.configuration.isVerbose()) {
                         logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
@@ -149,7 +151,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         if (node.link != null) managers.connections.freeClusterLink(node.link);
         logger.info("Address updated for node " + node.name + ", now " + node.ip + ":" + node.port);
 
-        if (nodeIsSlave(server.myself) && server.myself.master.equals(node)) {
+        if (nodeIsSlave(server.myself) && Objects.equals(server.myself.master, node)) {
             managers.replications.replicationSetMaster(node);
         }
         return true;

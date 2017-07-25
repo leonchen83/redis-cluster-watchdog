@@ -58,7 +58,12 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
             }
         }
 
-        long epoch = (nodeIsSlave(server.myself) && server.myself.master != null) ? server.myself.master.configEpoch : server.myself.configEpoch;
+        long epoch;
+        if (nodeIsSlave(server.myself) && server.myself.master != null) {
+            epoch = server.myself.master.configEpoch;
+        } else {
+            epoch = server.myself.configEpoch;
+        }
 
         StringBuilder info = new StringBuilder();
         info.append("cluster_state:").append(stats[server.cluster.state]).append("\r\n")

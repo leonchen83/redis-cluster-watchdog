@@ -21,6 +21,8 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
+import java.util.Objects;
+
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
@@ -48,7 +50,7 @@ public class ClusterReplicateCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        if (node.equals(server.myself)) {
+        if (Objects.equals(node, server.myself)) {
             replyError(t, "Can't replicate myself");
             return;
         }

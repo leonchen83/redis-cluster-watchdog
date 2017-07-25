@@ -27,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -93,7 +94,7 @@ public class ClusterMessageManager {
     }
 
     public boolean clusterNodeIsInGossipSection(ClusterMessage hdr, int count, ClusterNode n) {
-        return hdr.data.gossips.stream().limit(count).anyMatch(e -> e.name.equals(n.name));
+        return hdr.data.gossips.stream().limit(count).anyMatch(e -> Objects.equals(e.name, n.name));
     }
 
     public void clusterSetGossipEntry(ClusterMessage hdr, ClusterNode n) {
@@ -125,7 +126,7 @@ public class ClusterMessageManager {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
-            if (node.equals(server.myself)) continue;
+            if (Objects.equals(node, server.myself)) continue;
 
             if ((node.flags & CLUSTER_NODE_PFAIL) != 0) continue;
 
@@ -158,9 +159,9 @@ public class ClusterMessageManager {
     public void clusterBroadcastPong(int target) {
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (node.link == null) continue;
-            if (node == server.myself || nodeInHandshake(node)) continue;
+            if (Objects.equals(node, server.myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
-                boolean local = nodeIsSlave(node) && node.master != null && (node.master.equals(server.myself) || node.master.equals(server.myself.master));
+                boolean local = nodeIsSlave(node) && node.master != null && (Objects.equals(node.master, server.myself) || Objects.equals(node.master, server.myself.master));
                 if (!local) continue;
             }
             clusterSendPing(node.link, CLUSTERMSG_TYPE_PONG);

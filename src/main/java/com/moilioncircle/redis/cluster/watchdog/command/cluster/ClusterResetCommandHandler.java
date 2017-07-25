@@ -23,6 +23,7 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterNodeManager.getRandomHexChars;
@@ -70,7 +71,7 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             managers.slots.clusterDelSlot(i);
 
         List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
-        nodes.stream().filter(server.myself::equals).forEach(managers.nodes::clusterDelNode);
+        nodes.stream().filter(e -> Objects.equals(e, server.myself)).forEach(managers.nodes::clusterDelNode);
 
         if (!hard) return;
 

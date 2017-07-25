@@ -21,6 +21,8 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
+import java.util.Objects;
+
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 import static java.lang.Integer.parseInt;
 
@@ -69,7 +71,7 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
         }
         if (message[3].equalsIgnoreCase("migrating") && message.length == 5) {
-            if (server.cluster.slots[slot] == null || !server.cluster.slots[slot].equals(server.myself)) {
+            if (!Objects.equals(server.cluster.slots[slot], server.myself)) {
                 replyError(t, "I'm not the owner of hash slot " + slot);
                 return;
             }
@@ -80,7 +82,7 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
             }
             server.cluster.migratingSlotsTo[slot] = n;
         } else if (message[3].equalsIgnoreCase("importing") && message.length == 5) {
-            if (server.cluster.slots[slot] != null && server.cluster.slots[slot].equals(server.myself)) {
+            if (Objects.equals(server.cluster.slots[slot], server.myself)) {
                 replyError(t, "I'm already the owner of hash slot " + slot);
                 return;
             }
@@ -106,7 +108,7 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
             if (server.cluster.migratingSlotsTo[slot] != null)
                 server.cluster.migratingSlotsTo[slot] = null;
 
-            if (n.equals(server.myself) && server.cluster.importingSlotsFrom[slot] != null) {
+            if (Objects.equals(n, server.myself) && server.cluster.importingSlotsFrom[slot] != null) {
                 if (managers.states.clusterBumpConfigEpochWithoutConsensus()) {
                     logger.warn("configEpoch updated after importing slot " + slot);
                 }

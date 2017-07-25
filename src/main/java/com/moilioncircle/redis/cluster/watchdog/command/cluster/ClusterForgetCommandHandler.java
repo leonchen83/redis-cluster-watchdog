@@ -21,6 +21,8 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
+import java.util.Objects;
+
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
 /**
@@ -45,10 +47,10 @@ public class ClusterForgetCommandHandler extends AbstractCommandHandler {
         if (node == null) {
             replyError(t, "Unknown node " + message[2]);
             return;
-        } else if (node.equals(server.myself)) {
+        } else if (Objects.equals(node, server.myself)) {
             replyError(t, "I tried hard but I can't forget myself...");
             return;
-        } else if (nodeIsSlave(server.myself) && server.myself.master.equals(node)) {
+        } else if (nodeIsSlave(server.myself) && Objects.equals(server.myself.master, node)) {
             replyError(t, "Can't forget my master!");
             return;
         }

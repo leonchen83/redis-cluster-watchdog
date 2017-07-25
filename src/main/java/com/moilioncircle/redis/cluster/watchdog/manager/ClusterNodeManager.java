@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -42,16 +43,16 @@ public class ClusterNodeManager {
 
     public void clusterDelNode(ClusterNode node) {
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (server.cluster.importingSlotsFrom[i] != null && server.cluster.importingSlotsFrom[i].equals(node))
-                server.cluster.importingSlotsFrom[i] = null;
-            if (server.cluster.migratingSlotsTo[i] != null && server.cluster.migratingSlotsTo[i].equals(node))
-                server.cluster.migratingSlotsTo[i] = null;
-            if (server.cluster.slots[i] != null && server.cluster.slots[i].equals(node))
+            if (Objects.equals(server.cluster.slots[i], node))
                 managers.slots.clusterDelSlot(i);
+            if (Objects.equals(server.cluster.migratingSlotsTo[i], node))
+                server.cluster.migratingSlotsTo[i] = null;
+            if (Objects.equals(server.cluster.importingSlotsFrom[i], node))
+                server.cluster.importingSlotsFrom[i] = null;
         }
 
         server.cluster.nodes.values().stream().
-                filter(e -> !e.equals(node)).
+                filter(e -> !Objects.equals(e, node)).
                 forEach(e -> clusterNodeDelFailureReport(e, node));
         freeClusterNode(node);
     }
@@ -90,7 +91,7 @@ public class ClusterNodeManager {
 
     public boolean clusterNodeAddFailureReport(ClusterNode failing, ClusterNode sender) {
         for (ClusterNodeFailReport report : failing.failReports) {
-            if (!report.node.equals(sender)) continue;
+            if (!Objects.equals(report.node, sender)) continue;
             report.createTime = System.currentTimeMillis();
             return false;
         }
@@ -106,7 +107,7 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
-        Optional<ClusterNodeFailReport> report = node.failReports.stream().filter(e -> e.node.equals(sender)).findFirst();
+        Optional<ClusterNodeFailReport> report = node.failReports.stream().filter(e -> Objects.equals(e.node, sender)).findFirst();
         if (!report.isPresent()) return false;
         node.failReports.remove(report.get());
         clusterNodeCleanupFailureReports(node);
@@ -127,7 +128,7 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterNodeAddSlave(ClusterNode master, ClusterNode slave) {
-        if (master.slaves.stream().anyMatch(e -> e.equals(slave))) return false;
+        if (master.slaves.stream().anyMatch(e -> Objects.equals(e, slave))) return false;
         master.slaves.add(slave);
         master.flags |= CLUSTER_NODE_MIGRATE_TO;
         return true;
@@ -142,7 +143,7 @@ public class ClusterNodeManager {
 
         if (node.master != null) {
             clusterNodeRemoveSlave(node.master, node);
-            if (node.equals(server.myself)) node.flags |= CLUSTER_NODE_MIGRATE_TO;
+            if (Objects.equals(node, server.myself)) node.flags |= CLUSTER_NODE_MIGRATE_TO;
         }
 
         node.flags &= ~CLUSTER_NODE_SLAVE;
@@ -154,7 +155,7 @@ public class ClusterNodeManager {
         ClusterNode master = server.myself.master;
         if (master == null) return 0;
         long offset = managers.replications.replicationGetSlaveOffset();
-        return (int) master.slaves.stream().filter(e -> e != null && !e.equals(server.myself) && e.offset > offset).count();
+        return (int) master.slaves.stream().filter(e -> Objects.equals(e, server.myself) && e.offset > offset).count();
     }
 
     public long clusterGetMaxEpoch() {

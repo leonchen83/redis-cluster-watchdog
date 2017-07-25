@@ -269,7 +269,7 @@ public class ThinGossip {
                         isolatedMasters++;
                     }
                     if (slaves > maxSlaves) maxSlaves = slaves;
-                    if (managers.server.myself.master.equals(node))
+                    if (Objects.equals(managers.server.myself.master, node))
                         mySlaves = slaves;
                 }
 
@@ -344,7 +344,7 @@ public class ThinGossip {
             }
         }
 
-        if (target != null && candidate.equals(managers.server.myself) && (now - target.isolatedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
+        if (target != null && Objects.equals(candidate, managers.server.myself) && (now - target.isolatedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
             logger.info("Migrating to orphaned master " + target.name);
             managers.nodes.clusterSetMyMasterTo(target);
         }

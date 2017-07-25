@@ -3,6 +3,7 @@ package com.moilioncircle.redis.cluster.watchdog;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS_BYTES;
 
@@ -67,7 +68,7 @@ public class NodeInfo {
         n.configEpoch = node.configEpoch;
         n.master = node.master == null ? null : node.master.name;
         System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
-        n.link = node.link != null || node.equals(myself) ? "connected" : "disconnected";
+        n.link = node.link != null || Objects.equals(node, myself) ? "connected" : "disconnected";
         return n;
     }
 
