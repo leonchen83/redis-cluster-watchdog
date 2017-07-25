@@ -8,15 +8,15 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfigurati
  */
 public class ClusterConfiguration {
 
-    private boolean verbose = false;
-    private boolean asMaster = false;
     private String clusterAnnounceIp;
     private String clusterConfigFile;
     private int clusterAnnounceBusPort;
     private int clusterAnnouncePort = 6379;
     private long clusterNodeTimeout = 15000;
     private int clusterMigrationBarrier = 1;
-    private boolean clusterRequireFullCoverage = true;
+    private volatile boolean verbose = false;
+    private volatile boolean asMaster = false;
+    private volatile boolean clusterRequireFullCoverage = true;
     private NioBootstrapConfiguration networkConfiguration = NioBootstrapConfiguration.defaultSetting();
 
     private ClusterConfiguration() {
