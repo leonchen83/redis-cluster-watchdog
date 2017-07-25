@@ -36,7 +36,7 @@ public class NioInitiator<T> extends AbstractNioBootstrap<T> {
     protected volatile Bootstrap bootstrap;
     protected volatile EventLoopGroup workerGroup;
 
-    public NioInitiator(NioBootstrapConfiguration configuration) {
+    public NioInitiator(NetworkConfiguration configuration) {
         super(configuration);
     }
 

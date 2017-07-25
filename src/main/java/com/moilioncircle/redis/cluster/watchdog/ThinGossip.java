@@ -8,7 +8,7 @@ import com.moilioncircle.redis.cluster.watchdog.message.RCmbMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;
-import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
+import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
 import com.moilioncircle.redis.cluster.watchdog.util.net.session.DefaultSession;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
@@ -107,7 +107,7 @@ public class ThinGossip {
             managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }
 
-        cfd = new NioBootstrapImpl<>(true, NioBootstrapConfiguration.defaultSetting());
+        cfd = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
         cfd.setEncoder(ClusterMessageEncoder::new);
         cfd.setDecoder(ClusterMessageDecoder::new);
         cfd.setup();

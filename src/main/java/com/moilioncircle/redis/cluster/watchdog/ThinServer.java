@@ -19,7 +19,7 @@ package com.moilioncircle.redis.cluster.watchdog;
 import com.moilioncircle.redis.cluster.watchdog.codec.RedisDecoder;
 import com.moilioncircle.redis.cluster.watchdog.codec.RedisEncoder;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
-import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
+import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.TransportListener;
@@ -47,7 +47,7 @@ public class ThinServer {
     }
 
     public void start() {
-        cfd = new NioBootstrapImpl<>(true, NioBootstrapConfiguration.defaultSetting());
+        cfd = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
         cfd.setEncoder(RedisEncoder::new);
         cfd.setDecoder(RedisDecoder::new);
         cfd.setup();

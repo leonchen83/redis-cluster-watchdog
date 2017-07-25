@@ -1,6 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
-import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
+import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
 
 /**
  * @author Leon Chen
@@ -17,7 +17,7 @@ public class ClusterConfiguration {
     private volatile boolean verbose = false;
     private volatile boolean asMaster = false;
     private volatile boolean clusterRequireFullCoverage = true;
-    private NioBootstrapConfiguration networkConfiguration = NioBootstrapConfiguration.defaultSetting();
+    private NetworkConfiguration networkConfiguration = NetworkConfiguration.defaultSetting();
 
     private ClusterConfiguration() {
     }
@@ -118,11 +118,11 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public NioBootstrapConfiguration getNetworkConfiguration() {
+    public NetworkConfiguration getNetworkConfiguration() {
         return networkConfiguration;
     }
 
-    public ClusterConfiguration setNetworkConfiguration(NioBootstrapConfiguration networkConfiguration) {
+    public ClusterConfiguration setNetworkConfiguration(NetworkConfiguration networkConfiguration) {
         this.networkConfiguration = networkConfiguration;
         validate();
         return this;

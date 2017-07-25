@@ -36,7 +36,7 @@ public class NioAcceptor<T> extends AbstractNioBootstrap<T> {
     protected volatile EventLoopGroup eventLoop;
     protected volatile ServerBootstrap bootstrap;
 
-    public NioAcceptor(NioBootstrapConfiguration configuration) {
+    public NioAcceptor(NetworkConfiguration configuration) {
         super(configuration);
     }
 

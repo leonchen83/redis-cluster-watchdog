@@ -36,9 +36,9 @@ public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
     protected Supplier<ChannelHandler> decoder;
     protected volatile NioTransport<T> transport;
     protected volatile TransportListener<T> listener;
-    protected final NioBootstrapConfiguration configuration;
+    protected final NetworkConfiguration configuration;
 
-    protected AbstractNioBootstrap(NioBootstrapConfiguration configuration) {
+    protected AbstractNioBootstrap(NetworkConfiguration configuration) {
         this.configuration = configuration;
     }
 

@@ -22,13 +22,13 @@ import java.util.concurrent.TimeUnit;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class NioBootstrapConfiguration {
+public class NetworkConfiguration {
 
-    private NioBootstrapConfiguration() {
+    private NetworkConfiguration() {
     }
 
-    public static NioBootstrapConfiguration defaultSetting() {
-        return new NioBootstrapConfiguration();
+    public static NetworkConfiguration defaultSetting() {
+        return new NetworkConfiguration();
     }
 
     protected int soLinger = 0;
@@ -57,7 +57,7 @@ public class NioBootstrapConfiguration {
         return soLinger;
     }
 
-    public NioBootstrapConfiguration setSoLinger(int soLinger) {
+    public NetworkConfiguration setSoLinger(int soLinger) {
         this.soLinger = soLinger;
         return this;
     }
@@ -66,7 +66,7 @@ public class NioBootstrapConfiguration {
         return soTimeout;
     }
 
-    public NioBootstrapConfiguration setSoTimeout(int soTimeout) {
+    public NetworkConfiguration setSoTimeout(int soTimeout) {
         this.soTimeout = soTimeout;
         return this;
     }
@@ -75,7 +75,7 @@ public class NioBootstrapConfiguration {
         return soBacklog;
     }
 
-    public NioBootstrapConfiguration setSoBacklog(int soBacklog) {
+    public NetworkConfiguration setSoBacklog(int soBacklog) {
         this.soBacklog = soBacklog;
         return this;
     }
@@ -84,7 +84,7 @@ public class NioBootstrapConfiguration {
         return soSendBufferSize;
     }
 
-    public NioBootstrapConfiguration setSoSendBufferSize(int soSendBufferSize) {
+    public NetworkConfiguration setSoSendBufferSize(int soSendBufferSize) {
         this.soSendBufferSize = soSendBufferSize;
         return this;
     }
@@ -93,7 +93,7 @@ public class NioBootstrapConfiguration {
         return soRecvBufferSize;
     }
 
-    public NioBootstrapConfiguration setSoRecvBufferSize(int soRecvBufferSize) {
+    public NetworkConfiguration setSoRecvBufferSize(int soRecvBufferSize) {
         this.soRecvBufferSize = soRecvBufferSize;
         return this;
     }
@@ -102,7 +102,7 @@ public class NioBootstrapConfiguration {
         return tcpNoDelay;
     }
 
-    public NioBootstrapConfiguration setTcpNoDelay(boolean tcpNoDelay) {
+    public NetworkConfiguration setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
         return this;
     }
@@ -111,7 +111,7 @@ public class NioBootstrapConfiguration {
         return soKeepAlive;
     }
 
-    public NioBootstrapConfiguration setSoKeepAlive(boolean soKeepAlive) {
+    public NetworkConfiguration setSoKeepAlive(boolean soKeepAlive) {
         this.soKeepAlive = soKeepAlive;
         return this;
     }
@@ -120,7 +120,7 @@ public class NioBootstrapConfiguration {
         return soReuseAddr;
     }
 
-    public NioBootstrapConfiguration setSoReuseAddr(boolean soReuseAddr) {
+    public NetworkConfiguration setSoReuseAddr(boolean soReuseAddr) {
         this.soReuseAddr = soReuseAddr;
         return this;
     }
@@ -129,7 +129,7 @@ public class NioBootstrapConfiguration {
         return autoReconnect;
     }
 
-    public NioBootstrapConfiguration setAutoReconnect(boolean autoReconnect) {
+    public NetworkConfiguration setAutoReconnect(boolean autoReconnect) {
         this.autoReconnect = autoReconnect;
         return this;
     }
@@ -138,7 +138,7 @@ public class NioBootstrapConfiguration {
         return connectTimeout;
     }
 
-    public NioBootstrapConfiguration setConnectTimeout(long connectTimeout) {
+    public NetworkConfiguration setConnectTimeout(long connectTimeout) {
         this.connectTimeout = connectTimeout;
         return this;
     }
@@ -147,7 +147,7 @@ public class NioBootstrapConfiguration {
         return reconnectInterval;
     }
 
-    public NioBootstrapConfiguration setReconnectInterval(long reconnectInterval) {
+    public NetworkConfiguration setReconnectInterval(long reconnectInterval) {
         this.reconnectInterval = reconnectInterval;
         return this;
     }
