@@ -25,11 +25,8 @@ $./create-cluster create
 ```java  
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        ClusterManagers managers = new ClusterManagers(ClusterConfiguration.defaultSetting().setClusterAnnouncePort(10001));
-        ThinServer client = new ThinServer(managers);
-        ThinGossip gossip = new ThinGossip(managers);
-        client.start();
-        gossip.start();
+        ClusterWatchdog watchdog = new RedisClusterWatchdog(ClusterConfiguration.defaultSetting().setClusterAnnouncePort(10001));
+        watchdog.start();
     }
 
 ```
