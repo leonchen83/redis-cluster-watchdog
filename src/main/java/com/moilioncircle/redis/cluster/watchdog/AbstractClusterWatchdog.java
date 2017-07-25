@@ -29,7 +29,7 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
 
     protected AbstractClusterWatchdog(ClusterConfiguration configuration) {
         this.configuration = configuration;
-        this.managers = new ClusterManagers(configuration);
+        this.managers = new ClusterManagers(configuration, this);
     }
 
     @Override

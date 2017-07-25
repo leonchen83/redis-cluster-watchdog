@@ -1,6 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog.util.net.initiator;
 
-import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
+import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.TransportListener;
@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class NioInitiatorTest {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        NioBootstrapConfiguration configuration = NioBootstrapConfiguration.defaultSetting();
+        NetworkConfiguration configuration = NetworkConfiguration.defaultSetting();
         NioBootstrapImpl<RedisMessage> client = new NioBootstrapImpl<>(false, configuration);
         client.setEncoder(RedisEncoder::new);
         client.setDecoder(RedisDecoder::new);

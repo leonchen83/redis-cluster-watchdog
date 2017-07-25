@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 Leon Chen
+ * Copyright 2016 leon chen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,24 +20,17 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 /**
  * @author Leon Chen
- * @since 1.0.0
+ * @since 2.1.0
  */
-public interface CommandHandler {
-    void handle(Transport<Object> t, String[] message, byte[][] rawMessage);
-
-    default void replyError(Transport<Object> t, String message) {
-        t.write(("-ERR " + message + "\r\n").getBytes(), true);
-    }
-
-    default void replyBulk(Transport<Object> t, String message) {
-        t.write(("$" + message.length() + "\r\n" + message + "\r\n").getBytes(), true);
-    }
-
-    default void reply(Transport<Object> t, String message) {
-        t.write(("+" + message + "\r\n").getBytes(), true);
-    }
-
-    default void replyNumber(Transport<Object> t, String message) {
-        t.write((":" + message + "\r\n").getBytes(), true);
+public class InfoCommandHandler implements CommandHandler {
+    @Override
+    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+        if (message.length == 1 || message.length == 2) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("cluster_enabled:").append(1).append("\r\n");
+            replyBulk(t, builder.toString());
+        } else {
+            replyError(t, "wrong number of arguments for 'info' command");
+        }
     }
 }

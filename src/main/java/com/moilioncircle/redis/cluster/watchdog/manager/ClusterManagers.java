@@ -46,13 +46,15 @@ public class ClusterManagers {
     public ExecutorService worker;
     public ScheduledExecutorService executor;
 
+    public ClusterWatchdog watchdog;
     public ServerState server = new ServerState();
 
     private volatile ReplicationListener replicationListener;
     private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
 
-    public ClusterManagers(ClusterConfiguration configuration) {
+    public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
+        this.watchdog = watchdog;
         this.configuration = configuration;
         this.slots = new ClusterSlotManger(this);
         this.nodes = new ClusterNodeManager(this);

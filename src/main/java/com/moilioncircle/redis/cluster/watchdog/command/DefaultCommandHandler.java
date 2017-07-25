@@ -33,7 +33,12 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     public DefaultCommandHandler(ClusterManagers managers) {
         super(managers);
+        register("ping", new PingCommandHandler());
+        register("info", new InfoCommandHandler());
+        register("dbsize", new DBSizeCommandHandler());
+        register("config", new ConfigCommandHandler(managers));
         register("cluster", new ClusterCommandHandler(managers));
+        register("shutdown", new ShutdownCommandHandler(managers));
     }
 
     @Override
