@@ -15,10 +15,11 @@ public class ServerState {
     public String masterHost;
     public ClusterNode myself;
     public ClusterState cluster;
-    public Map<Transport<RCmbMessage>, ClusterLink> cfd = new ConcurrentHashMap<>();
 
     public long iteration = 0;
     public String previousAddress;
     public long stateSaveTime = 0;
     public long amongMinorityTime = 0;
+
+    public Map<Transport<RCmbMessage>, ClusterLink> cfd = new ConcurrentHashMap<>();
 }

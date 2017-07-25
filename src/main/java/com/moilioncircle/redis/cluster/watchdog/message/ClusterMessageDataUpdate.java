@@ -7,8 +7,8 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @since 1.0.0
  */
 public class ClusterMessageDataUpdate {
-    public long configEpoch;
     public String name;
+    public long configEpoch;
     public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
 
     @Override
