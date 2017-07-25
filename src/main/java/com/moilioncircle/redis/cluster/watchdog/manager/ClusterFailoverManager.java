@@ -23,8 +23,8 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
-import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;

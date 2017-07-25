@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
 
 /**
  * @author Leon Chen
@@ -60,9 +60,9 @@ public class ThinServer {
             @Override
             public void onMessage(Transport<Object> transport, Object message) {
                 managers.executor.execute(() -> {
-                    ConfigInfo previous = valueOf(managers.server.cluster);
+                    ClusterConfigInfo previous = valueOf(managers.server.cluster);
                     managers.commands.handleCommand(transport, (byte[][]) message);
-                    ConfigInfo next = valueOf(managers.server.cluster);
+                    ClusterConfigInfo next = valueOf(managers.server.cluster);
                     if (!previous.equals(next))
                         managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
                 });

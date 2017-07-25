@@ -45,9 +45,9 @@ public class ThinGossip {
     public void start() {
         this.clusterInit();
         managers.executor.scheduleAtFixedRate(() -> {
-            ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
+            ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
             clusterCron();
-            ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+            ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
             if (!previous.equals(next)) managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
@@ -103,7 +103,7 @@ public class ThinGossip {
             managers.server.myself = managers.server.cluster.myself = managers.nodes.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
             logger.info("No cluster configuration found, I'm " + managers.server.myself.name);
             managers.nodes.clusterAddNode(managers.server.myself);
-            ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+            ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
             managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }
 
@@ -123,10 +123,10 @@ public class ThinGossip {
             @Override
             public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                 managers.executor.execute(() -> {
-                    ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
+                    ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
                     ClusterMessage hdr = (ClusterMessage) message;
                     managers.handlers.get(hdr.type).handle(managers.server.cfd.get(transport), hdr);
-                    ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+                    ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
                     if (!previous.equals(next))
                         managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
                 });
@@ -199,10 +199,10 @@ public class ThinGossip {
                     @Override
                     public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
                         managers.executor.execute(() -> {
-                            ConfigInfo previous = ConfigInfo.valueOf(managers.server.cluster);
+                            ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
                             ClusterMessage hdr = (ClusterMessage) message;
                             managers.handlers.get(hdr.type).handle(link, hdr);
-                            ConfigInfo next = ConfigInfo.valueOf(managers.server.cluster);
+                            ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
                             if (!previous.equals(next))
                                 managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
                         });

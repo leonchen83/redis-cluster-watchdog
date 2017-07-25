@@ -13,15 +13,15 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ConfigInfo {
+public class ClusterConfigInfo {
     public long currentEpoch;
     public long lastVoteEpoch;
-    public Map<String, NodeInfo> nodes = new LinkedHashMap<>();
+    public Map<String, ClusterNodeInfo> nodes = new LinkedHashMap<>();
     public String[] migratingSlotsTo = new String[CLUSTER_SLOTS];
     public String[] importingSlotsFrom = new String[CLUSTER_SLOTS];
 
-    public static ConfigInfo valueOf(ClusterState state) {
-        ConfigInfo info = new ConfigInfo();
+    public static ClusterConfigInfo valueOf(ClusterState state) {
+        ClusterConfigInfo info = new ClusterConfigInfo();
         info.nodes = new LinkedHashMap<>();
         info.currentEpoch = state.currentEpoch;
         info.lastVoteEpoch = state.lastVoteEpoch;
@@ -29,7 +29,7 @@ public class ConfigInfo {
         info.importingSlotsFrom = new String[CLUSTER_SLOTS];
 
         for (ClusterNode node : state.nodes.values()) {
-            info.nodes.put(node.name, NodeInfo.valueOf(node, state.myself));
+            info.nodes.put(node.name, ClusterNodeInfo.valueOf(node, state.myself));
         }
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
@@ -48,7 +48,7 @@ public class ConfigInfo {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ConfigInfo that = (ConfigInfo) o;
+        ClusterConfigInfo that = (ClusterConfigInfo) o;
 
         if (currentEpoch != that.currentEpoch) return false;
         if (lastVoteEpoch != that.lastVoteEpoch) return false;

@@ -11,7 +11,7 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @author Leon Chen
  * @since 1.0.0
  */
-public class NodeInfo {
+public class ClusterNodeInfo {
     public int port;
     public String ip;
     public int flags;
@@ -29,7 +29,7 @@ public class NodeInfo {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        NodeInfo nodeInfo = (NodeInfo) o;
+        ClusterNodeInfo nodeInfo = (ClusterNodeInfo) o;
 
         if (port != nodeInfo.port) return false;
         if (busPort != nodeInfo.busPort) return false;
@@ -56,8 +56,8 @@ public class NodeInfo {
         return result;
     }
 
-    public static NodeInfo valueOf(ClusterNode node, ClusterNode myself) {
-        NodeInfo n = new NodeInfo();
+    public static ClusterNodeInfo valueOf(ClusterNode node, ClusterNode myself) {
+        ClusterNodeInfo n = new ClusterNodeInfo();
         n.ip = node.ip;
         n.name = node.name;
         n.port = node.port;

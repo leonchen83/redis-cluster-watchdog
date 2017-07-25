@@ -109,7 +109,7 @@ public class ClusterManagers {
         return r.onGetSlaveOffset();
     }
 
-    public void notifyConfigChanged(ConfigInfo info) {
+    public void notifyConfigChanged(ClusterConfigInfo info) {
         worker.submit(() -> {
             ClusterConfigListener r = this.clusterConfigListener;
             if (r != null) r.onConfigChanged(info);

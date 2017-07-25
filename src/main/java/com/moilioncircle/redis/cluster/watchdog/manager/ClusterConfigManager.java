@@ -1,7 +1,7 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
-import com.moilioncircle.redis.cluster.watchdog.ConfigInfo;
-import com.moilioncircle.redis.cluster.watchdog.NodeInfo;
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo;
+import com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import com.moilioncircle.redis.cluster.watchdog.util.collection.ByteMap;
@@ -166,14 +166,14 @@ public class ClusterConfigManager {
             if (maxEpoch > server.cluster.currentEpoch) {
                 server.cluster.currentEpoch = maxEpoch;
             }
-            managers.notifyConfigChanged(ConfigInfo.valueOf(server.cluster));
+            managers.notifyConfigChanged(ClusterConfigInfo.valueOf(server.cluster));
             return true;
         } catch (Throwable e) {
             return false;
         }
     }
 
-    public boolean clusterSaveConfig(ConfigInfo info, boolean force) {
+    public boolean clusterSaveConfig(ClusterConfigInfo info, boolean force) {
         BufferedWriter r = null;
         try {
             File file = new File(managers.configuration.getClusterConfigFile());
@@ -204,7 +204,7 @@ public class ClusterConfigManager {
                 map(Map.Entry::getValue).collect(joining(","));
     }
 
-    public static String clusterGenNodeDescription(ConfigInfo info, NodeInfo node) {
+    public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node) {
         StringBuilder builder = new StringBuilder();
 
         builder.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip);
@@ -246,9 +246,9 @@ public class ClusterConfigManager {
         return builder.toString();
     }
 
-    public static String clusterGenNodesDescription(ConfigInfo info, int filter) {
+    public static String clusterGenNodesDescription(ClusterConfigInfo info, int filter) {
         StringBuilder builder = new StringBuilder();
-        for (NodeInfo node : info.nodes.values()) {
+        for (ClusterNodeInfo node : info.nodes.values()) {
             if ((node.flags & filter) != 0) continue;
             builder.append(clusterGenNodeDescription(info, node));
             builder.append("\n");

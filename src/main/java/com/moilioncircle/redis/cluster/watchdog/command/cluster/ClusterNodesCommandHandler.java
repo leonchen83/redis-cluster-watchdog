@@ -20,7 +20,7 @@ import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
-import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.clusterGenNodesDescription;
 
 /**

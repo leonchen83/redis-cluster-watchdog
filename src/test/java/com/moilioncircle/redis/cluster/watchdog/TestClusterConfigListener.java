@@ -22,7 +22,7 @@ package com.moilioncircle.redis.cluster.watchdog;
  */
 public class TestClusterConfigListener implements ClusterConfigListener {
     @Override
-    public void onConfigChanged(ConfigInfo info) {
+    public void onConfigChanged(ClusterConfigInfo info) {
         System.out.println(info);
     }
 }
