@@ -19,10 +19,6 @@ public class ClusterLink {
 
     @Override
     public String toString() {
-        return "ClusterLink{" +
-                "createTime=" + createTime +
-                ", node=" + node +
-                ", fd=" + fd +
-                '}';
+        return "ClusterLink{" + "createTime=" + createTime + ", node=" + node + ", fd=" + fd + '}';
     }
 }

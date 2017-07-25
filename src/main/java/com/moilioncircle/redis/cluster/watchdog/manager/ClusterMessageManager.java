@@ -105,8 +105,8 @@ public class ClusterMessageManager {
         gossip.flags = n.flags;
         gossip.busPort = n.busPort;
         gossip.reserved = new byte[4];
-        gossip.pingTime = n.pingTime / 1000;
-        gossip.pongTime = n.pongTime / 1000;
+        gossip.pingTime = n.pingTime;
+        gossip.pongTime = n.pongTime;
         hdr.data.gossips.add(gossip);
     }
 

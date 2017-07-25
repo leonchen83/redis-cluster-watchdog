@@ -13,9 +13,6 @@ public class ClusterMessageDataUpdate {
 
     @Override
     public String toString() {
-        return "ClusterMessageDataUpdate{" +
-                "configEpoch=" + configEpoch +
-                ", name='" + name + '\'' +
-                '}';
+        return "ClusterMessageDataUpdate{" + "configEpoch=" + configEpoch + ", name='" + name + '\'' + '}';
     }
 }
