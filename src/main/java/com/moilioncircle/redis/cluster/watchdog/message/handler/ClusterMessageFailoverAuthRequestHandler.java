@@ -65,16 +65,15 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(hdr.slots, i)) continue;
-            if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch <= hdr.configEpoch)
-                continue;
-
+            if (server.cluster.slots[i] == null) continue;
+            if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue;
             logger.warn("Failover auth denied to " + node.name + ": slot %d epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + hdr.configEpoch + ")");
             return;
         }
 
         managers.messages.clusterSendFailoverAuth(node);
-        server.cluster.lastVoteEpoch = server.cluster.currentEpoch;
         node.master.votedTime = System.currentTimeMillis();
+        server.cluster.lastVoteEpoch = server.cluster.currentEpoch;
         logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
     }
 }
