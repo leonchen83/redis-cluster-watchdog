@@ -204,7 +204,7 @@ public class ClusterConfigManager {
                 map(Map.Entry::getValue).collect(joining(","));
     }
 
-    public String clusterGenNodeDescription(ConfigInfo info, NodeInfo node) {
+    public static String clusterGenNodeDescription(ConfigInfo info, NodeInfo node) {
         StringBuilder builder = new StringBuilder();
 
         builder.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip);
@@ -246,7 +246,7 @@ public class ClusterConfigManager {
         return builder.toString();
     }
 
-    public String clusterGenNodesDescription(ConfigInfo info, int filter) {
+    public static String clusterGenNodesDescription(ConfigInfo info, int filter) {
         StringBuilder builder = new StringBuilder();
         for (NodeInfo node : info.nodes.values()) {
             if ((node.flags & filter) != 0) continue;

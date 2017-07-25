@@ -55,7 +55,7 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
         out.writeBytes(hdr.reserved);
         out.writeShort(hdr.busPort);
         out.writeShort(hdr.flags);
-        out.writeByte(hdr.state);
+        out.writeByte(hdr.state.getState());
         out.writeBytes(hdr.messageFlags);
         switch (hdr.type) {
             case CLUSTERMSG_TYPE_PING:

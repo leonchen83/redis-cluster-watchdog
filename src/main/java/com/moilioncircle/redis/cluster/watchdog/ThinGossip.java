@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.concurrent.*;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 
 /**

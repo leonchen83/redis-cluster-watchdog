@@ -143,7 +143,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         if (link.equals(node.link)) return false;
 
         String ip = link.fd.getRemoteAddress(hdr.ip);
-        if (node.port == hdr.port && node.busPort == hdr.busPort && ip.equals(node.ip)) return false;
+        if (node.port == hdr.port && node.busPort == hdr.busPort && ip.equalsIgnoreCase(node.ip)) return false;
         node.ip = ip;
         node.port = hdr.port;
         node.busPort = hdr.busPort;

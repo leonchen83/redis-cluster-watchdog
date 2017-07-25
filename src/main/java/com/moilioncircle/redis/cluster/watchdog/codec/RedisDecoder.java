@@ -6,8 +6,8 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CHARSET;
 import static java.lang.Integer.parseInt;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author Leon Chen
@@ -40,7 +40,7 @@ public class RedisDecoder extends ByteToMessageDecoder {
                     if (in.readByte() != '\n') len++;
                     else break;
                 }
-                len = parseInt((String) in.getCharSequence(index, len, CHARSET));
+                len = parseInt((String) in.getCharSequence(index, len, UTF_8));
                 if (len == -1) return null;
                 rs = new byte[len];
                 in.readBytes(rs);
@@ -63,7 +63,7 @@ public class RedisDecoder extends ByteToMessageDecoder {
                     if (in.readByte() != '\n') len++;
                     else break;
                 }
-                len = parseInt((String) in.getCharSequence(index, len, CHARSET));
+                len = parseInt((String) in.getCharSequence(index, len, UTF_8));
                 if (len == -1) return null;
                 byte[][] ary = new byte[len][];
                 for (int i = 0; i < len; i++) ary[i] = (byte[]) decode(ctx, in);

@@ -7,6 +7,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -33,7 +35,7 @@ public class ClusterStateManager {
                 && now - server.stateSaveTime < CLUSTER_WRITABLE_DELAY)
             return;
 
-        byte state = CLUSTER_OK;
+        ClusterState state = CLUSTER_OK;
 
         if (managers.configuration.isClusterRequireFullCoverage()) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
@@ -70,7 +72,7 @@ public class ClusterStateManager {
 
             logger.info("Cluster state changed: " + (state == CLUSTER_OK ? "ok" : "fail"));
             server.cluster.state = state;
-            managers.notifyStateChanged(ClusterState.valueOf(state));
+            managers.notifyStateChanged(state);
         }
     }
 

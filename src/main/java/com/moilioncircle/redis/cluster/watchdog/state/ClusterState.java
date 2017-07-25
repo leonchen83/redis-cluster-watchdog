@@ -6,7 +6,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_COUNT;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
 
 /**
  * @author Leon Chen
@@ -17,9 +19,8 @@ public class ClusterState {
     public long pFailNodes = 0;
     public long currentEpoch = 0;
     public long lastVoteEpoch = 0;
-    public byte state = CLUSTER_FAIL;
-    public ClusterNode myself = null;
     public int failoverAuthRank = 0;
+    public ClusterNode myself = null;
     public long failoverAuthTime = 0;
     public int failoverAuthCount = 0;
     public long failoverAuthEpoch = 0;
@@ -31,6 +32,7 @@ public class ClusterState {
     public ClusterNode[] migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
     public ClusterNode[] importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
     public Map<String, Tuple2<Long, ClusterNode>> blacklist = new LinkedHashMap<>();
+    public com.moilioncircle.redis.cluster.watchdog.ClusterState state = CLUSTER_FAIL;
 
     @Override
     public String toString() {

@@ -21,12 +21,22 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @since 1.0.0
  */
 public enum ClusterState {
-    CLUSTER_OK((byte) 0), CLUSTER_FAIL((byte) 1);
+    CLUSTER_OK((byte) 0, "ok"), CLUSTER_FAIL((byte) 1, "fail");
 
-    private byte state;
+    private final byte state;
+    private final String display;
 
-    ClusterState(byte state) {
+    ClusterState(byte state, String display) {
         this.state = state;
+        this.display = display;
+    }
+
+    public byte getState() {
+        return state;
+    }
+
+    public String getDisplay() {
+        return display;
     }
 
     public static ClusterState valueOf(byte state) {

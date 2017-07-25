@@ -1,5 +1,7 @@
 package com.moilioncircle.redis.cluster.watchdog.message;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterState;
+
 import java.util.Arrays;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS_BYTES;
@@ -14,7 +16,6 @@ public class ClusterMessage implements RCmbMessage {
     public String ip;
     public int flags;
     public int count;
-    public byte state;
     public int length;
     public int version;
     public String name;
@@ -24,6 +25,7 @@ public class ClusterMessage implements RCmbMessage {
     public String signature;
     public long configEpoch;
     public long currentEpoch;
+    public ClusterState state;
     public byte[] reserved = new byte[34];
     public byte[] messageFlags = new byte[3];
     public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];

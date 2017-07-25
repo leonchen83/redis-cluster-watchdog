@@ -21,6 +21,7 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import static com.moilioncircle.redis.cluster.watchdog.ConfigInfo.valueOf;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.clusterGenNodesDescription;
 
 /**
  * @author Leon Chen
@@ -38,6 +39,6 @@ public class ClusterNodesCommandHandler extends AbstractCommandHandler {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments");
             return;
         }
-        replyBulk(t, managers.configs.clusterGenNodesDescription(valueOf(server.cluster), 0));
+        replyBulk(t, clusterGenNodesDescription(valueOf(server.cluster), 0));
     }
 }

@@ -43,7 +43,6 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        String[] stats = {"ok", "fail", "needhelp"};
         int assigned = 0, normal = 0, fail = 0, pFail = 0;
         for (int j = 0; j < CLUSTER_SLOTS; j++) {
             ClusterNode node = server.cluster.slots[j];
@@ -66,7 +65,7 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
         }
 
         StringBuilder info = new StringBuilder();
-        info.append("cluster_state:").append(stats[server.cluster.state]).append("\r\n")
+        info.append("cluster_state:").append(server.cluster.state.getDisplay()).append("\r\n")
                 .append("cluster_slots_assigned:").append(assigned).append("\r\n")
                 .append("cluster_slots_ok:").append(normal).append("\r\n")
                 .append("cluster_slots_pfail:").append(pFail).append("\r\n")

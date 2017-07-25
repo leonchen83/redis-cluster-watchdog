@@ -10,6 +10,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterState.valueOf;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author Leon Chen
@@ -27,7 +29,7 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
         in.markReaderIndex();
         try {
             ClusterMessage hdr = new ClusterMessage();
-            hdr.signature = (String) in.readCharSequence(4, CHARSET);
+            hdr.signature = (String) in.readCharSequence(4, UTF_8);
             hdr.length = in.readInt();
             if (in.readableBytes() < hdr.length - 8) {
                 in.resetReaderIndex();
@@ -47,7 +49,7 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
             in.readBytes(hdr.reserved);
             hdr.busPort = in.readUnsignedShort();
             hdr.flags = in.readUnsignedShort();
-            hdr.state = in.readByte();
+            hdr.state = valueOf(in.readByte());
             in.readBytes(hdr.messageFlags);
             switch (hdr.type) {
                 case CLUSTERMSG_TYPE_PING:
@@ -95,8 +97,8 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
         if (Arrays.equals(ary, bytes)) return null;
         for (int i = 0; i < ary.length; i++) {
             if (ary[i] != 0) continue;
-            return new String(ary, 0, i, CHARSET);
+            return new String(ary, 0, i, UTF_8);
         }
-        return new String(ary, CHARSET);
+        return new String(ary, UTF_8);
     }
 }
