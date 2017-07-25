@@ -10,7 +10,7 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
-import com.moilioncircle.redis.cluster.watchdog.util.net.session.SessionImpl;
+import com.moilioncircle.redis.cluster.watchdog.util.net.session.DefaultSession;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.TransportListener;
 import org.apache.commons.logging.Log;
@@ -116,7 +116,7 @@ public class ThinGossip {
             public void onConnected(Transport<RCmbMessage> transport) {
                 logger.info("[acceptor] > " + transport);
                 ClusterLink link = managers.connections.createClusterLink(null);
-                link.fd = new SessionImpl<>(transport);
+                link.fd = new DefaultSession<>(transport);
                 managers.server.cfd.put(transport, link);
             }
 
@@ -218,7 +218,7 @@ public class ThinGossip {
                 });
                 try {
                     fd.connect(node.ip, node.busPort).get();
-                    link.fd = new SessionImpl<>(fd.getTransport());
+                    link.fd = new DefaultSession<>(fd.getTransport());
                 } catch (InterruptedException | ExecutionException e) {
                     if (e instanceof InterruptedException) {
                         Thread.currentThread().interrupt();

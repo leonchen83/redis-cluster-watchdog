@@ -12,11 +12,11 @@ import java.net.InetSocketAddress;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class SessionImpl<T> implements Session<T> {
+public class DefaultSession<T> implements Session<T> {
 
     protected final Transport<T> transport;
 
-    public SessionImpl(Transport<T> transport) {
+    public DefaultSession(Transport<T> transport) {
         this.transport = transport;
     }
 
