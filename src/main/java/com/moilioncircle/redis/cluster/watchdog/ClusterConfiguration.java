@@ -24,7 +24,6 @@ public class ClusterConfiguration {
 
     public static ClusterConfiguration defaultSetting() {
         ClusterConfiguration configuration = new ClusterConfiguration();
-        configuration.validate();
         return configuration;
     }
 
@@ -34,7 +33,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setVerbose(boolean verbose) {
         this.verbose = verbose;
-        validate();
         return this;
     }
 
@@ -44,7 +42,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setAsMaster(boolean asMaster) {
         this.asMaster = asMaster;
-        validate();
         return this;
     }
 
@@ -54,7 +51,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterAnnounceIp(String clusterAnnounceIp) {
         this.clusterAnnounceIp = clusterAnnounceIp;
-        validate();
         return this;
     }
 
@@ -64,7 +60,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterNodeTimeout(long clusterNodeTimeout) {
         this.clusterNodeTimeout = clusterNodeTimeout;
-        validate();
         return this;
     }
 
@@ -74,7 +69,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterAnnouncePort(int clusterAnnouncePort) {
         this.clusterAnnouncePort = clusterAnnouncePort;
-        validate();
         return this;
     }
 
@@ -84,7 +78,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterConfigFile(String clusterConfigFile) {
         this.clusterConfigFile = clusterConfigFile;
-        validate();
         return this;
     }
 
@@ -94,7 +87,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterMigrationBarrier(int clusterMigrationBarrier) {
         this.clusterMigrationBarrier = clusterMigrationBarrier;
-        validate();
         return this;
     }
 
@@ -104,7 +96,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterAnnounceBusPort(int clusterAnnounceBusPort) {
         this.clusterAnnounceBusPort = clusterAnnounceBusPort;
-        validate();
         return this;
     }
 
@@ -114,7 +105,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterRequireFullCoverage(boolean clusterRequireFullCoverage) {
         this.clusterRequireFullCoverage = clusterRequireFullCoverage;
-        validate();
         return this;
     }
 
@@ -124,11 +114,10 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setNetworkConfiguration(NetworkConfiguration networkConfiguration) {
         this.networkConfiguration = networkConfiguration;
-        validate();
         return this;
     }
 
-    private void validate() {
+    public void validate() {
         if (clusterAnnouncePort <= 0 || clusterAnnouncePort > 65535) {
             throw new ClusterConfigurationException("illegal port" + clusterAnnouncePort);
         }
