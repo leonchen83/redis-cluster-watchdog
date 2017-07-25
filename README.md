@@ -24,7 +24,7 @@ $./create-cluster create
 
 ```java  
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+    public static void main(String[] args) {
         ClusterWatchdog watchdog = new RedisClusterWatchdog(ClusterConfiguration.defaultSetting().setClusterAnnouncePort(10001));
         watchdog.start();
     }
