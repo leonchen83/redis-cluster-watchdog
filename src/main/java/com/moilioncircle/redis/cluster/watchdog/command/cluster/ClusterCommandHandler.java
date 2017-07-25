@@ -50,7 +50,7 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
         register("replicate", new ClusterReplicateCommandHandler(managers));
         register("saveconfig", new ClusterSaveConfigCommandHandler(managers));
         register("flushslots", new ClusterFlushSlotsCommandHandler(managers));
-        register("countkeysinslot", new ClusterCountKeyInSlotCommandHandler(managers));
+        register("countkeysinslot", new ClusterCountKeysInSlotCommandHandler(managers));
         register("set-config-epoch", new ClusterSetConfigEpochCommandHandler(managers));
         register("count-failure-reports", new ClusterCountFailureReportsCommandHandler(managers));
     }

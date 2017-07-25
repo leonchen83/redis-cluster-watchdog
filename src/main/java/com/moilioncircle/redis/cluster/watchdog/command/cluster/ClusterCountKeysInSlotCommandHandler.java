@@ -20,13 +20,15 @@ import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
+import static java.lang.Integer.parseInt;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ClusterCountKeyInSlotCommandHandler extends AbstractCommandHandler {
+public class ClusterCountKeysInSlotCommandHandler extends AbstractCommandHandler {
 
-    public ClusterCountKeyInSlotCommandHandler(ClusterManagers managers) {
+    public ClusterCountKeysInSlotCommandHandler(ClusterManagers managers) {
         super(managers);
     }
 
@@ -37,6 +39,16 @@ public class ClusterCountKeyInSlotCommandHandler extends AbstractCommandHandler 
             return;
         }
 
-        replyError(t, "Unsupported operation [cluster " + message[1] + "]");
+        try {
+            int slot = parseInt(message[2]);
+            if (slot <= 0 || slot > 65535) {
+                replyError(t, "Invalid slot:" + slot);
+                return;
+            }
+
+            replyNumber(t, "0");
+        } catch (Exception e) {
+            replyError(t, "Invalid slot:" + message[2]);
+        }
     }
 }
