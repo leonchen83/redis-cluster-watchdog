@@ -17,7 +17,6 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
-import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageData;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
@@ -89,7 +88,8 @@ public class ClusterMessageManager {
         hdr.currentEpoch = server.cluster.currentEpoch;
         hdr.configEpoch = master.configEpoch;
 
-        hdr.offset = 0;
+        if (nodeIsSlave(server.myself))
+            hdr.offset = managers.replications.replicationGetSlaveOffset();
         return hdr;
     }
 
@@ -104,25 +104,24 @@ public class ClusterMessageManager {
         gossip.port = n.port;
         gossip.flags = n.flags;
         gossip.busPort = n.busPort;
-        gossip.reserved = new byte[4];
         gossip.pingTime = n.pingTime;
         gossip.pongTime = n.pongTime;
+        gossip.reserved = new byte[4];
         hdr.data.gossips.add(gossip);
     }
 
     public void clusterSendPing(ClusterLink link, int type) {
         int actives = server.cluster.nodes.size() - 2;
         int wanted = server.cluster.nodes.size() / 10;
-        if (wanted < 3) wanted = 3;
-        if (wanted > actives) wanted = actives;
-        int pFailWanted = (int) server.cluster.pFailNodes;
+        int fWanted = (int) server.cluster.pFailNodes;
+        wanted = Math.min(Math.max(wanted, 3), actives);
 
         if (link.node != null && type == CLUSTERMSG_TYPE_PING)
             link.node.pingTime = System.currentTimeMillis();
+
         ClusterMessage hdr = clusterBuildMessageHdr(type);
-        hdr.data = new ClusterMessageData();
-        int maxIterations = wanted * 3, gossips = 0;
-        while (actives > 0 && gossips < wanted && maxIterations-- > 0) {
+        int max = wanted * 3, gossips = 0;
+        while (actives > 0 && gossips < wanted && max-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
@@ -140,15 +139,15 @@ public class ClusterMessageManager {
             gossips++;
         }
 
-        if (pFailWanted != 0) {
+        if (fWanted != 0) {
             List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
-            for (int i = 0; i < nodes.size() && pFailWanted > 0; i++) {
+            for (int i = 0; i < nodes.size() && fWanted > 0; i++) {
                 ClusterNode node = nodes.get(i);
                 if (nodeInHandshake(node) || nodeWithoutAddr(node) || !nodePFailed(node)) continue;
                 clusterSetGossipEntry(hdr, node);
                 actives--;
                 gossips++;
-                pFailWanted--;
+                fWanted--;
             }
         }
 
@@ -161,7 +160,9 @@ public class ClusterMessageManager {
             if (node.link == null) continue;
             if (Objects.equals(node, server.myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
-                boolean local = nodeIsSlave(node) && node.master != null && (Objects.equals(node.master, server.myself) || Objects.equals(node.master, server.myself.master));
+                boolean local = nodeIsSlave(node)
+                        && node.master != null
+                        && (Objects.equals(node.master, server.myself) || Objects.equals(node.master, server.myself.master));
                 if (!local) continue;
             }
             clusterSendPing(node.link, CLUSTERMSG_TYPE_PONG);

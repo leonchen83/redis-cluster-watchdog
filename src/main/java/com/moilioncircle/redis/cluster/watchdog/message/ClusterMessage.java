@@ -24,10 +24,10 @@ public class ClusterMessage implements RCmbMessage {
     public String signature;
     public long configEpoch;
     public long currentEpoch;
-    public ClusterMessageData data;
     public byte[] reserved = new byte[34];
     public byte[] messageFlags = new byte[3];
     public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
+    public ClusterMessageData data = new ClusterMessageData();
 
     @Override
     public String toString() {

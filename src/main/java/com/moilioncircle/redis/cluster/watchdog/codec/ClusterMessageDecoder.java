@@ -1,11 +1,11 @@
 package com.moilioncircle.redis.cluster.watchdog.codec;
 
-import com.moilioncircle.redis.cluster.watchdog.message.*;
+import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
+import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -53,8 +53,6 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
                 case CLUSTERMSG_TYPE_PING:
                 case CLUSTERMSG_TYPE_PONG:
                 case CLUSTERMSG_TYPE_MEET:
-                    hdr.data = new ClusterMessageData();
-                    hdr.data.gossips = new ArrayList<>();
                     for (int i = 0; i < hdr.count; i++) {
                         ClusterMessageDataGossip gossip = new ClusterMessageDataGossip();
                         gossip.name = truncate(in, CLUSTER_NODE_NULL_NAME);
@@ -69,20 +67,14 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
                     }
                     break;
                 case CLUSTERMSG_TYPE_FAIL:
-                    hdr.data = new ClusterMessageData();
-                    hdr.data.fail = new ClusterMessageDataFail();
                     hdr.data.fail.name = truncate(in, CLUSTER_NODE_NULL_NAME);
                     break;
                 case CLUSTERMSG_TYPE_PUBLISH:
-                    hdr.data = new ClusterMessageData();
-                    hdr.data.publish = new ClusterMessageDataPublish();
                     hdr.data.publish.channelLength = in.readInt();
                     hdr.data.publish.messageLength = in.readInt();
                     in.readBytes(hdr.data.publish.bulkData);
                     break;
                 case CLUSTERMSG_TYPE_UPDATE:
-                    hdr.data = new ClusterMessageData();
-                    hdr.data.config = new ClusterMessageDataUpdate();
                     hdr.data.config.configEpoch = in.readLong();
                     hdr.data.config.name = truncate(in, CLUSTER_NODE_NULL_NAME);
                     in.readBytes(hdr.data.config.slots);

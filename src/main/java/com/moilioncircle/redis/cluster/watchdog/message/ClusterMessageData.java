@@ -8,10 +8,10 @@ import java.util.List;
  * @since 1.0.0
  */
 public class ClusterMessageData {
-    public ClusterMessageDataFail fail;
-    public ClusterMessageDataUpdate config;
-    public ClusterMessageDataPublish publish;
     public List<ClusterMessageDataGossip> gossips = new ArrayList<>();
+    public ClusterMessageDataFail fail = new ClusterMessageDataFail();
+    public ClusterMessageDataUpdate config = new ClusterMessageDataUpdate();
+    public ClusterMessageDataPublish publish = new ClusterMessageDataPublish();
 
     @Override
     public String toString() {
