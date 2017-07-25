@@ -12,14 +12,4 @@ public class ClusterMessageData {
     public ClusterMessageDataFail fail = new ClusterMessageDataFail();
     public ClusterMessageDataUpdate config = new ClusterMessageDataUpdate();
     public ClusterMessageDataPublish publish = new ClusterMessageDataPublish();
-
-    @Override
-    public String toString() {
-        return "ClusterMessageData{" +
-                "gossips=" + gossips +
-                ", fail=" + fail +
-                ", publish=" + publish +
-                ", config=" + config +
-                '}';
-    }
 }

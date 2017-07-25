@@ -56,7 +56,7 @@ public class ClusterMessageManager {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {
-            logger.warn("send RCmb message failed, link: " + link + ",hdr:" + hdr);
+            logger.warn("send RCmb message failed, link: " + link.fd + ",message type:" + hdr.type);
         }
     }
 

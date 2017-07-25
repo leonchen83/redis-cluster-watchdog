@@ -12,12 +12,4 @@ public class ClusterNodeFailReport {
         this.createTime = System.currentTimeMillis();
         this.node = node;
     }
-
-    @Override
-    public String toString() {
-        return "ClusterNodeFailReport{" +
-                "createTime=" + createTime +
-                ", node=" + node +
-                '}';
-    }
 }

@@ -2,7 +2,6 @@ package com.moilioncircle.redis.cluster.watchdog.state;
 
 import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple2;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -33,19 +32,4 @@ public class ClusterState {
     public ClusterNode[] importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
     public Map<String, Tuple2<Long, ClusterNode>> blacklist = new LinkedHashMap<>();
     public com.moilioncircle.redis.cluster.watchdog.ClusterState state = CLUSTER_FAIL;
-
-    @Override
-    public String toString() {
-        return "ClusterState{" +
-                "size=" + size +
-                ", state=" + state +
-                ", currentEpoch=" + currentEpoch +
-                ", myself=" + myself +
-                ", pFailNodes=" + pFailNodes +
-                ", nodes=" + nodes +
-                ", blacklist=" + blacklist +
-                ", messagesSent=" + Arrays.toString(messagesSent) +
-                ", messagesReceived=" + Arrays.toString(messagesReceived) +
-                '}';
-    }
 }

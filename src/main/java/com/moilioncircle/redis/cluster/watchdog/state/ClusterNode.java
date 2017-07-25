@@ -33,22 +33,4 @@ public class ClusterNode {
     public ClusterNode() {
         this.createTime = System.currentTimeMillis();
     }
-
-    @Override
-    public String toString() {
-        return "ClusterNode{" +
-                "port=" + port +
-                ", busPort=" + busPort +
-                ", ip='" + ip + '\'' +
-                ", flags=" + flags +
-                ", createTime=" + createTime +
-                ", name='" + name + '\'' +
-                ", pingTime=" + pingTime +
-                ", failTime=" + failTime +
-                ", offset=" + offset +
-                ", configEpoch=" + configEpoch +
-                ", pongTime=" + pongTime +
-                ", isolatedTime=" + isolatedTime +
-                '}';
-    }
 }

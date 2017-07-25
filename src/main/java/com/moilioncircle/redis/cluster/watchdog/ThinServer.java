@@ -54,7 +54,7 @@ public class ThinServer {
         cfd.setTransportListener(new TransportListener<Object>() {
             @Override
             public void onConnected(Transport<Object> transport) {
-                logger.info("[acceptor] > " + transport.toString());
+                logger.info("[acceptor] > " + transport);
             }
 
             @Override
@@ -70,7 +70,7 @@ public class ThinServer {
 
             @Override
             public void onDisconnected(Transport<Object> transport, Throwable cause) {
-                logger.info("[acceptor] < " + transport.toString());
+                logger.info("[acceptor] < " + transport);
             }
         });
         try {

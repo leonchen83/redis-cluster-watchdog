@@ -25,7 +25,7 @@ public class ClusterMessagePingHandler extends AbstractClusterMessageHandler {
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Ping packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
+            logger.debug("Ping packet received: node:" + link.node == null ? "(nil)" : link.node.name);
         }
 
         if (server.myself.ip == null && managers.configuration.getClusterAnnounceIp() == null) {

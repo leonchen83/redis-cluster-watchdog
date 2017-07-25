@@ -10,9 +10,4 @@ public class ClusterMessageDataUpdate {
     public String name;
     public long configEpoch;
     public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
-
-    @Override
-    public String toString() {
-        return "ClusterMessageDataUpdate{" + "configEpoch=" + configEpoch + ", name='" + name + '\'' + '}';
-    }
 }

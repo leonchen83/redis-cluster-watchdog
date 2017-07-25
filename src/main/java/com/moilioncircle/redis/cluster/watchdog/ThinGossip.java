@@ -114,7 +114,7 @@ public class ThinGossip {
         cfd.setTransportListener(new TransportListener<RCmbMessage>() {
             @Override
             public void onConnected(Transport<RCmbMessage> transport) {
-                logger.info("[acceptor] > " + transport.toString());
+                logger.info("[acceptor] > " + transport);
                 ClusterLink link = managers.connections.createClusterLink(null);
                 link.fd = new SessionImpl<>(transport);
                 managers.server.cfd.put(transport, link);
@@ -134,7 +134,7 @@ public class ThinGossip {
 
             @Override
             public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                logger.info("[acceptor] < " + transport.toString());
+                logger.info("[acceptor] < " + transport);
                 ClusterLink link = managers.server.cfd.remove(transport);
                 managers.connections.freeClusterLink(link);
             }
@@ -192,7 +192,7 @@ public class ThinGossip {
                 fd.setTransportListener(new TransportListener<RCmbMessage>() {
                     @Override
                     public void onConnected(Transport<RCmbMessage> transport) {
-                        logger.info("[initiator] > " + transport.toString());
+                        logger.info("[initiator] > " + transport);
                         fds.put(transport.getId(), transport);
                     }
 
@@ -210,7 +210,7 @@ public class ThinGossip {
 
                     @Override
                     public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                        logger.info("[initiator] < " + transport.toString());
+                        logger.info("[initiator] < " + transport);
                         fds.remove(transport.getId());
                         managers.connections.freeClusterLink(link);
                         fd.shutdown();

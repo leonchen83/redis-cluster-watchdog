@@ -57,7 +57,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         managers.states.clusterUpdateState();
         long ed = System.nanoTime();
         if (managers.configuration.isVerbose())
-            logger.debug("request type: " + hdr.type + ", elapsed time: " + (ed - st));
+            logger.debug("message type: " + hdr.type + ", elapsed time: " + (ed - st));
         return true;
     }
 

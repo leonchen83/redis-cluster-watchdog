@@ -69,10 +69,6 @@ public class ConfigInfo {
 
     @Override
     public String toString() {
-        return "ConfigInfo{" +
-                "currentEpoch=" + currentEpoch +
-                ", lastVoteEpoch=" + lastVoteEpoch +
-                ", nodes=" + nodes +
-                '}';
+        return "Config:[" + "currentEpoch=" + currentEpoch + ", lastVoteEpoch=" + lastVoteEpoch + ", nodes=" + nodes + ']';
     }
 }

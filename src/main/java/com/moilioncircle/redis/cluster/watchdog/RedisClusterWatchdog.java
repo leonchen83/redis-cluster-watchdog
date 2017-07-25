@@ -16,14 +16,31 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ClusterConfigListenerTest {
-    public static void main(String[] args) {
-        ClusterWatchdog watchdog = new RedisClusterWatchdog(ClusterConfiguration.defaultSetting());
-        watchdog.setClusterConfigListener(new TestClusterConfigListener());
-        watchdog.start();
+public class RedisClusterWatchdog extends AbstractClusterWatchdog {
+    protected final ThinServer server;
+    protected final ThinGossip gossip;
+
+    protected RedisClusterWatchdog(ClusterConfiguration configuration) {
+        super(configuration);
+        this.server = new ThinServer(managers);
+        this.gossip = new ThinGossip(managers);
+    }
+
+    @Override
+    public void start() {
+        server.start();
+        gossip.start();
+    }
+
+    @Override
+    public void stop(long timeout, TimeUnit unit) {
+        gossip.stop(timeout, unit);
+        server.stop(timeout, unit);
     }
 }

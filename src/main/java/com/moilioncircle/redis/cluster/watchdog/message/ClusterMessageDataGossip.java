@@ -13,17 +13,4 @@ public class ClusterMessageDataGossip {
     public long pingTime;
     public long pongTime;
     public byte[] reserved = new byte[4];
-
-    @Override
-    public String toString() {
-        return "ClusterMessageDataGossip{" +
-                "name='" + name + '\'' +
-                ", pingTime=" + pingTime +
-                ", pongTime=" + pongTime +
-                ", ip='" + ip + '\'' +
-                ", port=" + port +
-                ", busPort=" + busPort +
-                ", flags=" + flags +
-                '}';
-    }
 }

@@ -74,17 +74,10 @@ public class NodeInfo {
 
     @Override
     public String toString() {
-        return "NodeInfo{" +
-                "port=" + port +
-                ", ip='" + ip + '\'' +
-                ", flags=" + flags +
-                ", busPort=" + busPort +
-                ", name='" + name + '\'' +
-                ", link='" + link + '\'' +
-                ", pingTime=" + pingTime +
-                ", pongTime=" + pongTime +
-                ", master='" + master + '\'' +
-                ", configEpoch=" + configEpoch +
-                '}';
+        return "Node:[" +
+                ", address='" + (ip == null ? "0.0.0.0" : ip) + ":" + port + "@" + busPort + '\'' +
+                ", flags=" + flags + ", name='" + name + '\'' + ", link='" + link + '\'' +
+                ", pingTime=" + pingTime + ", pongTime=" + pongTime + ", master='" + master + '\'' +
+                ", configEpoch=" + configEpoch + ']';
     }
 }

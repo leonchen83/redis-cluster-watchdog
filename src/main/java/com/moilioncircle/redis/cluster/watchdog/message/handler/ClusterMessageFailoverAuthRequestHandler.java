@@ -22,7 +22,7 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Failover auth request packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
+            logger.debug("Failover auth request packet received: node:" + link.node == null ? "(nil)" : link.node.name);
         }
         if (sender == null) return true;
         clusterSendFailoverAuthIfNeeded(sender, hdr);

@@ -24,7 +24,7 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Pong packet received: node:" + link.node + ",name:" + sender + ",message:" + hdr);
+            logger.debug("Pong packet received: node:" + link.node == null ? "(nil)" : link.node.name);
         }
 
         if (link.node != null) {

@@ -16,9 +16,4 @@ public class ClusterLink {
     public ClusterLink() {
         this.createTime = System.currentTimeMillis();
     }
-
-    @Override
-    public String toString() {
-        return "ClusterLink{" + "createTime=" + createTime + ", node=" + node + ", fd=" + fd + '}';
-    }
 }

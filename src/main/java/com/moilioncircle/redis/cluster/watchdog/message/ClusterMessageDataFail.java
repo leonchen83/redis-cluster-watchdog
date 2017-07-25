@@ -6,11 +6,4 @@ package com.moilioncircle.redis.cluster.watchdog.message;
  */
 public class ClusterMessageDataFail {
     public String name;
-
-    @Override
-    public String toString() {
-        return "ClusterMessageDataFail{" +
-                "name='" + name + '\'' +
-                '}';
-    }
 }

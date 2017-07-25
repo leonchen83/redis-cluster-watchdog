@@ -70,7 +70,7 @@ public class ClusterStateManager {
                 return;
             }
 
-            logger.info("Cluster state changed: " + (state == CLUSTER_OK ? "ok" : "fail"));
+            logger.info("Cluster state changed: " + state.getDisplay());
             server.cluster.state = state;
             managers.notifyStateChanged(state);
         }
