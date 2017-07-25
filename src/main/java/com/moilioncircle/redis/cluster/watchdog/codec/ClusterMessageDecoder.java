@@ -58,8 +58,8 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
                     for (int i = 0; i < hdr.count; i++) {
                         ClusterMessageDataGossip gossip = new ClusterMessageDataGossip();
                         gossip.name = truncate(in, CLUSTER_NODE_NULL_NAME);
-                        gossip.pingTime = in.readInt() * 1000;
-                        gossip.pongTime = in.readInt() * 1000;
+                        gossip.pingTime = in.readInt() * 1000L;
+                        gossip.pongTime = in.readInt() * 1000L;
                         gossip.ip = truncate(in, CLUSTER_NODE_NULL_IP);
                         gossip.port = in.readUnsignedShort();
                         gossip.busPort = in.readUnsignedShort();

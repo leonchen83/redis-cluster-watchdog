@@ -64,8 +64,8 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
                 for (int i = 0; i < hdr.count; i++) {
                     ClusterMessageDataGossip gossip = hdr.data.gossips.get(i);
                     out.writeBytes(extract(gossip.name, CLUSTER_NODE_NULL_NAME));
-                    out.writeInt((int) (gossip.pingTime / 1000));
-                    out.writeInt((int) (gossip.pongTime / 1000));
+                    out.writeInt((int) (gossip.pingTime / 1000L));
+                    out.writeInt((int) (gossip.pongTime / 1000L));
                     out.writeBytes(extract(gossip.ip, CLUSTER_NODE_NULL_IP));
                     out.writeShort(gossip.port);
                     out.writeShort(gossip.busPort);

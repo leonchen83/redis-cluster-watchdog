@@ -259,9 +259,9 @@ public class ClusterConfigManager {
     public static String clusterGetMessageTypeString(int type) {
         switch (type) {
             case CLUSTERMSG_TYPE_PING:
-                return "pingTime";
+                return "ping";
             case CLUSTERMSG_TYPE_PONG:
-                return "pongTime";
+                return "pong";
             case CLUSTERMSG_TYPE_MEET:
                 return "meet";
             case CLUSTERMSG_TYPE_FAIL:
