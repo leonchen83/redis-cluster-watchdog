@@ -27,7 +27,7 @@ public class ClusterWatchdogTest {
     private static AtomicBoolean set = new AtomicBoolean(false);
 
     public static void main(String[] args) throws IOException {
-        for (int i = 0; i < 6; i++) {
+        for (int i = 1; i <= 10; i++) {
             final int j = i;
             new Thread(() -> {
                 ClusterConfiguration c = ClusterConfiguration.defaultSetting();
