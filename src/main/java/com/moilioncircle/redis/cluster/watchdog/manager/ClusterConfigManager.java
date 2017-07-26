@@ -314,7 +314,7 @@ public class ClusterConfigManager {
                         s.setLength(0);
                         dq = false;
                         if (i + 1 < ary.length && ary[i + 1] != ' ')
-                            throw new UnsupportedOperationException("parse file error.");
+                            throw new UnsupportedOperationException("parse config error.");
                     }
                     break;
                 case '\'':
@@ -327,7 +327,7 @@ public class ClusterConfigManager {
                         s.setLength(0);
                         q = false;
                         if (i + 1 < ary.length && ary[i + 1] != ' ')
-                            throw new UnsupportedOperationException("parse file error.");
+                            throw new UnsupportedOperationException("parse config error.");
                     }
                     break;
                 case '\\':

@@ -43,9 +43,9 @@ public class ClusterManagers {
     public ClusterCommandHandlerManager commands;
     public ClusterMessageHandlerManager handlers;
 
-    public ExecutorService file;
+    public ExecutorService config;
     public ExecutorService worker;
-    public ScheduledExecutorService executor;
+    public ScheduledExecutorService cron;
 
     public ClusterWatchdog watchdog;
     public ServerState server = new ServerState();
@@ -71,9 +71,9 @@ public class ClusterManagers {
         this.commands = new ClusterCommandHandlerManager(this);
         this.handlers = new ClusterMessageHandlerManager(this);
 
-        this.file = Executors.newSingleThreadExecutor();
+        this.config = Executors.newSingleThreadExecutor();
         this.worker = Executors.newSingleThreadExecutor();
-        this.executor = Executors.newSingleThreadScheduledExecutor();
+        this.cron = Executors.newSingleThreadScheduledExecutor();
     }
 
     public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {

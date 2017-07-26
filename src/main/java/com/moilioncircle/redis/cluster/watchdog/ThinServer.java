@@ -61,12 +61,12 @@ public class ThinServer {
 
             @Override
             public void onMessage(Transport<Object> transport, Object message) {
-                managers.executor.execute(() -> {
+                managers.cron.execute(() -> {
                     ClusterConfigInfo previous = valueOf(managers.server.cluster);
                     managers.commands.handleCommand(transport, (byte[][]) message);
                     ClusterConfigInfo next = valueOf(managers.server.cluster);
                     if (!previous.equals(next))
-                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
+                        managers.config.submit(() -> managers.configs.clusterSaveConfig(next, false));
                 });
             }
 

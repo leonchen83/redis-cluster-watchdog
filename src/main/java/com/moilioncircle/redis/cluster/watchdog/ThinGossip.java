@@ -46,34 +46,25 @@ public class ThinGossip {
 
     public void start() {
         this.clusterInit();
-        managers.executor.scheduleAtFixedRate(() -> {
+        managers.cron.scheduleAtFixedRate(() -> {
             ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
             clusterCron();
             ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
-            if (!previous.equals(next)) managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
+            if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     public void stop(long timeout, TimeUnit unit) {
         try {
-            managers.executor.shutdown();
-            managers.executor.awaitTermination(timeout, unit);
+            managers.cron.shutdown();
+            managers.cron.awaitTermination(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
         try {
-            acceptor.shutdown().get(timeout, unit);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            logger.error("unexpected error", e.getCause());
-        } catch (TimeoutException e) {
-            logger.error("stop timeout error", e);
-        }
-
-        try {
-            initiator.shutdown().get(timeout, unit);
+            NioBootstrapImpl<RCmbMessage> acceptor = this.acceptor;
+            if (acceptor != null) acceptor.shutdown().get(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {
@@ -83,8 +74,19 @@ public class ThinGossip {
         }
 
         try {
-            managers.file.shutdown();
-            managers.file.awaitTermination(timeout, unit);
+            NioBootstrapImpl<RCmbMessage> initiator = this.initiator;
+            if (initiator != null) initiator.shutdown().get(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            logger.error("unexpected error", e.getCause());
+        } catch (TimeoutException e) {
+            logger.error("stop timeout error", e);
+        }
+
+        try {
+            managers.config.shutdown();
+            managers.config.awaitTermination(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -104,7 +106,7 @@ public class ThinGossip {
             logger.info("No cluster configuration found, I'm " + managers.server.myself.name);
             managers.nodes.clusterAddNode(managers.server.myself);
             ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
-            managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
+            managers.config.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }
 
         acceptor = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
@@ -124,13 +126,13 @@ public class ThinGossip {
 
             @Override
             public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
-                managers.executor.execute(() -> {
+                managers.cron.execute(() -> {
                     ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
                     ClusterMessage hdr = (ClusterMessage) message;
                     managers.handlers.get(hdr.type).handle(managers.server.cfd.get(transport), hdr);
                     ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
                     if (!previous.equals(next))
-                        managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
+                        managers.config.submit(() -> managers.configs.clusterSaveConfig(next, false));
                 });
             }
 
@@ -208,13 +210,13 @@ public class ThinGossip {
 
                         @Override
                         public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
-                            managers.executor.execute(() -> {
+                            managers.cron.execute(() -> {
                                 ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
                                 ClusterMessage hdr = (ClusterMessage) message;
                                 managers.handlers.get(hdr.type).handle(link, hdr);
                                 ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
                                 if (!previous.equals(next))
-                                    managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
+                                    managers.config.submit(() -> managers.configs.clusterSaveConfig(next, false));
                             });
                         }
 
