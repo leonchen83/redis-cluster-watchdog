@@ -18,6 +18,7 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 
 import com.moilioncircle.redis.cluster.watchdog.*;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,6 +53,7 @@ public class ClusterManagers {
     private volatile ReplicationListener replicationListener;
     private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
+    private volatile RestoreCommandListener restoreCommandListener;
 
     public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
         this.watchdog = watchdog;
@@ -91,6 +93,12 @@ public class ClusterManagers {
         return r;
     }
 
+    public synchronized RestoreCommandListener setReplicationListener(RestoreCommandListener restoreCommandListener) {
+        RestoreCommandListener r = this.restoreCommandListener;
+        this.restoreCommandListener = restoreCommandListener;
+        return r;
+    }
+
     public void notifySetReplication(String ip, int host) {
         worker.submit(() -> {
             ReplicationListener r = this.replicationListener;
@@ -122,6 +130,13 @@ public class ClusterManagers {
         worker.submit(() -> {
             ClusterStateListener r = this.clusterStateListener;
             if (r != null) r.onStateChanged(state);
+        });
+    }
+
+    public void notifyRestoreCommand(byte[] key, long ttl, KeyValuePair<?> kv, boolean replace) {
+        worker.submit(() -> {
+            RestoreCommandListener r = this.restoreCommandListener;
+            if (r != null) r.onRestoreCommand(key, ttl, kv, replace);
         });
     }
 }
