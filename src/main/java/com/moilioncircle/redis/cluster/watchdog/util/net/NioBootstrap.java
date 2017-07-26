@@ -31,8 +31,6 @@ public interface NioBootstrap<T> extends TransportListener<T> {
 
     void setup();
 
-    boolean isServer();
-
     Transport<T> getTransport();
 
     CompletableFuture<?> shutdown();

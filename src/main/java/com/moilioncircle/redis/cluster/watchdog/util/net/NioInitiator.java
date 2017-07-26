@@ -19,7 +19,8 @@ package com.moilioncircle.redis.cluster.watchdog.util.net;
 import com.moilioncircle.redis.cluster.watchdog.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.redis.cluster.watchdog.util.concurrent.future.ListenableChannelFuture;
 import com.moilioncircle.redis.cluster.watchdog.util.concurrent.future.ListenableFuture;
-import com.moilioncircle.redis.cluster.watchdog.util.net.transport.NioTransport;
+import com.moilioncircle.redis.cluster.watchdog.util.net.transport.NioInitiatorTransport;
+import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -35,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class NioInitiator<T> extends AbstractNioBootstrap<T> {
     protected volatile Bootstrap bootstrap;
     protected volatile EventLoopGroup workerGroup;
+    protected volatile NioInitiatorTransport<T> transport;
 
     public NioInitiator(NetworkConfiguration configuration) {
         super(configuration);
@@ -50,7 +52,7 @@ public class NioInitiator<T> extends AbstractNioBootstrap<T> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", transport = new NioTransport<>(NioInitiator.this));
+                p.addLast("transport", transport = new NioInitiatorTransport<>(NioInitiator.this));
             }
         });
         this.bootstrap.option(ChannelOption.TCP_NODELAY, configuration.isTcpNoDelay());
@@ -68,8 +70,8 @@ public class NioInitiator<T> extends AbstractNioBootstrap<T> {
     }
 
     @Override
-    public boolean isServer() {
-        return false;
+    public Transport<T> getTransport() {
+        return this.transport;
     }
 
     @Override

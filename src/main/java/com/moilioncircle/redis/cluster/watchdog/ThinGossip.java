@@ -18,9 +18,11 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
@@ -35,8 +37,8 @@ public class ThinGossip {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
 
     public ClusterManagers managers;
-    private volatile NioBootstrapImpl<RCmbMessage> cfd;
-    private Map<Long, Transport<RCmbMessage>> fds = new ConcurrentHashMap<>();
+    private volatile NioBootstrapImpl<RCmbMessage> acceptor;
+    private volatile NioBootstrapImpl<RCmbMessage> initiator;
 
     public ThinGossip(ClusterManagers managers) {
         this.managers = managers;
@@ -61,7 +63,7 @@ public class ThinGossip {
         }
 
         try {
-            cfd.shutdown().get(timeout, unit);
+            acceptor.shutdown().get(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {
@@ -70,17 +72,15 @@ public class ThinGossip {
             logger.error("stop timeout error", e);
         }
 
-        fds.values().stream().map(e -> e.disconnect(null)).forEach(e -> {
-            try {
-                e.get(timeout, unit);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            } catch (ExecutionException ex) {
-                logger.error("unexpected error", ex.getCause());
-            } catch (TimeoutException ex) {
-                logger.error("stop timeout error", ex);
-            }
-        });
+        try {
+            initiator.shutdown().get(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            logger.error("unexpected error", e.getCause());
+        } catch (TimeoutException e) {
+            logger.error("stop timeout error", e);
+        }
 
         try {
             managers.file.shutdown();
@@ -107,11 +107,11 @@ public class ThinGossip {
             managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }
 
-        cfd = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
-        cfd.setEncoder(ClusterMessageEncoder::new);
-        cfd.setDecoder(ClusterMessageDecoder::new);
-        cfd.setup();
-        cfd.setTransportListener(new TransportListener<RCmbMessage>() {
+        acceptor = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
+        acceptor.setEncoder(ClusterMessageEncoder::new);
+        acceptor.setDecoder(ClusterMessageDecoder::new);
+        acceptor.setup();
+        acceptor.setTransportListener(new TransportListener<RCmbMessage>() {
             @Override
             public void onConnected(Transport<RCmbMessage> transport) {
                 logger.info("[acceptor] > " + transport);
@@ -140,7 +140,7 @@ public class ThinGossip {
             }
         });
         try {
-            cfd.connect(managers.configuration.getClusterAnnounceIp(), managers.configuration.getClusterAnnounceBusPort()).get();
+            acceptor.connect(managers.configuration.getClusterAnnounceIp(), managers.configuration.getClusterAnnounceBusPort()).get();
         } catch (InterruptedException | ExecutionException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -184,47 +184,45 @@ public class ThinGossip {
                 if (node.link != null)
                     continue;
 
+                if (initiator == null) {
+                    initiator = new NioBootstrapImpl<>(false, managers.configuration.getNetworkConfiguration());
+                    initiator.setEncoder(ClusterMessageEncoder::new);
+                    initiator.setDecoder(ClusterMessageDecoder::new);
+                    initiator.setup();
+                }
                 final ClusterLink link = managers.connections.createClusterLink(node);
-                NioBootstrapImpl<RCmbMessage> fd = new NioBootstrapImpl<>(false, managers.configuration.getNetworkConfiguration());
-                fd.setEncoder(ClusterMessageEncoder::new);
-                fd.setDecoder(ClusterMessageDecoder::new);
-                fd.setup();
-                fd.setTransportListener(new TransportListener<RCmbMessage>() {
-                    @Override
-                    public void onConnected(Transport<RCmbMessage> transport) {
-                        logger.info("[initiator] > " + transport);
-                        fds.put(transport.getId(), transport);
-                    }
-
-                    @Override
-                    public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
-                        managers.executor.execute(() -> {
-                            ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
-                            ClusterMessage hdr = (ClusterMessage) message;
-                            managers.handlers.get(hdr.type).handle(link, hdr);
-                            ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
-                            if (!previous.equals(next))
-                                managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
-                        });
-                    }
-
-                    @Override
-                    public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                        logger.info("[initiator] < " + transport);
-                        fds.remove(transport.getId());
-                        managers.connections.freeClusterLink(link);
-                        fd.shutdown();
-                    }
-                });
                 try {
-                    fd.connect(node.ip, node.busPort).get();
-                    link.fd = new DefaultSession<>(fd.getTransport());
+                    initiator.connect(node.ip, node.busPort).get();
+                    initiator.getTransport().setTransportListener(new TransportListener<RCmbMessage>() {
+                        @Override
+                        public void onConnected(Transport<RCmbMessage> transport) {
+                            logger.info("[initiator] > " + transport);
+                        }
+
+                        @Override
+                        public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
+                            managers.executor.execute(() -> {
+                                ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
+                                ClusterMessage hdr = (ClusterMessage) message;
+                                managers.handlers.get(hdr.type).handle(link, hdr);
+                                ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
+                                if (!previous.equals(next))
+                                    managers.file.submit(() -> managers.configs.clusterSaveConfig(next, false));
+                            });
+                        }
+
+                        @Override
+                        public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
+                            logger.info("[initiator] < " + transport);
+                            managers.connections.freeClusterLink(link);
+                        }
+                    });
+                    link.fd = new DefaultSession<>(initiator.getTransport());
                 } catch (InterruptedException | ExecutionException e) {
                     if (e instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                     }
                     if (node.pingTime == 0) node.pingTime = System.currentTimeMillis();
-                    fd.shutdown();
                     continue;
                 }
                 node.link = link;

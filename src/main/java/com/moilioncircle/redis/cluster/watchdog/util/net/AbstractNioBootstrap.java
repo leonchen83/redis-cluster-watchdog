@@ -16,7 +16,6 @@
 
 package com.moilioncircle.redis.cluster.watchdog.util.net;
 
-import com.moilioncircle.redis.cluster.watchdog.util.net.transport.NioTransport;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.TransportListener;
 import io.netty.channel.ChannelHandler;
@@ -34,17 +33,12 @@ public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
 
     protected Supplier<ChannelHandler> encoder;
     protected Supplier<ChannelHandler> decoder;
-    protected volatile NioTransport<T> transport;
+
     protected volatile TransportListener<T> listener;
     protected final NetworkConfiguration configuration;
 
     protected AbstractNioBootstrap(NetworkConfiguration configuration) {
         this.configuration = configuration;
-    }
-
-    @Override
-    public Transport<T> getTransport() {
-        return this.transport;
     }
 
     @Override

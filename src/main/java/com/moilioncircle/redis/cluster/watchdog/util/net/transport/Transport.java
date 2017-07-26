@@ -19,6 +19,8 @@ public interface Transport<T> {
 
     SocketAddress getRemoteAddress();
 
+    TransportListener<T> setTransportListener(TransportListener<T> listener);
+
     CompletableFuture<Void> disconnect(Throwable cause);
 
     CompletableFuture<Void> write(T message, boolean flush);

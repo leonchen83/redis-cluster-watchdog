@@ -18,7 +18,8 @@ package com.moilioncircle.redis.cluster.watchdog.util.net;
 
 import com.moilioncircle.redis.cluster.watchdog.util.concurrent.future.CompletableFuture;
 import com.moilioncircle.redis.cluster.watchdog.util.concurrent.future.ListenableChannelFuture;
-import com.moilioncircle.redis.cluster.watchdog.util.net.transport.NioTransport;
+import com.moilioncircle.redis.cluster.watchdog.util.net.transport.NioAcceptorTransport;
+import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -35,6 +36,7 @@ import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
 public class NioAcceptor<T> extends AbstractNioBootstrap<T> {
     protected volatile EventLoopGroup eventLoop;
     protected volatile ServerBootstrap bootstrap;
+    protected volatile NioAcceptorTransport<T> transport;
 
     public NioAcceptor(NetworkConfiguration configuration) {
         super(configuration);
@@ -52,7 +54,7 @@ public class NioAcceptor<T> extends AbstractNioBootstrap<T> {
                 final ChannelPipeline p = channel.pipeline();
                 p.addLast("encoder", getEncoder().get());
                 p.addLast("decoder", getDecoder().get());
-                p.addLast("transport", transport = new NioTransport<>(NioAcceptor.this));
+                p.addLast("transport", transport = new NioAcceptorTransport<>(NioAcceptor.this));
             }
         });
         this.bootstrap.option(ChannelOption.SO_BACKLOG, configuration.getSoBacklog());
@@ -72,8 +74,8 @@ public class NioAcceptor<T> extends AbstractNioBootstrap<T> {
     }
 
     @Override
-    public boolean isServer() {
-        return true;
+    public Transport<T> getTransport() {
+        return this.transport;
     }
 
     @Override

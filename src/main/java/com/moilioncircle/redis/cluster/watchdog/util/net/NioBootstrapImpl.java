@@ -62,11 +62,6 @@ public class NioBootstrapImpl<T> implements NioBootstrap<T> {
     }
 
     @Override
-    public boolean isServer() {
-        return wrapper.isServer();
-    }
-
-    @Override
     public Transport<T> getTransport() {
         return wrapper.getTransport();
     }
