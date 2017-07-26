@@ -93,7 +93,7 @@ public class ClusterManagers {
         return r;
     }
 
-    public synchronized RestoreCommandListener setReplicationListener(RestoreCommandListener restoreCommandListener) {
+    public synchronized RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
         RestoreCommandListener r = this.restoreCommandListener;
         this.restoreCommandListener = restoreCommandListener;
         return r;

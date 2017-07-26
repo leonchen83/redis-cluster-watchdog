@@ -29,6 +29,8 @@ public interface ClusterWatchdog {
 
     ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener);
 
+    RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener);
+
     ClusterConfiguration getClusterConfiguration();
 
     void start();
