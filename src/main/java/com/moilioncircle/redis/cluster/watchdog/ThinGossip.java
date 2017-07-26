@@ -114,7 +114,9 @@ public class ThinGossip {
         acceptor.setTransportListener(new TransportListener<RCmbMessage>() {
             @Override
             public void onConnected(Transport<RCmbMessage> transport) {
-                logger.info("[acceptor] > " + transport);
+                if (managers.configuration.isVerbose()) {
+                    logger.info("[acceptor] > " + transport);
+                }
                 ClusterLink link = managers.connections.createClusterLink(null);
                 link.fd = new DefaultSession<>(transport);
                 managers.server.cfd.put(transport, link);
@@ -134,9 +136,11 @@ public class ThinGossip {
 
             @Override
             public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                logger.info("[acceptor] < " + transport);
                 ClusterLink link = managers.server.cfd.remove(transport);
                 managers.connections.freeClusterLink(link);
+                if (managers.configuration.isVerbose()) {
+                    logger.info("[acceptor] < " + transport);
+                }
             }
         });
         try {
@@ -196,7 +200,10 @@ public class ThinGossip {
                     initiator.getTransport().setTransportListener(new TransportListener<RCmbMessage>() {
                         @Override
                         public void onConnected(Transport<RCmbMessage> transport) {
-                            logger.info("[initiator] > " + transport);
+                            if (managers.configuration.isVerbose()) {
+                                logger.info("[initiator] > " + transport);
+                            }
+
                         }
 
                         @Override
@@ -213,8 +220,10 @@ public class ThinGossip {
 
                         @Override
                         public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                            logger.info("[initiator] < " + transport);
                             managers.connections.freeClusterLink(link);
+                            if (managers.configuration.isVerbose()) {
+                                logger.info("[initiator] < " + transport);
+                            }
                         }
                     });
                     link.fd = new DefaultSession<>(initiator.getTransport());

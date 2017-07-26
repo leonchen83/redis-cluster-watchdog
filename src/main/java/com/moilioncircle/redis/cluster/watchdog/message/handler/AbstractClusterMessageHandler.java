@@ -36,7 +36,6 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
 
     @Override
     public boolean handle(ClusterLink link, ClusterMessage hdr) {
-        long st = System.nanoTime();
         if (hdr.type < CLUSTERMSG_TYPE_COUNT) {
             server.cluster.messagesReceived[hdr.type]++;
         }
@@ -56,9 +55,6 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
 
         handle(sender, link, hdr);
         managers.states.clusterUpdateState();
-        long ed = System.nanoTime();
-        if (managers.configuration.isVerbose())
-            logger.debug("message type: " + hdr.type + ", elapsed time: " + (ed - st));
         return true;
     }
 
