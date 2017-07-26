@@ -1,5 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog.message.handler;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
@@ -33,6 +34,7 @@ public class ClusterMessageFailHandler extends AbstractClusterMessageHandler {
             failing.flags |= CLUSTER_NODE_FAIL;
             failing.failTime = System.currentTimeMillis();
             failing.flags &= ~CLUSTER_NODE_PFAIL;
+            managers.notifyNodeFailed(ClusterNodeInfo.valueOf(failing, server.myself));
         }
         return true;
     }

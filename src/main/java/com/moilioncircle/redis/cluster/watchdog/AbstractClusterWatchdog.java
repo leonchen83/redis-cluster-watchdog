@@ -54,6 +54,11 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     }
 
     @Override
+    public ClusterNodeFailedListener setClusterNodeFailedListener(ClusterNodeFailedListener clusterNodeFailedListener) {
+        return managers.setClusterNodeFailedListener(clusterNodeFailedListener);
+    }
+
+    @Override
     public ClusterConfiguration getClusterConfiguration() {
         return this.configuration;
     }

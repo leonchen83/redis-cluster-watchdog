@@ -54,6 +54,7 @@ public class ClusterManagers {
     private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
     private volatile RestoreCommandListener restoreCommandListener;
+    private volatile ClusterNodeFailedListener clusterNodeFailedListener;
 
     public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
         this.watchdog = watchdog;
@@ -99,6 +100,12 @@ public class ClusterManagers {
         return r;
     }
 
+    public synchronized ClusterNodeFailedListener setClusterNodeFailedListener(ClusterNodeFailedListener clusterNodeFailedListener) {
+        ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+        this.clusterNodeFailedListener = clusterNodeFailedListener;
+        return r;
+    }
+
     public void notifySetReplication(String ip, int host) {
         worker.submit(() -> {
             ReplicationListener r = this.replicationListener;
@@ -130,6 +137,34 @@ public class ClusterManagers {
         worker.submit(() -> {
             ClusterStateListener r = this.clusterStateListener;
             if (r != null) r.onStateChanged(state);
+        });
+    }
+
+    public void notifyNodePFailed(ClusterNodeInfo pfailed) {
+        worker.submit(() -> {
+            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            if (r != null) r.onNodePFailed(pfailed);
+        });
+    }
+
+    public void notifyNodeFailed(ClusterNodeInfo failed) {
+        worker.submit(() -> {
+            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            if (r != null) r.onNodeFailed(failed);
+        });
+    }
+
+    public void notifyUnsetNodePFailed(ClusterNodeInfo pfailed) {
+        worker.submit(() -> {
+            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            if (r != null) r.onUnsetNodePFailed(pfailed);
+        });
+    }
+
+    public void notifyUnsetNodeFailed(ClusterNodeInfo failed) {
+        worker.submit(() -> {
+            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            if (r != null) r.onUnsetNodeFailed(failed);
         });
     }
 

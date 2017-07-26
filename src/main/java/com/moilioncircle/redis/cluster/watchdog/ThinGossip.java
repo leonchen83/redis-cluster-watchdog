@@ -293,6 +293,7 @@ public class ThinGossip {
                     logger.debug("*** NODE " + node.name + " possibly failing");
                     node.flags |= CLUSTER_NODE_PFAIL;
                     update = true;
+                    managers.notifyNodePFailed(ClusterNodeInfo.valueOf(node, managers.server.myself));
                 }
             }
 

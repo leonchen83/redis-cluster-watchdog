@@ -1,5 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog.message.handler;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
@@ -57,6 +58,7 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
 
             if (nodePFailed(link.node)) {
                 link.node.flags &= ~CLUSTER_NODE_PFAIL;
+                managers.notifyUnsetNodePFailed(ClusterNodeInfo.valueOf(link.node, server.myself));
             } else if (nodeFailed(link.node)) {
                 clearNodeFailureIfNeeded(link.node);
             }
@@ -115,11 +117,13 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
         if (nodeIsSlave(node) || node.assignedSlots == 0) {
             logger.info("Clear FAIL state for node " + node.name + ": " + (nodeIsSlave(node) ? "slave" : "master without slots") + " is reachable again.");
             node.flags &= ~CLUSTER_NODE_FAIL;
+            managers.notifyUnsetNodeFailed(ClusterNodeInfo.valueOf(node, server.myself));
         }
 
         if (nodeIsMaster(node) && node.assignedSlots > 0 && now - node.failTime > managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_UNDO_TIME_MULTI) {
             logger.info("Clear FAIL state for node " + node.name + ": is reachable again and nobody is serving its slots after some createTime.");
             node.flags &= ~CLUSTER_NODE_FAIL;
+            managers.notifyUnsetNodeFailed(ClusterNodeInfo.valueOf(node, server.myself));
         }
     }
 }

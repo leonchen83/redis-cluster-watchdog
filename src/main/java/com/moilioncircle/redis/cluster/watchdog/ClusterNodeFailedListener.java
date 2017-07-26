@@ -16,26 +16,16 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public interface ClusterWatchdog {
-    ReplicationListener setReplicationListener(ReplicationListener replicationListener);
+public interface ClusterNodeFailedListener {
+    void onNodePFailed(ClusterNodeInfo pFailed);
 
-    ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener);
+    void onUnsetNodePFailed(ClusterNodeInfo pFailed);
 
-    ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener);
+    void onNodeFailed(ClusterNodeInfo failed);
 
-    RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener);
-
-    ClusterNodeFailedListener setClusterNodeFailedListener(ClusterNodeFailedListener clusterNodeFailedListener);
-
-    ClusterConfiguration getClusterConfiguration();
-
-    void start();
-
-    void stop(long timeout, TimeUnit unit);
+    void onUnsetNodeFailed(ClusterNodeInfo failed);
 }
