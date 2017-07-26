@@ -166,6 +166,14 @@ public class ClusterConfigManager {
             if (maxEpoch > server.cluster.currentEpoch) {
                 server.cluster.currentEpoch = maxEpoch;
             }
+            for (ClusterNode node : server.cluster.nodes.values()) {
+                if ((node.flags & CLUSTER_NODE_PFAIL) != 0) {
+                    managers.notifyNodePFailed(ClusterNodeInfo.valueOf(node, server.myself));
+                }
+                if ((node.flags & CLUSTER_NODE_FAIL) != 0) {
+                    managers.notifyNodeFailed(ClusterNodeInfo.valueOf(node, server.myself));
+                }
+            }
             managers.notifyConfigChanged(ClusterConfigInfo.valueOf(server.cluster));
             return true;
         } catch (Throwable e) {
