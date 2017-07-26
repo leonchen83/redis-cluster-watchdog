@@ -97,7 +97,6 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
             }
         }
 
-        logger.info(Arrays.toString(serialized));
         final long keyTTL = ttl;
         final boolean keyReplace = replace;
         Replicator replicator = new RestoreReplicator(new ByteArrayInputStream(serialized), Configuration.defaultSetting());
