@@ -33,9 +33,9 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     public DefaultCommandHandler(ClusterManagers managers) {
         super(managers);
-        register("ping", new PingCommandHandler());
-        register("info", new InfoCommandHandler());
-        register("dbsize", new DBSizeCommandHandler());
+        register("ping", new PingCommandHandler(managers));
+        register("info", new InfoCommandHandler(managers));
+        register("dbsize", new DBSizeCommandHandler(managers));
         register("config", new ConfigCommandHandler(managers));
         register("cluster", new ClusterCommandHandler(managers));
         register("shutdown", new ShutdownCommandHandler(managers));

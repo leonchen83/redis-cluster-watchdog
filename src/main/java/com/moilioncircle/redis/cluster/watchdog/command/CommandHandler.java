@@ -24,20 +24,4 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  */
 public interface CommandHandler {
     void handle(Transport<Object> t, String[] message, byte[][] rawMessage);
-
-    default void replyError(Transport<Object> t, String message) {
-        t.write(("-ERR " + message + "\r\n").getBytes(), true);
-    }
-
-    default void replyBulk(Transport<Object> t, String message) {
-        t.write(("$" + message.length() + "\r\n" + message + "\r\n").getBytes(), true);
-    }
-
-    default void reply(Transport<Object> t, String message) {
-        t.write(("+" + message + "\r\n").getBytes(), true);
-    }
-
-    default void replyNumber(Transport<Object> t, String message) {
-        t.write((":" + message + "\r\n").getBytes(), true);
-    }
 }

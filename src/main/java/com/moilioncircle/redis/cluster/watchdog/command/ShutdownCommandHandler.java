@@ -36,7 +36,7 @@ public class ShutdownCommandHandler extends AbstractCommandHandler {
         if (message.length == 1) {
             reply(t, "OK");
             managers.watchdog.stop(30, TimeUnit.SECONDS);
-        } else if (message.length == 2 && message[1] != null && message[1].equalsIgnoreCase("nosave") || message[1].equalsIgnoreCase("save")) {
+        } else if (message.length == 2 && message[1] != null && (message[1].equalsIgnoreCase("nosave") || message[1].equalsIgnoreCase("save"))) {
             reply(t, "OK");
             managers.watchdog.stop(30, TimeUnit.SECONDS);
         } else {

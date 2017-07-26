@@ -16,13 +16,19 @@
 
 package com.moilioncircle.redis.cluster.watchdog.command;
 
+import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 /**
  * @author Leon Chen
  * @since 2.1.0
  */
-public class DBSizeCommandHandler implements CommandHandler {
+public class DBSizeCommandHandler extends AbstractCommandHandler {
+
+    public DBSizeCommandHandler(ClusterManagers managers) {
+        super(managers);
+    }
+
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length == 1) {

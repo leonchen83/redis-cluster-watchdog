@@ -18,6 +18,7 @@ package com.moilioncircle.redis.cluster.watchdog.command;
 
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
+import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -34,5 +35,21 @@ public abstract class AbstractCommandHandler implements CommandHandler {
     public AbstractCommandHandler(ClusterManagers managers) {
         this.managers = managers;
         this.server = managers.server;
+    }
+
+    protected void replyError(Transport<Object> t, String message) {
+        t.write(("-ERR " + message + "\r\n").getBytes(), true);
+    }
+
+    protected void replyBulk(Transport<Object> t, String message) {
+        t.write(("$" + message.length() + "\r\n" + message + "\r\n").getBytes(), true);
+    }
+
+    protected void reply(Transport<Object> t, String message) {
+        t.write(("+" + message + "\r\n").getBytes(), true);
+    }
+
+    protected void replyNumber(Transport<Object> t, String message) {
+        t.write((":" + message + "\r\n").getBytes(), true);
     }
 }
