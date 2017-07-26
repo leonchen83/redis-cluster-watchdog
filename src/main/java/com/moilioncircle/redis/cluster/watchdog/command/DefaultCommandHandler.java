@@ -39,9 +39,9 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         register("config", new ConfigCommandHandler(managers));
         register("cluster", new ClusterCommandHandler(managers));
         register("restore", new RestoreCommandHandler(managers));
-        register("readonly", new ReadonlyCommandHandler(managers));
+//        register("readonly", new ReadonlyCommandHandler(managers));
         register("shutdown", new ShutdownCommandHandler(managers));
-        register("readwrite", new ReadWriteCommandHandler(managers));
+//        register("readwrite", new ReadWriteCommandHandler(managers));
     }
 
     @Override
