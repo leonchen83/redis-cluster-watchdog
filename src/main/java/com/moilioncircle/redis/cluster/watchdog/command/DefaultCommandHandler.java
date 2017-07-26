@@ -38,6 +38,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         register("dbsize", new DBSizeCommandHandler(managers));
         register("config", new ConfigCommandHandler(managers));
         register("cluster", new ClusterCommandHandler(managers));
+        register("restore", new RestoreCommandHandler(managers));
         register("shutdown", new ShutdownCommandHandler(managers));
     }
 

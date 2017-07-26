@@ -94,6 +94,11 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 managers.notifyRestoreCommand(key, keyTTL == 0L ? keyTTL : System.currentTimeMillis() + keyTTL, kv, keyReplace);
             }
         });
+        try {
+            replicator.open();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     private static class RestoreReplicator extends AbstractReplicator {
