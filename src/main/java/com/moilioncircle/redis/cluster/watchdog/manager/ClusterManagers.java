@@ -168,10 +168,10 @@ public class ClusterManagers {
         });
     }
 
-    public void notifyRestoreCommand(byte[] key, long ttl, KeyValuePair<?> kv, boolean replace) {
+    public void notifyRestoreCommand(KeyValuePair<?> kv, boolean replace) {
         worker.submit(() -> {
             RestoreCommandListener r = this.restoreCommandListener;
-            if (r != null) r.onRestoreCommand(key, ttl, kv, replace);
+            if (r != null) r.onRestoreCommand(kv, replace);
         });
     }
 }

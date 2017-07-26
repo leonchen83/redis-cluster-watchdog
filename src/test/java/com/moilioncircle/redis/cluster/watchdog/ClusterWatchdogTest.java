@@ -16,16 +16,15 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
+
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
 public class ClusterWatchdogTest {
-    private static AtomicBoolean set = new AtomicBoolean(false);
-
     public static void main(String[] args) throws IOException {
         for (int i = 1; i <= 10; i++) {
             final int j = i;
@@ -34,29 +33,13 @@ public class ClusterWatchdogTest {
                 c.setAsMaster(true);
                 c.setClusterAnnouncePort(10000 + j);
                 ClusterWatchdog watchdog = new RedisClusterWatchdog(c);
-                if (set.compareAndSet(false, true)) {
-                    watchdog.setClusterNodeFailedListener(new ClusterNodeFailedListener() {
-                        @Override
-                        public void onNodePFailed(ClusterNodeInfo pFailed) {
-                            System.out.println("set pfailed:" + pFailed.name);
-                        }
-
-                        @Override
-                        public void onUnsetNodePFailed(ClusterNodeInfo pFailed) {
-                            System.out.println("unset pfailed:" + pFailed.name);
-                        }
-
-                        @Override
-                        public void onNodeFailed(ClusterNodeInfo failed) {
-                            System.out.println("set failed:" + failed.name);
-                        }
-
-                        @Override
-                        public void onUnsetNodeFailed(ClusterNodeInfo failed) {
-                            System.out.println("unset failed:" + failed.name);
-                        }
-                    });
-                }
+                watchdog.setRestoreCommandListener(new RestoreCommandListener() {
+                    @Override
+                    public void onRestoreCommand(KeyValuePair<?> kv, boolean replace) {
+                        System.out.println(kv);
+                        System.out.println(replace);
+                    }
+                });
                 watchdog.start();
             }).start();
         }
