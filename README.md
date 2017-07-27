@@ -75,7 +75,7 @@ Following command **MUST** open `ClusterConfiguration.asMaster`
 `redis-trib.rb check host:port`  
 `redis-trib.rb info host:port`  
 `redis-trib.rb rebalance <--weight N> --auto-weights --threshold N --use-empty-masters --simulate --timeout milliseconds --pipeline N`  
-`redis-trib.rb reshard --from host:port --to host:port --slots N --yes --timeout milliseconds --pipeline N`  
+`redis-trib.rb reshard --from arg --to nodename --slots N --yes --timeout milliseconds --pipeline N host:port`  
 `redis-trib.rb add-node <--slave --master-id masterid> new_host:new_port existing_host:existing_port`  
 `redis-trib.rb del-node host:port node_id`  
 `redis-trib.rb call host:port command arg arg .. arg`  
