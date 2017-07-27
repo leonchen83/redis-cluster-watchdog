@@ -199,7 +199,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 KeyStringValueString o0 = new KeyStringValueString();
                 byte[] val = parser.rdbLoadEncodedStringObject().first();
                 o0.setValueRdbType(RDB_TYPE_STRING);
-                o0.setValue(new String(val, CHARSET));
+                o0.setValue(new String(val, UTF_8));
                 o0.setRawValue(val);
                 o0.setDb(db);
                 return o0;
@@ -214,7 +214,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 List<byte[]> rawList = new ArrayList<>();
                 for (int i = 0; i < len; i++) {
                     byte[] element = parser.rdbLoadEncodedStringObject().first();
-                    list.add(new String(element, CHARSET));
+                    list.add(new String(element, UTF_8));
                     rawList.add(element);
                 }
                 o1.setValueRdbType(RDB_TYPE_LIST);
@@ -233,7 +233,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 Set<byte[]> rawSet = new LinkedHashSet<>();
                 for (int i = 0; i < len; i++) {
                     byte[] element = parser.rdbLoadEncodedStringObject().first();
-                    set.add(new String(element, CHARSET));
+                    set.add(new String(element, UTF_8));
                     rawSet.add(element);
                 }
                 o2.setValueRdbType(RDB_TYPE_SET);
@@ -252,7 +252,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 while (len > 0) {
                     byte[] element = parser.rdbLoadEncodedStringObject().first();
                     double score = parser.rdbLoadDoubleValue();
-                    zset.add(new ZSetEntry(new String(element, CHARSET), score, element));
+                    zset.add(new ZSetEntry(new String(element, UTF_8), score, element));
                     len--;
                 }
                 o3.setValueRdbType(RDB_TYPE_ZSET);
@@ -270,7 +270,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 while (len > 0) {
                     byte[] element = parser.rdbLoadEncodedStringObject().first();
                     double score = parser.rdbLoadBinaryDoubleValue();
-                    zset.add(new ZSetEntry(new String(element, CHARSET), score, element));
+                    zset.add(new ZSetEntry(new String(element, UTF_8), score, element));
                     len--;
                 }
                 o5.setValueRdbType(RDB_TYPE_ZSET_2);
@@ -289,7 +289,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 while (len > 0) {
                     byte[] field = parser.rdbLoadEncodedStringObject().first();
                     byte[] value = parser.rdbLoadEncodedStringObject().first();
-                    map.put(new String(field, CHARSET), new String(value, CHARSET));
+                    map.put(new String(field, UTF_8), new String(value, UTF_8));
                     rawMap.put(field, value);
                     len--;
                 }
@@ -322,7 +322,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                     zmEleLen = BaseRdbParser.LenHelper.zmElementLen(stream);
                     if (zmEleLen == 255) {
                         //value is null
-                        map.put(new String(field, CHARSET), null);
+                        map.put(new String(field, UTF_8), null);
                         rawMap.put(field, null);
                         o9.setValueRdbType(RDB_TYPE_HASH_ZIPMAP);
                         o9.setValue(map);
@@ -333,7 +333,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                     int free = BaseRdbParser.LenHelper.free(stream);
                     byte[] value = BaseRdbParser.StringHelper.bytes(stream, zmEleLen);
                     BaseRdbParser.StringHelper.skip(stream, free);
-                    map.put(new String(field, CHARSET), new String(value, CHARSET));
+                    map.put(new String(field, UTF_8), new String(value, UTF_8));
                     rawMap.put(field, value);
                 }
             }
@@ -352,7 +352,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 int zllen = BaseRdbParser.LenHelper.zllen(stream);
                 for (int i = 0; i < zllen; i++) {
                     byte[] e = BaseRdbParser.StringHelper.zipListEntry(stream);
-                    list.add(new String(e, CHARSET));
+                    list.add(new String(e, UTF_8));
                     rawList.add(e);
                 }
                 int zlend = BaseRdbParser.LenHelper.zlend(stream);
@@ -419,9 +419,9 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 while (zllen > 0) {
                     byte[] element = BaseRdbParser.StringHelper.zipListEntry(stream);
                     zllen--;
-                    double score = Double.valueOf(new String(BaseRdbParser.StringHelper.zipListEntry(stream), CHARSET));
+                    double score = Double.valueOf(new String(BaseRdbParser.StringHelper.zipListEntry(stream), UTF_8));
                     zllen--;
-                    zset.add(new ZSetEntry(new String(element, CHARSET), score, element));
+                    zset.add(new ZSetEntry(new String(element, UTF_8), score, element));
                 }
                 int zlend = BaseRdbParser.LenHelper.zlend(stream);
                 if (zlend != 255) {
@@ -450,7 +450,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                     zllen--;
                     byte[] value = BaseRdbParser.StringHelper.zipListEntry(stream);
                     zllen--;
-                    map.put(new String(field, CHARSET), new String(value, CHARSET));
+                    map.put(new String(field, UTF_8), new String(value, UTF_8));
                     rawMap.put(field, value);
                 }
                 int zlend = BaseRdbParser.LenHelper.zlend(stream);
@@ -480,7 +480,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                     int zllen = BaseRdbParser.LenHelper.zllen(stream);
                     for (int j = 0; j < zllen; j++) {
                         byte[] e = BaseRdbParser.StringHelper.zipListEntry(stream);
-                        list.add(new String(e, CHARSET));
+                        list.add(new String(e, UTF_8));
                         rawList.add(e);
                     }
                     int zlend = BaseRdbParser.LenHelper.zlend(stream);
