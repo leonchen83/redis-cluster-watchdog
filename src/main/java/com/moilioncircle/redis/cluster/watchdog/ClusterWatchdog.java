@@ -31,7 +31,7 @@ public interface ClusterWatchdog {
 
     RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener);
 
-    ClusterNodeFailedListener setClusterNodeFailedListener(ClusterNodeFailedListener clusterNodeFailedListener);
+    ClusterNodeListener setClusterNodeFailedListener(ClusterNodeListener clusterNodeFailedListener);
 
     ClusterConfiguration getClusterConfiguration();
 

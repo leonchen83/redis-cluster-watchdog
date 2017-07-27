@@ -20,7 +20,7 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @author Leon Chen
  * @since 1.0.0
  */
-public interface ClusterNodeFailedListener {
+public interface ClusterNodeListener {
     void onNodePFailed(ClusterNodeInfo pFailed);
 
     void onUnsetNodePFailed(ClusterNodeInfo pFailed);
@@ -28,4 +28,8 @@ public interface ClusterNodeFailedListener {
     void onNodeFailed(ClusterNodeInfo failed);
 
     void onUnsetNodeFailed(ClusterNodeInfo failed);
+
+    void onNodeAdded(ClusterNodeInfo node);
+
+    void onNodeDeleted(ClusterNodeInfo node);
 }

@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
@@ -105,6 +106,7 @@ public class ThinGossip {
             managers.server.myself = managers.server.cluster.myself = managers.nodes.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
             logger.info("No cluster configuration found, I'm " + managers.server.myself.name);
             managers.nodes.clusterAddNode(managers.server.myself);
+            managers.notifyNodeAdded(valueOf(managers.server.myself, managers.server.myself));
             ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
             managers.config.submit(() -> managers.configs.clusterSaveConfig(next, false));
         }
@@ -302,7 +304,7 @@ public class ThinGossip {
                     logger.debug("*** NODE " + node.name + " possibly failing");
                     node.flags |= CLUSTER_NODE_PFAIL;
                     update = true;
-                    managers.notifyNodePFailed(ClusterNodeInfo.valueOf(node, managers.server.myself));
+                    managers.notifyNodePFailed(valueOf(node, managers.server.myself));
                 }
             }
 

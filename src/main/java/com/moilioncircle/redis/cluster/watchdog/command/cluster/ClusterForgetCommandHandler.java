@@ -23,6 +23,7 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import java.util.Objects;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
 /**
@@ -56,6 +57,7 @@ public class ClusterForgetCommandHandler extends AbstractCommandHandler {
         }
         managers.blacklists.clusterBlacklistAddNode(node);
         managers.nodes.clusterDelNode(node);
+        managers.notifyNodeDeleted(valueOf(node, server.myself));
         managers.states.clusterUpdateState();
         reply(t, "OK");
     }

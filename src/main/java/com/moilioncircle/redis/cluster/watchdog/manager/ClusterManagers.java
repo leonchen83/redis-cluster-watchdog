@@ -54,7 +54,7 @@ public class ClusterManagers {
     private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
     private volatile RestoreCommandListener restoreCommandListener;
-    private volatile ClusterNodeFailedListener clusterNodeFailedListener;
+    private volatile ClusterNodeListener clusterNodeListener;
 
     public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
         this.watchdog = watchdog;
@@ -100,9 +100,9 @@ public class ClusterManagers {
         return r;
     }
 
-    public synchronized ClusterNodeFailedListener setClusterNodeFailedListener(ClusterNodeFailedListener clusterNodeFailedListener) {
-        ClusterNodeFailedListener r = this.clusterNodeFailedListener;
-        this.clusterNodeFailedListener = clusterNodeFailedListener;
+    public synchronized ClusterNodeListener setClusterNodeFailedListener(ClusterNodeListener clusterNodeFailedListener) {
+        ClusterNodeListener r = this.clusterNodeListener;
+        this.clusterNodeListener = clusterNodeFailedListener;
         return r;
     }
 
@@ -142,28 +142,28 @@ public class ClusterManagers {
 
     public void notifyNodePFailed(ClusterNodeInfo pfailed) {
         worker.submit(() -> {
-            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            ClusterNodeListener r = this.clusterNodeListener;
             if (r != null) r.onNodePFailed(pfailed);
         });
     }
 
     public void notifyNodeFailed(ClusterNodeInfo failed) {
         worker.submit(() -> {
-            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            ClusterNodeListener r = this.clusterNodeListener;
             if (r != null) r.onNodeFailed(failed);
         });
     }
 
     public void notifyUnsetNodePFailed(ClusterNodeInfo pfailed) {
         worker.submit(() -> {
-            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            ClusterNodeListener r = this.clusterNodeListener;
             if (r != null) r.onUnsetNodePFailed(pfailed);
         });
     }
 
     public void notifyUnsetNodeFailed(ClusterNodeInfo failed) {
         worker.submit(() -> {
-            ClusterNodeFailedListener r = this.clusterNodeFailedListener;
+            ClusterNodeListener r = this.clusterNodeListener;
             if (r != null) r.onUnsetNodeFailed(failed);
         });
     }
@@ -172,6 +172,20 @@ public class ClusterManagers {
         worker.submit(() -> {
             RestoreCommandListener r = this.restoreCommandListener;
             if (r != null) r.onRestoreCommand(kv, replace);
+        });
+    }
+
+    public void notifyNodeAdded(ClusterNodeInfo node) {
+        worker.submit(() -> {
+            ClusterNodeListener r = this.clusterNodeListener;
+            if (r != null) r.onNodeAdded(node);
+        });
+    }
+
+    public void notifyNodeDeleted(ClusterNodeInfo node) {
+        worker.submit(() -> {
+            ClusterNodeListener r = this.clusterNodeListener;
+            if (r != null) r.onNodeDeleted(node);
         });
     }
 }

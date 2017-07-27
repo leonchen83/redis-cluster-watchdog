@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 import static java.lang.Math.max;
 import static java.util.Comparator.comparingLong;
@@ -66,6 +67,7 @@ public class ClusterNodeManager {
         server.cluster.nodes.remove(node.name);
         node.name = name;
         clusterAddNode(node);
+        managers.notifyNodeAdded(valueOf(node, server.myself));
     }
 
     public ClusterNode createClusterNode(String name, int flags) {

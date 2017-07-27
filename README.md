@@ -86,9 +86,9 @@ Following command **MUST** open `ClusterConfiguration.asMaster`
 ## Listeners  
 
 `ReplicationListener`  
-`ClusterConfigListener`  
+`ClusterNodeListener`  
 `ClusterStateListener`  
+`ClusterConfigListener`  
 `RestoreCommandListener`  
-`ClusterNodeFailedListener`  
 
 # Have fun!!

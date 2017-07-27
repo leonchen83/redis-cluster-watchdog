@@ -167,11 +167,13 @@ public class ClusterConfigManager {
                 server.cluster.currentEpoch = maxEpoch;
             }
             for (ClusterNode node : server.cluster.nodes.values()) {
+                ClusterNodeInfo info = ClusterNodeInfo.valueOf(node, server.myself);
+                managers.notifyNodeAdded(info);
                 if ((node.flags & CLUSTER_NODE_PFAIL) != 0) {
-                    managers.notifyNodePFailed(ClusterNodeInfo.valueOf(node, server.myself));
+                    managers.notifyNodePFailed(info);
                 }
                 if ((node.flags & CLUSTER_NODE_FAIL) != 0) {
-                    managers.notifyNodeFailed(ClusterNodeInfo.valueOf(node, server.myself));
+                    managers.notifyNodeFailed(info);
                 }
             }
             managers.notifyConfigChanged(ClusterConfigInfo.valueOf(server.cluster));

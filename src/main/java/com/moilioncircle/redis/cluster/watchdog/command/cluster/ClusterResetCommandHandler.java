@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterNodeManager.getRandomHexChars;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
@@ -71,17 +72,18 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             managers.slots.clusterDelSlot(i);
 
         List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
-        nodes.stream().filter(e -> !Objects.equals(e, server.myself)).forEach(managers.nodes::clusterDelNode);
+        nodes.stream().filter(e -> !Objects.equals(e, server.myself)).forEach(e -> {
+            managers.nodes.clusterDelNode(e);
+            managers.notifyNodeDeleted(valueOf(e, server.myself));
+        });
 
         if (!hard) return;
 
         server.myself.configEpoch = 0;
         server.cluster.currentEpoch = 0;
         server.cluster.lastVoteEpoch = 0;
-        String previous = server.myself.name;
-        server.cluster.nodes.remove(previous);
-        server.myself.name = getRandomHexChars();
-        managers.nodes.clusterAddNode(server.myself);
+        managers.notifyNodeDeleted(valueOf(server.myself, server.myself));
+        managers.nodes.clusterRenameNode(server.myself, getRandomHexChars());
         logger.info("Node hard reset, now I'm " + server.myself.name);
     }
 }
