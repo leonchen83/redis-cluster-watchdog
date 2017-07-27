@@ -43,6 +43,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 //        register("readonly", new ReadonlyCommandHandler(managers));
         register("shutdown", new ShutdownCommandHandler(managers));
 //        register("readwrite", new ReadWriteCommandHandler(managers));
+        register("restore-asking", new RestoreCommandHandler(managers));
     }
 
     @Override

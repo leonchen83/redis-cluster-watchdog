@@ -117,6 +117,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
         } catch (IOException e) {
             throw new java.io.UncheckedIOException(e);
         }
+        reply(t, "OK");
     }
 
     public static class RestoreReplicator extends AbstractReplicator {
