@@ -77,6 +77,6 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
         managers.messages.clusterSendFailoverAuth(node);
         node.master.votedTime = System.currentTimeMillis();
         server.cluster.lastVoteEpoch = server.cluster.currentEpoch;
-        logger.warn("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
+        logger.info("Failover auth granted to " + node.name + " for epoch " + server.cluster.currentEpoch);
     }
 }

@@ -114,7 +114,7 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
 
             if (Objects.equals(n, server.myself) && server.cluster.importing[slot] != null) {
                 if (managers.states.clusterBumpConfigEpochWithoutConsensus()) {
-                    logger.warn("configEpoch updated after importing slot " + slot);
+                    logger.info("configEpoch updated after importing slot " + slot);
                 }
                 server.cluster.importing[slot] = null;
             }
