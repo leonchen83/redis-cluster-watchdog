@@ -50,11 +50,11 @@ public class ClusterManagers {
     public ClusterWatchdog watchdog;
     public ServerState server = new ServerState();
 
+    private volatile ClusterNodeListener clusterNodeListener;
     private volatile ReplicationListener replicationListener;
     private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
     private volatile RestoreCommandListener restoreCommandListener;
-    private volatile ClusterNodeListener clusterNodeListener;
 
     public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
         this.watchdog = watchdog;
@@ -74,6 +74,12 @@ public class ClusterManagers {
         this.config = Executors.newSingleThreadExecutor();
         this.worker = Executors.newSingleThreadExecutor();
         this.cron = Executors.newSingleThreadScheduledExecutor();
+    }
+
+    public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
+        ClusterNodeListener r = this.clusterNodeListener;
+        this.clusterNodeListener = clusterNodeListener;
+        return r;
     }
 
     public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
@@ -97,12 +103,6 @@ public class ClusterManagers {
     public synchronized RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
         RestoreCommandListener r = this.restoreCommandListener;
         this.restoreCommandListener = restoreCommandListener;
-        return r;
-    }
-
-    public synchronized ClusterNodeListener setClusterNodeFailedListener(ClusterNodeListener clusterNodeFailedListener) {
-        ClusterNodeListener r = this.clusterNodeListener;
-        this.clusterNodeListener = clusterNodeFailedListener;
         return r;
     }
 

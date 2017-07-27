@@ -34,6 +34,11 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     }
 
     @Override
+    public ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
+        return managers.setClusterNodeListener(clusterNodeListener);
+    }
+
+    @Override
     public ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
         return managers.setReplicationListener(replicationListener);
     }
@@ -51,11 +56,6 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     @Override
     public RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
         return managers.setRestoreCommandListener(restoreCommandListener);
-    }
-
-    @Override
-    public ClusterNodeListener setClusterNodeFailedListener(ClusterNodeListener clusterNodeFailedListener) {
-        return managers.setClusterNodeFailedListener(clusterNodeFailedListener);
     }
 
     @Override
