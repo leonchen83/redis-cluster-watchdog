@@ -28,8 +28,8 @@ public class ClusterState {
     public Map<String, ClusterNode> nodes = new LinkedHashMap<>();
     public long[] messagesSent = new long[CLUSTERMSG_TYPE_COUNT];
     public long[] messagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
-    public ClusterNode[] migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
-    public ClusterNode[] importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
+    public ClusterNode[] migrating = new ClusterNode[CLUSTER_SLOTS];
+    public ClusterNode[] importing = new ClusterNode[CLUSTER_SLOTS];
     public Map<String, Tuple2<Long, ClusterNode>> blacklist = new LinkedHashMap<>();
     public com.moilioncircle.redis.cluster.watchdog.ClusterState state = CLUSTER_FAIL;
 }

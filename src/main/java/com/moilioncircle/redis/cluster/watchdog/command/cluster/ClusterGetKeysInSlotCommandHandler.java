@@ -73,7 +73,6 @@ public class ClusterGetKeysInSlotCommandHandler extends AbstractCommandHandler {
             return;
         }
 
-        String reply = "*0\r\n";
-        t.write(reply.getBytes(), true);
+        t.write("*0\r\n".getBytes(), true);
     }
 }

@@ -80,7 +80,7 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
                 replyError(t, "I don't know fail node " + message[4]);
                 return;
             }
-            server.cluster.migratingSlotsTo[slot] = n;
+            server.cluster.migrating[slot] = n;
         } else if (message[3].equalsIgnoreCase("importing") && message.length == 5) {
             if (Objects.equals(server.cluster.slots[slot], server.myself)) {
                 replyError(t, "I'm already the owner of hash slot " + slot);
@@ -91,11 +91,11 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
                 replyError(t, "I don't know fail node " + message[4]);
                 return;
             }
-            server.cluster.importingSlotsFrom[slot] = n;
+            server.cluster.importing[slot] = n;
         } else if (message[3].equalsIgnoreCase("stable") && message.length == 4) {
             /* CLUSTER SETSLOT <SLOT> STABLE */
-            server.cluster.importingSlotsFrom[slot] = null;
-            server.cluster.migratingSlotsTo[slot] = null;
+            server.cluster.importing[slot] = null;
+            server.cluster.migrating[slot] = null;
         } else if (message[3].equalsIgnoreCase("node") && message.length == 5) {
             /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
@@ -105,14 +105,14 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
                 return;
             }
 
-            if (server.cluster.migratingSlotsTo[slot] != null)
-                server.cluster.migratingSlotsTo[slot] = null;
+            if (server.cluster.migrating[slot] != null)
+                server.cluster.migrating[slot] = null;
 
-            if (Objects.equals(n, server.myself) && server.cluster.importingSlotsFrom[slot] != null) {
+            if (Objects.equals(n, server.myself) && server.cluster.importing[slot] != null) {
                 if (managers.states.clusterBumpConfigEpochWithoutConsensus()) {
                     logger.warn("configEpoch updated after importing slot " + slot);
                 }
-                server.cluster.importingSlotsFrom[slot] = null;
+                server.cluster.importing[slot] = null;
             }
             managers.slots.clusterDelSlot(slot);
             managers.slots.clusterAddSlot(n, slot);

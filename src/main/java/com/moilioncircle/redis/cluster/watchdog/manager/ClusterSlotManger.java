@@ -89,8 +89,8 @@ public class ClusterSlotManger {
     }
 
     public void clusterCloseAllSlots() {
-        server.cluster.migratingSlotsTo = new ClusterNode[CLUSTER_SLOTS];
-        server.cluster.importingSlotsFrom = new ClusterNode[CLUSTER_SLOTS];
+        server.cluster.migrating = new ClusterNode[CLUSTER_SLOTS];
+        server.cluster.importing = new ClusterNode[CLUSTER_SLOTS];
     }
 
     public static int keyHashSlot(byte[] key) {

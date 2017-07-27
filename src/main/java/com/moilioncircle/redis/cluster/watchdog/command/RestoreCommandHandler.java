@@ -64,52 +64,56 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
 
         if (rawMessage.length != 4 && rawMessage.length != 5) {
             replyError(t, "wrong number of arguments for 'restore' command");
+            return;
         }
 
         byte[] key = rawMessage[1];
         if (key == null) {
             replyError(t, "Invalid key: null");
+            return;
         }
 
-        long ttl = 0L;
+        long ttl;
         try {
             ttl = parseLong(message[2]);
         } catch (Exception e) {
             replyError(t, "Invalid ttl: " + message[2]);
+            return;
         }
 
         if (ttl < 0) {
             replyError(t, "Invalid ttl: " + ttl);
+            return;
         }
 
         byte[] serialized = rawMessage[3];
 
         if (serialized == null) {
             replyError(t, "Invalid serialized-value: null");
+            return;
         }
 
-        boolean replace = false;
+        boolean replace;
         if (rawMessage.length == 5) {
             if (message[4] != null && message[4].equalsIgnoreCase("replace")) {
                 replace = true;
             } else {
                 replyError(t, "wrong number of arguments for 'restore' command");
+                return;
             }
-        }
+        } else replace = false;
 
-        final long keyTTL = ttl;
-        final boolean keyReplace = replace;
         Replicator replicator = new RestoreReplicator(new ByteArrayInputStream(serialized), Configuration.defaultSetting());
         replicator.addRdbListener(new RdbListener.Adaptor() {
             @Override
             public void handle(Replicator replicator, KeyValuePair<?> kv) {
                 kv.setKey(new String(key, UTF_8));
                 kv.setRawKey(key);
-                if (keyTTL != 0L) {
+                if (ttl != 0L) {
                     kv.setExpiredType(ExpiredType.MS);
-                    kv.setExpiredValue(System.currentTimeMillis() + keyTTL);
+                    kv.setExpiredValue(System.currentTimeMillis() + ttl);
                 }
-                managers.notifyRestoreCommand(kv, keyReplace);
+                managers.notifyRestoreCommand(kv, replace);
             }
         });
         try {

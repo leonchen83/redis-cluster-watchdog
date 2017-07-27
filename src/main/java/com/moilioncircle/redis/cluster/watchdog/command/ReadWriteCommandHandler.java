@@ -33,6 +33,7 @@ public class ReadWriteCommandHandler extends AbstractCommandHandler {
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 1) {
             replyError(t, "wrong number of arguments for 'readwrite' command");
+            return;
         }
 
         reply(t, "OK");

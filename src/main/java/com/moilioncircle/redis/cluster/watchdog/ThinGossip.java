@@ -85,6 +85,9 @@ public class ThinGossip {
             logger.error("stop timeout error", e);
         }
 
+        // if myself is a slave. safe to shutdown replication socket.
+        managers.replications.replicationUnsetMaster();
+
         try {
             managers.config.shutdown();
             managers.config.awaitTermination(timeout, unit);

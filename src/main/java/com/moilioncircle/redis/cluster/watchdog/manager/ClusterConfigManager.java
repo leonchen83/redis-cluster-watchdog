@@ -141,9 +141,9 @@ public class ClusterConfigManager {
                                 managers.nodes.clusterAddNode(n);
                             }
                             if (direction == '>') {
-                                server.cluster.migratingSlotsTo[slot] = n;
+                                server.cluster.migrating[slot] = n;
                             } else {
-                                server.cluster.importingSlotsFrom[slot] = n;
+                                server.cluster.importing[slot] = n;
                             }
                             continue;
                         } else if (arg.contains("-")) {
@@ -245,10 +245,10 @@ public class ClusterConfigManager {
 
         if ((node.flags & CLUSTER_NODE_MYSELF) != 0) {
             for (int j = 0; j < CLUSTER_SLOTS; j++) {
-                if (info.migratingSlotsTo[j] != null) {
-                    builder.append(" [").append(j).append("->-").append(info.migratingSlotsTo[j]).append("]");
-                } else if (info.importingSlotsFrom[j] != null) {
-                    builder.append(" [").append(j).append("-<-").append(info.importingSlotsFrom[j]).append("]");
+                if (info.migrating[j] != null) {
+                    builder.append(" [").append(j).append("->-").append(info.migrating[j]).append("]");
+                } else if (info.importing[j] != null) {
+                    builder.append(" [").append(j).append("-<-").append(info.importing[j]).append("]");
                 }
             }
         }

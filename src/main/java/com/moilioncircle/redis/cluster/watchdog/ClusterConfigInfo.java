@@ -16,28 +16,28 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
 public class ClusterConfigInfo {
     public long currentEpoch;
     public long lastVoteEpoch;
+    public String[] migrating = new String[CLUSTER_SLOTS];
+    public String[] importing = new String[CLUSTER_SLOTS];
     public Map<String, ClusterNodeInfo> nodes = new LinkedHashMap<>();
-    public String[] migratingSlotsTo = new String[CLUSTER_SLOTS];
-    public String[] importingSlotsFrom = new String[CLUSTER_SLOTS];
 
     public static ClusterConfigInfo valueOf(ClusterState state) {
         ClusterConfigInfo info = new ClusterConfigInfo();
         info.nodes = new LinkedHashMap<>();
         info.currentEpoch = state.currentEpoch;
         info.lastVoteEpoch = state.lastVoteEpoch;
-        info.migratingSlotsTo = new String[CLUSTER_SLOTS];
-        info.importingSlotsFrom = new String[CLUSTER_SLOTS];
+        info.migrating = new String[CLUSTER_SLOTS];
+        info.importing = new String[CLUSTER_SLOTS];
 
         for (ClusterNode node : state.nodes.values()) {
             info.nodes.put(node.name, ClusterNodeInfo.valueOf(node, state.myself));
         }
 
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (state.migratingSlotsTo[i] != null) {
-                info.migratingSlotsTo[i] = state.migratingSlotsTo[i].name;
+            if (state.migrating[i] != null) {
+                info.migrating[i] = state.migrating[i].name;
             }
-            if (state.importingSlotsFrom[i] != null) {
-                info.importingSlotsFrom[i] = state.importingSlotsFrom[i].name;
+            if (state.importing[i] != null) {
+                info.importing[i] = state.importing[i].name;
             }
         }
         return info;
@@ -53,8 +53,8 @@ public class ClusterConfigInfo {
         if (currentEpoch != that.currentEpoch) return false;
         if (lastVoteEpoch != that.lastVoteEpoch) return false;
         if (!nodes.equals(that.nodes)) return false;
-        if (!Arrays.equals(migratingSlotsTo, that.migratingSlotsTo)) return false;
-        return Arrays.equals(importingSlotsFrom, that.importingSlotsFrom);
+        if (!Arrays.equals(migrating, that.migrating)) return false;
+        return Arrays.equals(importing, that.importing);
     }
 
     @Override
@@ -62,8 +62,8 @@ public class ClusterConfigInfo {
         int result = (int) (currentEpoch ^ (currentEpoch >>> 32));
         result = 31 * result + (int) (lastVoteEpoch ^ (lastVoteEpoch >>> 32));
         result = 31 * result + nodes.hashCode();
-        result = 31 * result + Arrays.hashCode(migratingSlotsTo);
-        result = 31 * result + Arrays.hashCode(importingSlotsFrom);
+        result = 31 * result + Arrays.hashCode(migrating);
+        result = 31 * result + Arrays.hashCode(importing);
         return result;
     }
 

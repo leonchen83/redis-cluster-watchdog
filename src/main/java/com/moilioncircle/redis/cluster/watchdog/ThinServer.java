@@ -40,18 +40,18 @@ public class ThinServer {
     private static final Log logger = LogFactory.getLog(ThinServer.class);
 
     private ClusterManagers managers;
-    private volatile NioBootstrapImpl<Object> cfd;
+    private volatile NioBootstrapImpl<Object> acceptor;
 
     public ThinServer(ClusterManagers managers) {
         this.managers = managers;
     }
 
     public void start() {
-        cfd = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
-        cfd.setEncoder(RedisEncoder::new);
-        cfd.setDecoder(RedisDecoder::new);
-        cfd.setup();
-        cfd.setTransportListener(new TransportListener<Object>() {
+        acceptor = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
+        acceptor.setEncoder(RedisEncoder::new);
+        acceptor.setDecoder(RedisDecoder::new);
+        acceptor.setup();
+        acceptor.setTransportListener(new TransportListener<Object>() {
             @Override
             public void onConnected(Transport<Object> transport) {
                 if (managers.configuration.isVerbose()) {
@@ -78,7 +78,7 @@ public class ThinServer {
             }
         });
         try {
-            cfd.connect(null, managers.configuration.getClusterAnnouncePort()).get();
+            acceptor.connect(null, managers.configuration.getClusterAnnouncePort()).get();
         } catch (InterruptedException | ExecutionException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -89,17 +89,15 @@ public class ThinServer {
     }
 
     public void stop(long timeout, TimeUnit unit) {
-        NioBootstrapImpl<Object> cfd = this.cfd;
-        if (cfd != null) {
-            try {
-                cfd.shutdown().get(timeout, unit);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } catch (ExecutionException e) {
-                logger.error("unexpected error", e.getCause());
-            } catch (TimeoutException e) {
-                logger.error("stop timeout error", e);
-            }
+        NioBootstrapImpl<Object> acceptor = this.acceptor;
+        try {
+            if (acceptor != null) acceptor.shutdown().get(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            logger.error("unexpected error", e.getCause());
+        } catch (TimeoutException e) {
+            logger.error("stop timeout error", e);
         }
     }
 }

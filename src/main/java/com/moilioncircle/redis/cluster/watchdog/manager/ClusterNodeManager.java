@@ -46,10 +46,10 @@ public class ClusterNodeManager {
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (Objects.equals(server.cluster.slots[i], node))
                 managers.slots.clusterDelSlot(i);
-            if (Objects.equals(server.cluster.migratingSlotsTo[i], node))
-                server.cluster.migratingSlotsTo[i] = null;
-            if (Objects.equals(server.cluster.importingSlotsFrom[i], node))
-                server.cluster.importingSlotsFrom[i] = null;
+            if (Objects.equals(server.cluster.migrating[i], node))
+                server.cluster.migrating[i] = null;
+            if (Objects.equals(server.cluster.importing[i], node))
+                server.cluster.importing[i] = null;
         }
 
         server.cluster.nodes.values().stream().

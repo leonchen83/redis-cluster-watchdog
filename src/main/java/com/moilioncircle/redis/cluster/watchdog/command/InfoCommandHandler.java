@@ -32,9 +32,7 @@ public class InfoCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length == 1 || message.length == 2) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("cluster_enabled:").append(1).append("\r\n");
-            replyBulk(t, builder.toString());
+            replyBulk(t, "cluster_enabled:1\r\n");
         } else {
             replyError(t, "wrong number of arguments for 'info' command");
         }

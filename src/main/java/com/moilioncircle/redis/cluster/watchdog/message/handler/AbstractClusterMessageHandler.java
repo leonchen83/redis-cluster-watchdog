@@ -71,7 +71,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(slots, i)) continue;
             if (Objects.equals(server.cluster.slots[i], sender)) continue;
-            if (server.cluster.importingSlotsFrom[i] != null) continue;
+            if (server.cluster.importing[i] != null) continue;
             if (server.cluster.slots[i] == null || server.cluster.slots[i].configEpoch < senderConfigEpoch) {
                 if (Objects.equals(server.cluster.slots[i], previous))
                     next = sender;
@@ -183,6 +183,6 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
 
         server.cluster.currentEpoch++;
         server.myself.configEpoch = server.cluster.currentEpoch;
-        logger.warn("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + server.myself.configEpoch);
+        logger.info("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + server.myself.configEpoch);
     }
 }

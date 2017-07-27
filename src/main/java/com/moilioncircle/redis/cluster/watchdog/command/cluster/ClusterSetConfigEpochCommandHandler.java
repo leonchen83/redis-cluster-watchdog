@@ -57,7 +57,6 @@ public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler 
             }
         } catch (Exception e) {
             replyError(t, "Invalid config epoch specified: " + message[2]);
-            return;
         }
     }
 }

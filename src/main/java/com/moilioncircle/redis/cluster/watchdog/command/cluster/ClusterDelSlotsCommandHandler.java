@@ -71,8 +71,8 @@ public class ClusterDelSlotsCommandHandler extends AbstractCommandHandler {
         }
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (slots[i] == 0) continue;
-            if (server.cluster.importingSlotsFrom[i] != null)
-                server.cluster.importingSlotsFrom[i] = null;
+            if (server.cluster.importing[i] != null)
+                server.cluster.importing[i] = null;
             managers.slots.clusterDelSlot(i);
         }
         managers.states.clusterUpdateState();
