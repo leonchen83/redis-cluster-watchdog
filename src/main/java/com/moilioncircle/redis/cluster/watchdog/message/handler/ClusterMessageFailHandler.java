@@ -20,7 +20,7 @@ public class ClusterMessageFailHandler extends AbstractClusterMessageHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
-        logger.debug("Fail packet received: node:" + link.node == null ? "(nil)" : link.node.name);
+        logger.debug("Fail packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
 
         if (sender == null) {
             logger.info("Ignoring FAIL message from unknown node " + hdr.name + " fail " + hdr.data.fail.name);

@@ -18,7 +18,7 @@ public class ClusterMessageUpdateHandler extends AbstractClusterMessageHandler {
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
-        logger.debug("Update packet received: node:" + link.node == null ? "(nil)" : link.node.name);
+        logger.debug("Update packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
         if (sender == null) return true;
         long configEpoch = hdr.data.config.configEpoch;
         ClusterNode node = managers.nodes.clusterLookupNode(hdr.data.config.name);

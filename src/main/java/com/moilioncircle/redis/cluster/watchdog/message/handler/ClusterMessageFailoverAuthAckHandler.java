@@ -18,7 +18,7 @@ public class ClusterMessageFailoverAuthAckHandler extends AbstractClusterMessage
 
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
-        logger.debug("Failover auth ack packet received: node:" + link.node == null ? "(nil)" : link.node.name);
+        logger.debug("Failover auth ack packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
 
         if (sender == null) return true;
         if (nodeIsMaster(sender) && sender.assignedSlots > 0 && hdr.currentEpoch >= server.cluster.failoverAuthEpoch) {
