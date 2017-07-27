@@ -64,8 +64,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <commons.logging.version>1.2</commons.logging.version>
         <netty.version>4.1.11.Final</netty.version>
+        <commons.logging.version>1.2</commons.logging.version>
         <redis.replicator.version>2.3.0</redis.replicator.version>
     </properties>
 
@@ -79,6 +79,11 @@
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
             <version>${commons.logging.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.moilioncircle</groupId>
+            <artifactId>redis-replicator</artifactId>
+            <version>${redis.replicator.version}</version>
         </dependency>
         <!-- test -->
         <dependency>
@@ -104,11 +109,6 @@
             <artifactId>jedis</artifactId>
             <version>2.9.0</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.moilioncircle</groupId>
-            <artifactId>redis-replicator</artifactId>
-            <version>${redis.replicator.version}</version>
         </dependency>
     </dependencies>
 
