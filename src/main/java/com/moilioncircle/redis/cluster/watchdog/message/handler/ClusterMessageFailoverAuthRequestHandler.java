@@ -67,7 +67,7 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
             if (!bitmapTestBit(hdr.slots, i)) continue;
             if (server.cluster.slots[i] == null) continue;
             if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue;
-            logger.warn("Failover auth denied to " + node.name + ": slot %d epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + hdr.configEpoch + ")");
+            logger.warn("Failover auth denied to " + node.name + ": slot " + i + " epoch (" + server.cluster.slots[i].configEpoch + ") > reqEpoch (" + hdr.configEpoch + ")");
             return;
         }
 
