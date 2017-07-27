@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Leon Chen
  * @since 1.0.0
  */
+@SuppressWarnings("unchecked")
 public abstract class AbstractTransport<T> extends SimpleChannelInboundHandler<T> implements Transport<T> {
 
     private long id;
