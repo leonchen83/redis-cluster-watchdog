@@ -19,6 +19,8 @@ package com.moilioncircle.redis.cluster.watchdog.command.cluster;
 import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import static java.lang.Long.parseLong;
 
@@ -27,6 +29,8 @@ import static java.lang.Long.parseLong;
  * @since 1.0.0
  */
 public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler {
+
+    private static final Log logger = LogFactory.getLog(ClusterSetConfigEpochCommandHandler.class);
 
     public ClusterSetConfigEpochCommandHandler(ClusterManagers managers) {
         super(managers);

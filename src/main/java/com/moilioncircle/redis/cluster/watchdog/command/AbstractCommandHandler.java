@@ -19,15 +19,12 @@ package com.moilioncircle.redis.cluster.watchdog.command;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
 public abstract class AbstractCommandHandler implements CommandHandler {
-    protected static final Log logger = LogFactory.getLog(AbstractCommandHandler.class);
 
     protected final ServerState server;
     protected final ClusterManagers managers;

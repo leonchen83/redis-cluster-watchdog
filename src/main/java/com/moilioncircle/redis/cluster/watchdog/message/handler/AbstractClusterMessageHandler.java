@@ -24,7 +24,7 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
  */
 public abstract class AbstractClusterMessageHandler implements ClusterMessageHandler {
 
-    protected static final Log logger = LogFactory.getLog(AbstractClusterMessageHandler.class);
+    private static final Log logger = LogFactory.getLog(AbstractClusterMessageHandler.class);
 
     protected ServerState server;
     protected ClusterManagers managers;

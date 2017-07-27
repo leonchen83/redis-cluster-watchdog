@@ -4,6 +4,8 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_FLAG0_FORCEACK;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
@@ -15,6 +17,9 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
  * @since 1.0.0
  */
 public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMessageHandler {
+
+    private static final Log logger = LogFactory.getLog(ClusterMessageFailoverAuthRequestHandler.class);
+
     public ClusterMessageFailoverAuthRequestHandler(ClusterManagers managers) {
         super(managers);
     }

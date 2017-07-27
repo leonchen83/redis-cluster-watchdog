@@ -75,7 +75,8 @@ public class ClusterConfigManager {
                     }
                     int colonIdx = hostAndPort.indexOf(":");
                     int atIdx = hostAndPort.indexOf("@");
-                    node.ip = hostAndPort.substring(0, colonIdx);
+                    String ip = hostAndPort.substring(0, colonIdx);
+                    node.ip = ip.equalsIgnoreCase("0.0.0.0") ? null : ip;
                     node.port = parseInt(hostAndPort.substring(colonIdx + 1, atIdx == -1 ? hostAndPort.length() : atIdx));
                     node.busPort = atIdx == -1 ? node.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx + 1));
                     String[] roles = args.get(2).split(",");

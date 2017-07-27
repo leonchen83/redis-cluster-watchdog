@@ -4,6 +4,8 @@ import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 
@@ -12,6 +14,9 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSl
  * @since 1.0.0
  */
 public class ClusterMessageUpdateHandler extends AbstractClusterMessageHandler {
+
+    private static final Log logger = LogFactory.getLog(ClusterMessageUpdateHandler.class);
+
     public ClusterMessageUpdateHandler(ClusterManagers managers) {
         super(managers);
     }

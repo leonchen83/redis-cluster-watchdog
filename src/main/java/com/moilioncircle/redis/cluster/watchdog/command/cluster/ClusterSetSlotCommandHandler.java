@@ -20,6 +20,8 @@ import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.util.Objects;
 
@@ -31,6 +33,8 @@ import static java.lang.Integer.parseInt;
  * @since 1.0.0
  */
 public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
+
+    private static final Log logger = LogFactory.getLog(ClusterSetSlotCommandHandler.class);
 
     public ClusterSetSlotCommandHandler(ClusterManagers managers) {
         super(managers);
