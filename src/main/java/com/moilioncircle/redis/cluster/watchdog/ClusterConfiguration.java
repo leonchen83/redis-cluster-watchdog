@@ -12,9 +12,9 @@ public class ClusterConfiguration {
     private String clusterConfigFile;
     private int clusterAnnounceBusPort;
     private int clusterAnnouncePort = 6379;
-    private int clusterMigrationBarrier = 1;
     private volatile boolean verbose = false;
     private volatile boolean asMaster = false;
+    private volatile int clusterMigrationBarrier = 1;
     private volatile long clusterNodeTimeout = 15000;
     private volatile boolean clusterRequireFullCoverage = true;
     private NetworkConfiguration networkConfiguration = NetworkConfiguration.defaultSetting();
