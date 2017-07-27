@@ -71,13 +71,16 @@ Following command **MUST** open `ClusterConfiguration.asMaster`
 
 ## Supported redis-trib.rb command
 
-`redis-trib.rb create host1:port1 ... hostN:portN`  
+`redis-trib.rb create <--replicas N> host1:port1 ... hostN:portN`  
 `redis-trib.rb check host:port`  
 `redis-trib.rb info host:port`  
-`redis-trib.rb add-node new_host:new_port existing_host:existing_port`  
+`redis-trib.rb rebalance <--weight N> --auto-weights --threshold N --use-empty-masters --simulate --timeout milliseconds --pipeline N`  
+`redis-trib.rb reshard --from host:port --to host:port --slots N --yes --timeout milliseconds --pipeline N`  
+`redis-trib.rb add-node <--slave --master-id masterid> new_host:new_port existing_host:existing_port`  
 `redis-trib.rb del-node host:port node_id`  
 `redis-trib.rb call host:port command arg arg .. arg`  
 `redis-trib.rb set-timeout host:port milliseconds`  
+`redis-trib.rb import --from host:port <--copy> <--replace> host:port`  
 `redis-trib.rb help`  
 
 ## Listeners  
