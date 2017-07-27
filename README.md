@@ -66,11 +66,29 @@ Following command **MUST** open `ClusterConfiguration.asMaster`
 `CLUSTER SETSLOT slot IMPORTING nodename`  
 `CLUSTER SETSLOT slot STABLE`  
 `CLUSTER SETSLOT slot NODE nodename`  
+`CLUSTER GETKEYSINSLOT slot count` will always return a zero length array  
+`CLUSTER COUNTKEYSINSLOT slot` will always return zero  
+
+## Supported redis-trib.rb command
+
+`redis-trib.rb create <--replicas N> host1:port1 ... hostN:portN`  
+`redis-trib.rb check host:port`  
+`redis-trib.rb info host:port`  
+`redis-trib.rb rebalance <--weight N> --auto-weights --threshold N --use-empty-masters --simulate --timeout milliseconds --pipeline N`  
+`redis-trib.rb reshard --from host:port --to host:port --slots N --yes --timeout milliseconds --pipeline N`  
+`redis-trib.rb add-node <--slave --master-id masterid> new_host:new_port existing_host:existing_port`  
+`redis-trib.rb del-node host:port node_id`  
+`redis-trib.rb call host:port command arg arg .. arg`  
+`redis-trib.rb set-timeout host:port milliseconds`  
+`redis-trib.rb import --from host:port <--copy> <--replace> host:port`  
+`redis-trib.rb help`  
 
 ## Listeners  
 
 `ReplicationListener`  
 `ClusterConfigListener`  
 `ClusterStateListener`  
+`RestoreCommandListener`  
+`ClusterNodeFailedListener`  
 
 # Have fun!!
