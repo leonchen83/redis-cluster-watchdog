@@ -12,8 +12,8 @@ public class ClusterConfiguration {
     private String clusterConfigFile;
     private int clusterAnnounceBusPort;
     private int clusterAnnouncePort = 6379;
+    private volatile boolean master = false;
     private volatile boolean verbose = false;
-    private volatile boolean asMaster = false;
     private volatile int clusterMigrationBarrier = 1;
     private volatile long clusterNodeTimeout = 15000;
     private volatile boolean clusterRequireFullCoverage = true;
@@ -23,8 +23,7 @@ public class ClusterConfiguration {
     }
 
     public static ClusterConfiguration defaultSetting() {
-        ClusterConfiguration configuration = new ClusterConfiguration();
-        return configuration;
+        return new ClusterConfiguration();
     }
 
     public boolean isVerbose() {
@@ -36,12 +35,12 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public boolean isAsMaster() {
-        return asMaster;
+    public boolean isMaster() {
+        return master;
     }
 
-    public ClusterConfiguration setAsMaster(boolean asMaster) {
-        this.asMaster = asMaster;
+    public ClusterConfiguration setMaster(boolean master) {
+        this.master = master;
         return this;
     }
 

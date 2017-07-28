@@ -44,7 +44,7 @@ public class ClusterFailoverManager {
     }
 
     public void clusterHandleSlaveFailover() {
-        if (!managers.configuration.isAsMaster()) return;
+        if (!managers.configuration.isMaster()) return;
         long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
         long authTimeout = Math.max(managers.configuration.getClusterNodeTimeout() * 2, 2000);
         long authRetryTime = authTimeout * 2;

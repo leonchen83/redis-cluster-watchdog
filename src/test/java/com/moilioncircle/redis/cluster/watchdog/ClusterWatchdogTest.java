@@ -30,7 +30,7 @@ public class ClusterWatchdogTest {
             final int j = i;
             new Thread(() -> {
                 ClusterConfiguration c = ClusterConfiguration.defaultSetting();
-                c.setAsMaster(true);
+                c.setMaster(true);
                 c.setClusterAnnouncePort(10000 + j);
                 ClusterWatchdog watchdog = new RedisClusterWatchdog(c);
                 watchdog.setRestoreCommandListener(new RestoreCommandListener() {

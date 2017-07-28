@@ -58,7 +58,7 @@ $./redis-cli -p 10001
 `CLUSTER SET-CONFIG-EPOCH epoch`  
 `CLUSTER RESET <HARD | SOFT>`  
   
-Following command **MUST** open `ClusterConfiguration.asMaster`  
+Following command **MUST** open `ClusterConfiguration.master`  
   
 `CLUSTER ADDSLOTS slot <slot>`  
 `CLUSTER DELSLOTS slot <slot>`  

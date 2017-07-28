@@ -8,7 +8,7 @@ import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
  */
 public class ReplicationListenerTest {
     public static void main(String[] args) {
-        ClusterWatchdog watchdog = new RedisClusterWatchdog(ClusterConfiguration.defaultSetting().setAsMaster(true));
+        ClusterWatchdog watchdog = new RedisClusterWatchdog(ClusterConfiguration.defaultSetting().setMaster(true));
         watchdog.setReplicationListener(new TestReplicationListener());
         watchdog.setRestoreCommandListener(new RestoreCommandListener() {
             @Override

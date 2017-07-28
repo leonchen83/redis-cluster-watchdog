@@ -36,7 +36,7 @@ public class ClusterAddSlotsCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
 
-        if (!managers.configuration.isAsMaster()) {
+        if (!managers.configuration.isMaster()) {
             replyError(t, "Unsupported COMMAND");
             return;
         }
