@@ -67,7 +67,6 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
         hdr.port = in.readUnsignedShort();
         hdr.busPort = hdr.port + CLUSTER_PORT_INCR;
         hdr.flags = in.readUnsignedShort();
-        hdr.flags = in.readUnsignedShort();
         hdr.state = valueOf(in.readByte());
         in.readBytes(hdr.messageFlags);
         switch (hdr.type) {
