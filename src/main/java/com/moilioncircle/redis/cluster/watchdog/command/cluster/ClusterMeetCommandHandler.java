@@ -19,8 +19,11 @@ package com.moilioncircle.redis.cluster.watchdog.command.cluster;
 import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_PORT_INCR;
+import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V0;
 import static java.lang.Integer.parseInt;
 
 /**
@@ -29,6 +32,7 @@ import static java.lang.Integer.parseInt;
  */
 public class ClusterMeetCommandHandler extends AbstractCommandHandler {
 
+    private static final Log logger = LogFactory.getLog(ClusterMeetCommandHandler.class);
 
     public ClusterMeetCommandHandler(ClusterManagers managers) {
         super(managers);
@@ -59,6 +63,11 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
             }
         } else {
             busPort = port + CLUSTER_PORT_INCR;
+        }
+
+        if (managers.configuration.getVersion() == PROTOCOL_V0) {
+            busPort = port + CLUSTER_PORT_INCR;
+            logger.warn("bus port force set to " + busPort + ", cause version is 0.");
         }
 
         if (port <= 0 || port > 65535) {

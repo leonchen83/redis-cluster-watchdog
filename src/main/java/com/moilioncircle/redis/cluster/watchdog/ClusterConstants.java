@@ -16,8 +16,6 @@ public class ClusterConstants {
 
     public static final int CLUSTER_PORT_INCR = 10000;
 
-    public static final int CLUSTER_PROTOCOL_VERSION = 1;
-
     public static final int CLUSTER_FAIL_REPORT_VALIDITY_MULTI = 2;
 
     public static final int CLUSTER_FAIL_UNDO_TIME_MULTI = 2;

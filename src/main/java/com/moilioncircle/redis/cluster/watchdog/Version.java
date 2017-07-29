@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 Leon Chen
+ * Copyright 2016 leon chen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,22 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ClusterConfigListenerTest {
-    public static void main(String[] args) {
-        ClusterWatchdog watchdog = new RedisClusterWatchdog(ClusterConfiguration.defaultSetting().setVersion(Version.PROTOCOL_V1));
-        watchdog.setClusterConfigListener(new TestClusterConfigListener());
-        watchdog.start();
+public enum Version {
+    PROTOCOL_V0(0), PROTOCOL_V1(1);
+
+    private int version;
+
+    Version(int version) {
+        this.version = version;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public static Version valueOf(int version) {
+        if (version == 0) return PROTOCOL_V0;
+        else if (version == 1) return PROTOCOL_V1;
+        else throw new UnsupportedOperationException("version: " + version);
     }
 }

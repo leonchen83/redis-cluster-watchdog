@@ -1,6 +1,11 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_PORT_INCR;
+import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V0;
 
 /**
  * @author Leon Chen
@@ -8,12 +13,15 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
  */
 public class ClusterConfiguration {
 
+    private static final Log logger = LogFactory.getLog(ClusterConfiguration.class);
+
     private String clusterAnnounceIp;
     private String clusterConfigFile;
     private int clusterAnnounceBusPort;
     private int clusterAnnouncePort = 6379;
     private volatile boolean master = false;
     private volatile boolean verbose = false;
+    private volatile Version version = PROTOCOL_V0;
     private volatile int clusterMigrationBarrier = 1;
     private volatile long clusterNodeTimeout = 15000;
     private volatile boolean clusterRequireFullCoverage = true;
@@ -32,6 +40,15 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setVerbose(boolean verbose) {
         this.verbose = verbose;
+        return this;
+    }
+
+    public Version getVersion() {
+        return version;
+    }
+
+    public ClusterConfiguration setVersion(Version version) {
+        this.version = version;
         return this;
     }
 
@@ -117,16 +134,27 @@ public class ClusterConfiguration {
     }
 
     public void validate() {
-        if (clusterAnnouncePort <= 0 || clusterAnnouncePort > 65535) {
-            throw new ClusterConfigurationException("illegal port" + clusterAnnouncePort);
+        if (version == null) {
+            throw new ClusterConfigurationException("illegal version: " + version);
         }
 
-        if (clusterAnnounceBusPort == 0) {
-            clusterAnnounceBusPort = clusterAnnouncePort + ClusterConstants.CLUSTER_PORT_INCR;
+        if (clusterAnnouncePort <= 0 || clusterAnnouncePort > 65535) {
+            throw new ClusterConfigurationException("illegal port: " + clusterAnnouncePort);
+        }
+
+        if (clusterAnnounceBusPort == 0 || version == PROTOCOL_V0) {
+            clusterAnnounceBusPort = clusterAnnouncePort + CLUSTER_PORT_INCR;
+            if (version == PROTOCOL_V0)
+                logger.warn("clusterAnnouncePort force set to " + clusterAnnounceBusPort + ", cause version is 0.");
         }
 
         if (clusterAnnounceBusPort <= 0 || clusterAnnounceBusPort > 65535) {
-            throw new ClusterConfigurationException("illegal bus port" + clusterAnnounceBusPort);
+            throw new ClusterConfigurationException("illegal bus port: " + clusterAnnounceBusPort);
+        }
+
+        if (clusterAnnounceIp != null && version == PROTOCOL_V0) {
+            clusterAnnounceIp = null;
+            logger.warn("clusterAnnounceIp force set to null, cause version is 0.");
         }
 
         if (clusterConfigFile == null) {
@@ -134,11 +162,11 @@ public class ClusterConfiguration {
         }
 
         if (clusterMigrationBarrier < 1) {
-            throw new ClusterConfigurationException("illegal migration barrier" + clusterMigrationBarrier);
+            throw new ClusterConfigurationException("illegal migration barrier: " + clusterMigrationBarrier);
         }
 
         if (clusterNodeTimeout <= 0) {
-            throw new ClusterConfigurationException("illegal node timeout" + clusterNodeTimeout);
+            throw new ClusterConfigurationException("illegal node timeout: " + clusterNodeTimeout);
         }
     }
 }

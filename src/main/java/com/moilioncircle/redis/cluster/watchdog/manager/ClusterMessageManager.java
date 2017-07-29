@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V0;
+import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 
 /**
@@ -69,7 +71,7 @@ public class ClusterMessageManager {
     public ClusterMessage clusterBuildMessageHdr(int type) {
         ClusterMessage hdr = new ClusterMessage();
         ClusterNode master = (nodeIsSlave(server.myself) && server.myself.master != null) ? server.myself.master : server.myself;
-        hdr.version = CLUSTER_PROTOCOL_VERSION;
+        hdr.version = managers.configuration.getVersion();
         hdr.signature = "RCmb";
         hdr.type = type;
         hdr.name = server.myself.name;
@@ -106,11 +108,51 @@ public class ClusterMessageManager {
         gossip.busPort = n.busPort;
         gossip.pingTime = n.pingTime;
         gossip.pongTime = n.pongTime;
-        gossip.reserved = new byte[4];
         hdr.data.gossips.add(gossip);
     }
 
     public void clusterSendPing(ClusterLink link, int type) {
+        if (managers.configuration.getVersion() == PROTOCOL_V0) {
+            clusterSendPingV0(link, type);
+        } else if (managers.configuration.getVersion() == PROTOCOL_V1) {
+            clusterSendPingV1(link, type);
+        }
+    }
+
+    private void clusterSendPingV0(ClusterLink link, int type) {
+        int actives = server.cluster.nodes.size() - 2;
+        int wanted = server.cluster.nodes.size() / 10;
+        wanted = Math.min(Math.max(wanted, 3), actives);
+
+        if (link.node != null && type == CLUSTERMSG_TYPE_PING)
+            link.node.pingTime = System.currentTimeMillis();
+
+        ClusterMessage hdr = clusterBuildMessageHdr(type);
+        int max = wanted * 3, gossips = 0;
+        while (actives > 0 && gossips < wanted && max-- > 0) {
+            List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
+            ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
+
+            if (Objects.equals(node, server.myself)) continue;
+
+            if (max > wanted * 2 && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0)
+                continue;
+
+            if ((node.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (node.link == null && node.assignedSlots == 0))
+                continue;
+
+            if (clusterNodeIsInGossipSection(hdr, gossips, node)) continue;
+
+            clusterSetGossipEntry(hdr, node);
+            actives--;
+            gossips++;
+        }
+
+        hdr.count = gossips;
+        clusterSendMessage(link, hdr);
+    }
+
+    private void clusterSendPingV1(ClusterLink link, int type) {
         int actives = server.cluster.nodes.size() - 2;
         int wanted = server.cluster.nodes.size() / 10;
         int fWanted = (int) server.cluster.pFailNodes;

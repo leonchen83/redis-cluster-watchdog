@@ -12,5 +12,4 @@ public class ClusterMessageDataGossip {
     public int busPort;
     public long pingTime;
     public long pongTime;
-    public byte[] reserved = new byte[4];
 }

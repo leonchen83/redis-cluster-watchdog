@@ -14,6 +14,7 @@ import java.util.Objects;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
+import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.representClusterNodeFlags;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
@@ -40,7 +41,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
             server.cluster.messagesReceived[hdr.type]++;
         }
 
-        if (hdr.version != CLUSTER_PROTOCOL_VERSION) return true;
+        if (hdr.version != managers.configuration.getVersion()) return true;
 
         ClusterNode sender = managers.nodes.clusterLookupNode(hdr.name);
         if (sender != null && !nodeInHandshake(sender)) {
@@ -114,7 +115,8 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
                 }
             }
 
-            if ((gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0
+            if (managers.configuration.getVersion() == PROTOCOL_V1
+                    && (gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0
                     && node.pingTime == 0
                     && managers.nodes.clusterNodeFailureReportsCount(node) == 0
                     && gossip.pongTime <= (System.currentTimeMillis() + 500)
