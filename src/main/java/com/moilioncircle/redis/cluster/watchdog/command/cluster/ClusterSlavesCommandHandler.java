@@ -18,6 +18,7 @@ package com.moilioncircle.redis.cluster.watchdog.command.cluster;
 
 import com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo;
 import com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo;
+import com.moilioncircle.redis.cluster.watchdog.Version;
 import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
@@ -58,9 +59,10 @@ public class ClusterSlavesCommandHandler extends AbstractCommandHandler {
         StringBuilder builder = new StringBuilder();
         builder.append("*").append(node.slaves.size()).append("\r\n");
         for (ClusterNode slave : node.slaves) {
+            Version version = managers.configuration.getVersion();
             ClusterConfigInfo configInfo = ClusterConfigInfo.valueOf(server.cluster);
             ClusterNodeInfo nodeInfo = ClusterNodeInfo.valueOf(slave, server.cluster.myself);
-            String description = clusterGenNodeDescription(configInfo, nodeInfo);
+            String description = clusterGenNodeDescription(configInfo, nodeInfo, version);
             builder.append("$").append(description.length()).append("\r\n").append(description).append("\r\n");
         }
         t.write(builder.toString().getBytes(), true);

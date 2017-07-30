@@ -2,6 +2,7 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 
 import com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo;
 import com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo;
+import com.moilioncircle.redis.cluster.watchdog.Version;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import com.moilioncircle.redis.cluster.watchdog.util.collection.ByteMap;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.util.stream.Collectors.joining;
@@ -190,7 +192,8 @@ public class ClusterConfigManager {
             File file = new File(managers.configuration.getClusterConfigFile());
             if (!file.exists() && !file.createNewFile()) return false;
             r = new BufferedWriter(new FileWriter(file));
-            String line = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE) +
+            Version version = managers.configuration.getVersion();
+            String line = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE, version) +
                     "vars currentEpoch " + info.currentEpoch +
                     " lastVoteEpoch " + info.lastVoteEpoch;
             r.write(line);
@@ -215,11 +218,14 @@ public class ClusterConfigManager {
                 map(Map.Entry::getValue).collect(joining(","));
     }
 
-    public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node) {
+    public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node, Version version) {
         StringBuilder builder = new StringBuilder();
 
         builder.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip);
-        builder.append(":").append(node.port).append("@").append(node.busPort).append(" ");
+        builder.append(":").append(node.port);
+        if (version == PROTOCOL_V1)
+            builder.append("@").append(node.busPort);
+        builder.append(" ");
         builder.append(representClusterNodeFlags(node.flags)).append(" ");
         builder.append(node.master == null ? "-" : node.master).append(" ");
         builder.append(node.pingTime).append(" ").append(node.pongTime);
@@ -257,11 +263,11 @@ public class ClusterConfigManager {
         return builder.toString();
     }
 
-    public static String clusterGenNodesDescription(ClusterConfigInfo info, int filter) {
+    public static String clusterGenNodesDescription(ClusterConfigInfo info, int filter, Version version) {
         StringBuilder builder = new StringBuilder();
         for (ClusterNodeInfo node : info.nodes.values()) {
             if ((node.flags & filter) != 0) continue;
-            builder.append(clusterGenNodeDescription(info, node));
+            builder.append(clusterGenNodeDescription(info, node, version));
             builder.append("\n");
         }
         return builder.toString();
