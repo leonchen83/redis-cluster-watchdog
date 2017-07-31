@@ -8,6 +8,7 @@ import com.moilioncircle.redis.cluster.watchdog.message.RCmbMessage;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;
+import com.moilioncircle.redis.cluster.watchdog.util.Resourcable;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
 import com.moilioncircle.redis.cluster.watchdog.util.net.session.DefaultSession;
@@ -36,7 +37,7 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ThinGossip {
+public class ThinGossip implements Resourcable {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
 
     public ClusterManagers managers;
@@ -49,6 +50,7 @@ public class ThinGossip {
         this.configuration = managers.configuration;
     }
 
+    @Override
     public void start() {
         this.clusterInit();
         managers.cron.scheduleAtFixedRate(() -> {
@@ -59,6 +61,7 @@ public class ThinGossip {
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
+    @Override
     public void stop(long timeout, TimeUnit unit) {
         try {
             managers.cron.shutdown();

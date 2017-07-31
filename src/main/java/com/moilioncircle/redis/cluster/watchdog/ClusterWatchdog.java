@@ -16,17 +16,13 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
-import java.util.concurrent.TimeUnit;
+import com.moilioncircle.redis.cluster.watchdog.util.Resourcable;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public interface ClusterWatchdog {
-
-    void start();
-
-    void stop(long timeout, TimeUnit unit);
+public interface ClusterWatchdog extends Resourcable {
 
     ClusterConfiguration getClusterConfiguration();
 

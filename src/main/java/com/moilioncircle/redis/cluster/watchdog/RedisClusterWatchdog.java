@@ -16,6 +16,8 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.cluster.watchdog.util.Resourcable;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,8 +26,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class RedisClusterWatchdog extends AbstractClusterWatchdog {
 
-    protected final ThinServer server;
-    protected final ThinGossip gossip;
+    protected final Resourcable server;
+    protected final Resourcable gossip;
 
     protected RedisClusterWatchdog(ClusterConfiguration configuration) {
         super(configuration);

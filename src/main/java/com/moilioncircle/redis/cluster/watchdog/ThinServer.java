@@ -19,6 +19,7 @@ package com.moilioncircle.redis.cluster.watchdog;
 import com.moilioncircle.redis.cluster.watchdog.codec.RedisDecoder;
 import com.moilioncircle.redis.cluster.watchdog.codec.RedisEncoder;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
+import com.moilioncircle.redis.cluster.watchdog.util.Resourcable;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
@@ -36,7 +37,7 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ThinServer {
+public class ThinServer implements Resourcable {
     private static final Log logger = LogFactory.getLog(ThinServer.class);
 
     private ClusterManagers managers;
@@ -48,6 +49,7 @@ public class ThinServer {
         this.configuration = managers.configuration;
     }
 
+    @Override
     public void start() {
         acceptor = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
         acceptor.setEncoder(RedisEncoder::new);
@@ -82,6 +84,7 @@ public class ThinServer {
         }
     }
 
+    @Override
     public void stop(long timeout, TimeUnit unit) {
         NioBootstrapImpl<Object> acceptor = this.acceptor;
         try {
