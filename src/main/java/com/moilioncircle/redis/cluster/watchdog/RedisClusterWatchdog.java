@@ -16,8 +16,6 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
-import com.moilioncircle.redis.cluster.watchdog.util.Resourcable;
-
 import java.util.concurrent.TimeUnit;
 
 /**

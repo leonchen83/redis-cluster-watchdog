@@ -16,8 +16,6 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
-import com.moilioncircle.redis.cluster.watchdog.util.Resourcable;
-
 /**
  * @author Leon Chen
  * @since 1.0.0

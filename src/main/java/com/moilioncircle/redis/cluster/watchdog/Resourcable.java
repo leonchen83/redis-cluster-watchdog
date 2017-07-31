@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.moilioncircle.redis.cluster.watchdog.util;
+package com.moilioncircle.redis.cluster.watchdog;
 
 import java.util.concurrent.TimeUnit;
 

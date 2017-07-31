@@ -5,11 +5,10 @@ import com.moilioncircle.redis.cluster.watchdog.codec.ClusterMessageEncoder;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.message.RCmbMessage;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageHandler;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;
-import com.moilioncircle.redis.cluster.watchdog.util.Resourcable;
-import com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.util.net.NioBootstrapImpl;
 import com.moilioncircle.redis.cluster.watchdog.util.net.session.DefaultSession;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
@@ -27,11 +26,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
-import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
+import static com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration.defaultSetting;
+import static java.lang.Math.max;
 
 /**
  * @author Leon Chen
@@ -54,10 +55,10 @@ public class ThinGossip implements Resourcable {
     public void start() {
         this.clusterInit();
         managers.cron.scheduleAtFixedRate(() -> {
-            ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
-            clusterCron();
-            ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
-            if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+            ClusterConfigInfo previous = valueOf(managers.server.cluster);
+            clusterCron(); ClusterConfigInfo next = valueOf(managers.server.cluster);
+            if (!previous.equals(next))
+                managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -112,76 +113,54 @@ public class ThinGossip implements Resourcable {
 
     public void clusterInit() {
         managers.server.cluster = new ClusterState();
+        int port = configuration.getClusterAnnouncePort();
+        String address = configuration.getClusterAnnounceIp();
+        int busPort = configuration.getClusterAnnounceBusPort();
+
         if (!managers.configs.clusterLoadConfig()) {
-            managers.server.myself = managers.server.cluster.myself = managers.nodes.createClusterNode(null, CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER);
-            logger.info("No cluster configuration found, I'm " + managers.server.myself.name);
+            int flags = CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER;
+            managers.server.myself = managers.nodes.createClusterNode(null, flags);
+            managers.server.cluster.myself = managers.server.myself;
+            String name = managers.server.myself.name;
+            logger.info("No cluster configuration found, I'm " + name);
             managers.nodes.clusterAddNode(managers.server.myself);
-            managers.notifyNodeAdded(valueOf(managers.server.myself));
-            ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
+            managers.notifyNodeAdded(ClusterNodeInfo.valueOf(managers.server.myself));
+            ClusterConfigInfo next = valueOf(managers.server.cluster);
             managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
         }
 
-        acceptor = new NioBootstrapImpl<>(true, NetworkConfiguration.defaultSetting());
+        acceptor = new NioBootstrapImpl<>(true, defaultSetting());
         acceptor.setEncoder(ClusterMessageEncoder::new);
-        acceptor.setDecoder(ClusterMessageDecoder::new);
-        acceptor.setup();
-        acceptor.setTransportListener(new TransportListener<RCmbMessage>() {
-            @Override
-            public void onConnected(Transport<RCmbMessage> transport) {
-                if (configuration.isVerbose()) logger.info("[acceptor] > " + transport);
-                ClusterLink link = managers.connections.createClusterLink(null);
-                link.fd = new DefaultSession<>(transport);
-                managers.server.cfd.put(transport, link);
-            }
+        acceptor.setDecoder(ClusterMessageDecoder::new); acceptor.setup();
+        acceptor.setTransportListener(new AcceptorTransportListener());
 
-            @Override
-            public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
-                managers.cron.execute(() -> {
-                    ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
-                    ClusterMessage hdr = (ClusterMessage) message;
-                    managers.handlers.get(hdr.type).handle(managers.server.cfd.get(transport), hdr);
-                    ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
-                    if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
-                });
-            }
-
-            @Override
-            public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                managers.connections.freeClusterLink(managers.server.cfd.remove(transport));
-                if (configuration.isVerbose()) logger.info("[acceptor] < " + transport);
-            }
-        });
         try {
-            acceptor.connect(configuration.getClusterAnnounceIp(), configuration.getClusterAnnounceBusPort()).get();
+            acceptor.connect(address, busPort).get();
         } catch (InterruptedException | ExecutionException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            } else {
-                throw new UnsupportedOperationException(e.getCause());
-            }
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            else throw new UnsupportedOperationException(e.getCause());
         }
 
-        managers.server.myself.port = configuration.getClusterAnnouncePort();
-        managers.server.myself.busPort = configuration.getClusterAnnounceBusPort();
+        managers.server.myself.port = port;
+        managers.server.myself.busPort = busPort;
     }
 
     public void clusterCron() {
         try {
-            long now = System.currentTimeMillis();
             managers.server.iteration++;
+            long now = System.currentTimeMillis();
+            ClusterNode myself = managers.server.myself;
+            long nodeTimeout = configuration.getClusterNodeTimeout();
 
             String nextAddress = configuration.getClusterAnnounceIp();
             if (!Objects.equals(managers.server.previousAddress, nextAddress)) {
                 managers.server.previousAddress = nextAddress;
-                if (nextAddress != null) managers.server.myself.ip = nextAddress;
-                else managers.server.myself.ip = null;
+                if (nextAddress != null) myself.ip = nextAddress; else myself.ip = null;
             }
 
-            long handshakeTimeout = configuration.getClusterNodeTimeout();
-            if (handshakeTimeout < 1000) handshakeTimeout = 1000;
             managers.server.cluster.pFailNodes = 0;
-            List<ClusterNode> nodes = new ArrayList<>(managers.server.cluster.nodes.values());
-            for (ClusterNode node : nodes) {
+            long handshakeTimeout = max(nodeTimeout, 1000);
+            for (ClusterNode node : new ArrayList<>(managers.server.cluster.nodes.values())) {
                 if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0) continue;
                 if ((node.flags & CLUSTER_NODE_PFAIL) != 0) managers.server.cluster.pFailNodes++;
                 if (nodeInHandshake(node) && now - node.createTime > handshakeTimeout) {
@@ -192,47 +171,23 @@ public class ThinGossip implements Resourcable {
                 if (initiator == null) {
                     initiator = new NioBootstrapImpl<>(false, configuration.getNetworkConfiguration());
                     initiator.setEncoder(ClusterMessageEncoder::new);
-                    initiator.setDecoder(ClusterMessageDecoder::new);
-                    initiator.setup();
+                    initiator.setDecoder(ClusterMessageDecoder::new); initiator.setup();
                 }
 
                 final ClusterLink link = managers.connections.createClusterLink(node);
+                TransportListener<RCmbMessage> r = new InitiatorTransportListener(link);
                 try {
                     initiator.connect(node.ip, node.busPort).get();
-                    initiator.getTransport().setTransportListener(new TransportListener<RCmbMessage>() {
-                        @Override
-                        public void onConnected(Transport<RCmbMessage> transport) {
-                            if (configuration.isVerbose()) logger.info("[initiator] > " + transport);
-                        }
-
-                        @Override
-                        public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
-                            managers.cron.execute(() -> {
-                                ClusterConfigInfo previous = ClusterConfigInfo.valueOf(managers.server.cluster);
-                                ClusterMessage hdr = (ClusterMessage) message;
-                                managers.handlers.get(hdr.type).handle(link, hdr);
-                                ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
-                                if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
-                            });
-                        }
-
-                        @Override
-                        public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-                            managers.connections.freeClusterLink(link);
-                            if (configuration.isVerbose()) logger.info("[initiator] < " + transport);
-                        }
-                    });
+                    initiator.getTransport().setTransportListener(r);
                     link.fd = new DefaultSession<>(initiator.getTransport());
                 } catch (InterruptedException | ExecutionException e) {
                     if (e instanceof InterruptedException) Thread.currentThread().interrupt();
                     if (node.pingTime == 0) node.pingTime = System.currentTimeMillis(); continue;
                 }
-                node.link = link;
-                link.createTime = System.currentTimeMillis();
-                long previousPing = node.pingTime;
-                managers.messages.clusterSendPing(link, (node.flags & CLUSTER_NODE_MEET) != 0 ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
-                if (previousPing != 0) node.pingTime = previousPing;
-                node.flags &= ~CLUSTER_NODE_MEET;
+                node.link = link; link.createTime = System.currentTimeMillis();
+                long previousPingTime = node.pingTime; boolean meet = (node.flags & CLUSTER_NODE_MEET) != 0;
+                managers.messages.clusterSendPing(link, meet ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
+                if (previousPingTime != 0) node.pingTime = previousPingTime; node.flags &= ~CLUSTER_NODE_MEET;
             }
 
             long minPongTime = 0;
@@ -259,78 +214,148 @@ public class ThinGossip implements Resourcable {
             for (ClusterNode node : managers.server.cluster.nodes.values()) {
                 now = System.currentTimeMillis();
 
-                if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR | CLUSTER_NODE_HANDSHAKE)) != 0) continue;
-                if (nodeIsSlave(managers.server.myself) && nodeIsMaster(node) && !nodeFailed(node)) {
+                if ((node.flags & CLUSTER_NODE_MYSELF) != 0) continue;
+                if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
+                if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
+                if (nodeIsSlave(myself) && nodeIsMaster(node) && !nodeFailed(node)) {
                     int slaves = managers.nodes.clusterCountNonFailingSlaves(node);
                     if (slaves == 0 && node.assignedSlots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) isolated++;
                     if (slaves > maxSlaves) maxSlaves = slaves;
-                    if (Objects.equals(managers.server.myself.master, node)) mySlaves = slaves;
+                    if (Objects.equals(myself.master, node)) mySlaves = slaves;
                 }
 
                 if (node.link != null
-                        && now - node.link.createTime > configuration.getClusterNodeTimeout()
+                        && now - node.link.createTime > nodeTimeout
                         && node.pingTime != 0 && node.pongTime < node.pingTime
-                        && now - node.pingTime > configuration.getClusterNodeTimeout() / 2) {
+                        && now - node.pingTime > nodeTimeout / 2) {
+
                     managers.connections.freeClusterLink(node.link);
                 }
 
-                if (node.link != null && node.pingTime == 0 && (now - node.pongTime) > configuration.getClusterNodeTimeout() / 2) {
+                if (node.link != null && node.pingTime == 0 && (now - node.pongTime) > nodeTimeout / 2) {
                     managers.messages.clusterSendPing(node.link, CLUSTERMSG_TYPE_PING); continue;
                 }
 
                 if (node.pingTime == 0) continue;
 
-                if (now - node.pingTime > configuration.getClusterNodeTimeout() && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
+                if (now - node.pingTime > nodeTimeout && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
                     logger.debug("*** NODE " + node.name + " possibly failing");
                     node.flags |= CLUSTER_NODE_PFAIL; update = true;
-                    managers.notifyNodePFailed(valueOf(node, managers.server.myself));
+                    managers.notifyNodePFailed(ClusterNodeInfo.valueOf(node, myself));
                 }
             }
 
-            ClusterNode myself = managers.server.myself;
-            if (nodeIsSlave(myself) && managers.server.masterHost == null && myself.master != null && nodeHasAddr(myself.master)) {
+            if (nodeIsSlave(myself)
+                    && managers.server.masterHost == null
+                    && myself.master != null
+                    && nodeHasAddr(myself.master)) {
+
                 managers.replications.replicationSetMaster(myself.master);
             }
 
             if (nodeIsSlave(myself)) {
                 managers.failovers.clusterHandleSlaveFailover();
-                if (isolated != 0 && maxSlaves >= 2 && mySlaves == maxSlaves) clusterHandleSlaveMigration(maxSlaves);
+                boolean migration = isolated != 0 && maxSlaves >= 2 && mySlaves == maxSlaves;
+                if (migration) clusterHandleSlaveMigration(maxSlaves);
             }
             if (update || managers.server.cluster.state == CLUSTER_FAIL) managers.states.clusterUpdateState();
         } catch (Throwable e) { logger.error("unexpected error ", e); }
     }
 
     public void clusterHandleSlaveMigration(int max) {
-        if (managers.server.cluster.state != CLUSTER_OK) return;
+        ClusterNode myself = managers.server.myself;
         if (managers.server.myself.master == null) return;
+        if (managers.server.cluster.state != CLUSTER_OK) return;
         Predicate<ClusterNode> t = e -> !nodeFailed(e) && !nodePFailed(e);
-        int slaves = (int) managers.server.myself.master.slaves.stream().filter(t).count();
-        if (slaves <= configuration.getClusterMigrationBarrier()) return;
+        int slaves = (int) myself.master.slaves.stream().filter(t).count();
+        if (slaves <= this.configuration.getClusterMigrationBarrier()) return;
 
         ClusterNode target = null;
         long now = System.currentTimeMillis();
         ClusterNode candidate = managers.server.myself;
         for (ClusterNode node : managers.server.cluster.nodes.values()) {
-            slaves = 0; boolean isolated = true;
+            boolean isolated = true;
             if (nodeIsSlave(node) || nodeFailed(node)) isolated = false;
             if ((node.flags & CLUSTER_NODE_MIGRATE_TO) == 0) isolated = false;
-            if (nodeIsMaster(node)) slaves = managers.nodes.clusterCountNonFailingSlaves(node);
-            if (slaves > 0) isolated = false;
+            if ((slaves = managers.nodes.clusterCountNonFailingSlaves(node)) > 0) isolated = false;
 
-            if (isolated) {
-                if (target == null && node.assignedSlots > 0) target = node;
+            if (!isolated) node.isolatedTime = 0;
+            else {
                 if (node.isolatedTime == 0) node.isolatedTime = now;
-            } else node.isolatedTime = 0;
-
-            if (slaves == max) {
-                BinaryOperator<ClusterNode> op = (a, b) -> a.name.compareTo(b.name) >= 0 ? b : a;
-                candidate = node.slaves.stream().reduce(managers.server.myself, op);
+                if (target == null && node.assignedSlots > 0) target = node;
             }
+
+            if (slaves != max) continue;
+            BinaryOperator<ClusterNode> op;
+            op = (a, b) -> a.name.compareTo(b.name) >= 0 ? b : a;
+            candidate = node.slaves.stream().reduce(myself, op);
         }
 
-        if (target != null && Objects.equals(candidate, managers.server.myself) && (now - target.isolatedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
+        if (target != null && Objects.equals(candidate, myself)
+                && (now - target.isolatedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
             logger.info("Migrating to orphaned master " + target.name);
             managers.nodes.clusterSetMyMasterTo(target);
+        }
+    }
+
+    private class InitiatorTransportListener implements TransportListener<RCmbMessage> {
+
+        private final ClusterLink link;
+        private InitiatorTransportListener(ClusterLink link) {
+            this.link = link;
+        }
+
+        @Override
+        public void onConnected(Transport<RCmbMessage> transport) {
+            if (configuration.isVerbose()) logger.info("[initiator] > " + transport);
+        }
+
+        @Override
+        public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
+            managers.cron.execute(() -> {
+                ClusterConfigInfo previous;
+                previous = valueOf(managers.server.cluster);
+                ClusterMessage hdr = (ClusterMessage) message;
+                managers.handlers.get(hdr.type).handle(link, hdr);
+                ClusterConfigInfo next = valueOf(managers.server.cluster);
+                if (!previous.equals(next))
+                    managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+            });
+        }
+
+        @Override
+        public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
+            managers.connections.freeClusterLink(link);
+            if (configuration.isVerbose()) logger.info("[initiator] < " + transport);
+        }
+    }
+
+    private class AcceptorTransportListener implements TransportListener<RCmbMessage> {
+        @Override
+        public void onConnected(Transport<RCmbMessage> transport) {
+            if (configuration.isVerbose()) logger.info("[acceptor] > " + transport);
+            ClusterLink link = managers.connections.createClusterLink(null);
+            link.fd = new DefaultSession<>(transport);
+            managers.server.cfd.put(transport, link);
+        }
+
+        @Override
+        public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
+            managers.cron.execute(() -> {
+                ClusterConfigInfo previous = valueOf(managers.server.cluster);
+                ClusterMessage hdr = (ClusterMessage) message;
+                ClusterMessageHandler h = managers.handlers.get(hdr.type);
+                h.handle(managers.server.cfd.get(transport), hdr);
+                ClusterConfigInfo next = valueOf(managers.server.cluster);
+                if (!previous.equals(next))
+                    managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+            });
+        }
+
+        @Override
+        public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
+            managers.connections.freeClusterLink(managers.server.cfd.remove(transport));
+            if (configuration.isVerbose()) logger.info("[acceptor] < " + transport);
         }
     }
 }
