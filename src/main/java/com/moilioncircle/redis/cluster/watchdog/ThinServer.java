@@ -40,10 +40,12 @@ public class ThinServer {
     private static final Log logger = LogFactory.getLog(ThinServer.class);
 
     private ClusterManagers managers;
+    private ClusterConfiguration configuration;
     private volatile NioBootstrapImpl<Object> acceptor;
 
     public ThinServer(ClusterManagers managers) {
         this.managers = managers;
+        this.configuration = managers.configuration;
     }
 
     public void start() {
@@ -54,7 +56,7 @@ public class ThinServer {
         acceptor.setTransportListener(new TransportListener<Object>() {
             @Override
             public void onConnected(Transport<Object> transport) {
-                if (managers.configuration.isVerbose()) logger.info("[acceptor] > " + transport);
+                if (configuration.isVerbose()) logger.info("[acceptor] > " + transport);
             }
 
             @Override
@@ -69,11 +71,11 @@ public class ThinServer {
 
             @Override
             public void onDisconnected(Transport<Object> transport, Throwable cause) {
-                if (managers.configuration.isVerbose()) logger.info("[acceptor] < " + transport);
+                if (configuration.isVerbose()) logger.info("[acceptor] < " + transport);
             }
         });
         try {
-            acceptor.connect(null, managers.configuration.getClusterAnnouncePort()).get();
+            acceptor.connect(null, configuration.getClusterAnnouncePort()).get();
         } catch (InterruptedException | ExecutionException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             else throw new UnsupportedOperationException(e.getCause());
