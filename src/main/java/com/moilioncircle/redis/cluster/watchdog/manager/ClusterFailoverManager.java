@@ -67,8 +67,8 @@ public class ClusterFailoverManager {
             managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES); return;
         }
 
-        int rank;
-        if (!server.cluster.failoverAuthSent && (rank = managers.nodes.clusterGetSlaveRank()) > server.cluster.failoverAuthRank) {
+        int rank = managers.nodes.clusterGetSlaveRank();
+        if (!server.cluster.failoverAuthSent && rank > server.cluster.failoverAuthRank) {
             long delay = (rank - server.cluster.failoverAuthRank) * 1000;
             server.cluster.failoverAuthTime += delay; server.cluster.failoverAuthRank = rank;
             logger.info("Slave rank updated to #" + rank + ", added " + delay + " milliseconds of delay.");
@@ -82,8 +82,7 @@ public class ClusterFailoverManager {
             server.cluster.currentEpoch++;
             server.cluster.failoverAuthEpoch = server.cluster.currentEpoch;
             logger.info("Starting a failover election for epoch " + server.cluster.currentEpoch + ".");
-            managers.messages.clusterRequestFailoverAuth();
-            server.cluster.failoverAuthSent = true; return;
+            managers.messages.clusterRequestFailoverAuth(); server.cluster.failoverAuthSent = true; return;
         }
 
         if (server.cluster.failoverAuthCount >= quorum) {
