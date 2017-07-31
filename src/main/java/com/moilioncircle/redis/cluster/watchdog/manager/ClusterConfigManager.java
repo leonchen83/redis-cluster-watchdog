@@ -220,7 +220,7 @@ public class ClusterConfigManager {
         String ip = node.ip == null ? "0.0.0.0" : node.ip;
         String master = node.master == null ? "-" : node.master;
         long pongTime = node.pongTime, configEpoch = node.configEpoch;
-        boolean connected = node.link != null || (node.flags & CLUSTER_NODE_MYSELF) != 0;
+        boolean connected = node.link != null || nodeIsMyself(node.flags);
 
         StringBuilder builder = new StringBuilder(node.name);
         builder.append(" ").append(ip).append(":").append(node.port);

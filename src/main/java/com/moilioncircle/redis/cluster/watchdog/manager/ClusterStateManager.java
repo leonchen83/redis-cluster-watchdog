@@ -36,15 +36,16 @@ public class ClusterStateManager {
         ClusterState state = CLUSTER_OK;
         if (managers.configuration.isClusterRequireFullCoverage()) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                if (server.cluster.slots[i] == null) { state = CLUSTER_FAIL; break; }
-                if ((server.cluster.slots[i].flags & CLUSTER_NODE_FAIL) != 0) { state = CLUSTER_FAIL; break; }
+                ClusterNode n = server.cluster.slots[i];
+                if (n == null || nodeFailed(n.flags)) { state = CLUSTER_FAIL; break; }
             }
         }
 
         int masters = 0; server.cluster.size = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (nodeIsMaster(node) && node.assignedSlots != 0) {
-                server.cluster.size++; if (!nodeFailed(node.flags) && !nodePFailed(node.flags)) masters++;
+                server.cluster.size++;
+                if (!nodeFailed(node.flags) && !nodePFailed(node.flags)) masters++;
             }
         }
         //
