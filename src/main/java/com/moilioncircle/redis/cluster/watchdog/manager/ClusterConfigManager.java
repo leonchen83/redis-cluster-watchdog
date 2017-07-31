@@ -14,6 +14,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
@@ -203,26 +204,19 @@ public class ClusterConfigManager {
             StringBuilder builder = new StringBuilder(d);
             builder.append("vars currentEpoch ").append(info.currentEpoch);
             builder.append(" lastVoteEpoch ").append(info.lastVoteEpoch);
-            r.write(builder.toString());
-            r.flush();
-            if (!force) managers.notifyConfigChanged(info);
-            return true;
-        } catch (IOException e) {
-            return false;
+            r.write(builder.toString()); r.flush();
+            if (!force) managers.notifyConfigChanged(info); return true;
+        } catch (IOException e) { return false;
         } finally {
-            if (r != null) try {
-                r.close();
-            } catch (IOException e) {
-                logger.error("unexpected IO error", e.getCause());
-            }
+            if (r != null) try { r.close(); }
+            catch (IOException e) { logger.error("unexpected IO error", e.getCause()); }
         }
     }
 
     public static String representClusterNodeFlags(int flags) {
         if (flags == 0) return "noflags";
-        return ClusterConfigManager.flags.entrySet().stream().
-                filter(node -> (flags & node.getKey()) != 0).
-                map(Map.Entry::getValue).collect(joining(","));
+        Predicate<Map.Entry<Byte, String>> t = node -> (flags & node.getKey()) != 0;
+        return ClusterConfigManager.flags.entrySet().stream().filter(t).map(Map.Entry::getValue).collect(joining(","));
     }
 
     public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node, Version v) {

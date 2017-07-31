@@ -37,6 +37,10 @@ public class ReplicationManager {
         this.server = managers.server;
     }
 
+    public long replicationGetSlaveOffset() {
+        return managers.notifyReplicationGetSlaveOffset();
+    }
+
     public void replicationSetMaster(ClusterNode node) {
         logger.info("replication set [" + node.ip + ":" + node.port + "]");
         server.masterHost = node.ip; server.masterPort = node.port;
@@ -45,11 +49,7 @@ public class ReplicationManager {
 
     public void replicationUnsetMaster() {
         logger.info("replication unset [" + server.masterHost + ":" + server.masterPort + "]");
-        managers.notifyUnsetReplication();
-        server.masterHost = null; server.masterPort = 0;
+        managers.notifyUnsetReplication(); server.masterHost = null; server.masterPort = 0;
     }
 
-    public long replicationGetSlaveOffset() {
-        return managers.notifyReplicationGetSlaveOffset();
-    }
 }

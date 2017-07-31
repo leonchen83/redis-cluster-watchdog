@@ -66,9 +66,9 @@ public class ClusterMessageManager {
     }
 
     public void clusterBroadcastMessage(ClusterMessage hdr) {
-        server.cluster.nodes.values().stream().
-                filter(e -> e.link != null && (e.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) == 0).
-                forEach(e -> clusterSendMessage(e.link, hdr));
+        Predicate<ClusterNode> t = e -> e.link != null;
+        t = t.and(e -> (e.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) == 0);
+        server.cluster.nodes.values().stream().filter(t).forEach(e -> clusterSendMessage(e.link, hdr));
     }
 
     public ClusterMessage clusterBuildMessageHdr(int type) {

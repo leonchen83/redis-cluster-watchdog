@@ -92,8 +92,8 @@ public class ClusterNodeManager {
     }
 
     public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
-        Optional<ClusterNodeFailReport> report = node.failReports.stream().
-                filter(e -> Objects.equals(e.node, sender)).findFirst();
+        Predicate<ClusterNodeFailReport> t = e -> Objects.equals(e.node, sender);
+        Optional<ClusterNodeFailReport> report = node.failReports.stream().filter(t).findFirst();
         if (!report.isPresent()) return false; node.failReports.remove(report.get());
         clusterNodeCleanupFailureReports(node); return true;
     }
