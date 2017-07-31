@@ -35,20 +35,15 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
             hdr.signature = (String) in.readCharSequence(4, UTF_8);
             hdr.length = in.readInt();
             if (in.readableBytes() < hdr.length - 8) {
-                in.resetReaderIndex();
-                return null;
+                in.resetReaderIndex(); return null;
             }
             hdr.version = Version.valueOf(in.readUnsignedShort());
-            if (hdr.version == PROTOCOL_V0)
-                decodeMessageV0(hdr, in);
-            else if (hdr.version == PROTOCOL_V1)
-                decodeMessageV1(hdr, in);
-            else
-                throw new UnsupportedOperationException("version: " + hdr.version);
+            if (hdr.version == PROTOCOL_V0) decodeMessageV0(hdr, in);
+            else if (hdr.version == PROTOCOL_V1) decodeMessageV1(hdr, in);
+            else throw new UnsupportedOperationException("version: " + hdr.version);
             return hdr;
         } catch (Exception e) {
-            in.resetReaderIndex();
-            return null;
+            in.resetReaderIndex(); return null;
         }
     }
 

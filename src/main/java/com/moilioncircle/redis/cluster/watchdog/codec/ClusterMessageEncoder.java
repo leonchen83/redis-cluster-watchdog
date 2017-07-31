@@ -23,12 +23,9 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
     protected void encode(ChannelHandlerContext ctx, RCmbMessage msg, ByteBuf out) throws Exception {
         if (!(msg instanceof ClusterMessage)) return;
         ClusterMessage hdr = (ClusterMessage) msg;
-        if (hdr.version == PROTOCOL_V0)
-            encodeMessageV0(hdr, out);
-        else if (hdr.version == PROTOCOL_V1)
-            encodeMessageV1(hdr, out);
-        else
-            throw new UnsupportedOperationException("version: " + hdr.version);
+        if (hdr.version == PROTOCOL_V0) encodeMessageV0(hdr, out);
+        else if (hdr.version == PROTOCOL_V1) encodeMessageV1(hdr, out);
+        else throw new UnsupportedOperationException("version: " + hdr.version);
     }
 
     protected void encodeMessageV0(ClusterMessage hdr, ByteBuf out) {
