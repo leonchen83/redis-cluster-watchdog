@@ -5,7 +5,6 @@ import com.moilioncircle.redis.cluster.watchdog.codec.ClusterMessageEncoder;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.message.RCmbMessage;
-import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageHandler;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterState;
@@ -130,6 +129,7 @@ public class ThinGossip implements Resourcable {
         }
 
         acceptor = new NioBootstrapImpl<>(true, defaultSetting());
+        //
         acceptor.setEncoder(ClusterMessageEncoder::new);
         acceptor.setDecoder(ClusterMessageDecoder::new); acceptor.setup();
         acceptor.setTransportListener(new AcceptorTransportListener());
@@ -170,6 +170,7 @@ public class ThinGossip implements Resourcable {
 
                 if (initiator == null) {
                     initiator = new NioBootstrapImpl<>(false, configuration.getNetworkConfiguration());
+                    //
                     initiator.setEncoder(ClusterMessageEncoder::new);
                     initiator.setDecoder(ClusterMessageDecoder::new); initiator.setup();
                 }
@@ -306,12 +307,12 @@ public class ThinGossip implements Resourcable {
         }
 
         @Override
-        public void onConnected(Transport<RCmbMessage> transport) {
-            if (configuration.isVerbose()) logger.info("[initiator] > " + transport);
+        public void onConnected(Transport<RCmbMessage> t) {
+            if (configuration.isVerbose()) logger.info("[initiator] > " + t);
         }
 
         @Override
-        public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
+        public void onMessage(Transport<RCmbMessage> t, RCmbMessage message) {
             managers.cron.execute(() -> {
                 ClusterConfigInfo previous;
                 previous = valueOf(managers.server.cluster);
@@ -324,28 +325,28 @@ public class ThinGossip implements Resourcable {
         }
 
         @Override
-        public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
+        public void onDisconnected(Transport<RCmbMessage> t, Throwable cause) {
             managers.connections.freeClusterLink(link);
-            if (configuration.isVerbose()) logger.info("[initiator] < " + transport);
+            if (configuration.isVerbose()) logger.info("[initiator] < " + t);
         }
     }
 
     private class AcceptorTransportListener implements TransportListener<RCmbMessage> {
         @Override
-        public void onConnected(Transport<RCmbMessage> transport) {
-            if (configuration.isVerbose()) logger.info("[acceptor] > " + transport);
+        public void onConnected(Transport<RCmbMessage> t) {
+            if (configuration.isVerbose()) logger.info("[acceptor] > " + t);
             ClusterLink link = managers.connections.createClusterLink(null);
-            link.fd = new DefaultSession<>(transport);
-            managers.server.cfd.put(transport, link);
+            link.fd = new DefaultSession<>(t); managers.server.cfd.put(t, link);
         }
 
         @Override
-        public void onMessage(Transport<RCmbMessage> transport, RCmbMessage message) {
+        public void onMessage(Transport<RCmbMessage> t, RCmbMessage message) {
             managers.cron.execute(() -> {
-                ClusterConfigInfo previous = valueOf(managers.server.cluster);
+                ClusterConfigInfo previous;
+                previous = valueOf(managers.server.cluster);
                 ClusterMessage hdr = (ClusterMessage) message;
-                ClusterMessageHandler h = managers.handlers.get(hdr.type);
-                h.handle(managers.server.cfd.get(transport), hdr);
+                ClusterLink link = managers.server.cfd.get(t);
+                managers.handlers.get(hdr.type).handle(link, hdr);
                 ClusterConfigInfo next = valueOf(managers.server.cluster);
                 if (!previous.equals(next))
                     managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
@@ -353,9 +354,9 @@ public class ThinGossip implements Resourcable {
         }
 
         @Override
-        public void onDisconnected(Transport<RCmbMessage> transport, Throwable cause) {
-            managers.connections.freeClusterLink(managers.server.cfd.remove(transport));
-            if (configuration.isVerbose()) logger.info("[acceptor] < " + transport);
+        public void onDisconnected(Transport<RCmbMessage> t, Throwable cause) {
+            managers.connections.freeClusterLink(managers.server.cfd.remove(t));
+            if (configuration.isVerbose()) logger.info("[acceptor] < " + t);
         }
     }
 }

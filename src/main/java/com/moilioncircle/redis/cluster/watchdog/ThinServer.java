@@ -52,6 +52,7 @@ public class ThinServer implements Resourcable {
     @Override
     public void start() {
         acceptor = new NioBootstrapImpl<>(true, defaultSetting());
+        //
         acceptor.setEncoder(RedisEncoder::new);
         acceptor.setDecoder(RedisDecoder::new); acceptor.setup();
         acceptor.setTransportListener(new RedisTransportListener());
@@ -79,15 +80,16 @@ public class ThinServer implements Resourcable {
 
     private class RedisTransportListener implements TransportListener<Object> {
         @Override
-        public void onConnected(Transport<Object> transport) {
-            if (configuration.isVerbose()) logger.info("[acceptor] > " + transport);
+        public void onConnected(Transport<Object> t) {
+            if (configuration.isVerbose()) logger.info("[acceptor] > " + t);
         }
 
         @Override
-        public void onMessage(Transport<Object> transport, Object message) {
+        public void onMessage(Transport<Object> t, Object message) {
             managers.cron.execute(() -> {
-                ClusterConfigInfo previous = valueOf(managers.server.cluster);
-                managers.commands.handleCommand(transport, (byte[][]) message);
+                ClusterConfigInfo previous;
+                previous = valueOf(managers.server.cluster);
+                managers.commands.handleCommand(t, (byte[][]) message);
                 ClusterConfigInfo next = valueOf(managers.server.cluster);
                 if (!previous.equals(next))
                     managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
@@ -95,8 +97,8 @@ public class ThinServer implements Resourcable {
         }
 
         @Override
-        public void onDisconnected(Transport<Object> transport, Throwable cause) {
-            if (configuration.isVerbose()) logger.info("[acceptor] < " + transport);
+        public void onDisconnected(Transport<Object> t, Throwable cause) {
+            if (configuration.isVerbose()) logger.info("[acceptor] < " + t);
         }
     }
 }

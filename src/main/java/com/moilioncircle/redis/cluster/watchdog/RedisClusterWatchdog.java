@@ -27,7 +27,7 @@ public class RedisClusterWatchdog extends AbstractClusterWatchdog {
     protected final Resourcable server;
     protected final Resourcable gossip;
 
-    protected RedisClusterWatchdog(ClusterConfiguration configuration) {
+    public RedisClusterWatchdog(ClusterConfiguration configuration) {
         super(configuration);
         this.server = new ThinServer(managers);
         this.gossip = new ThinGossip(managers);
