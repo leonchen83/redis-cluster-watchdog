@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
  * @since 1.0.0
  */
 public class ReplicationManager {
+
     private static final Log logger = LogFactory.getLog(ReplicationManager.class);
 
     private ServerState server;
@@ -38,16 +39,14 @@ public class ReplicationManager {
 
     public void replicationSetMaster(ClusterNode node) {
         logger.info("replication set [" + node.ip + ":" + node.port + "]");
-        server.masterHost = node.ip;
-        server.masterPort = node.port;
+        server.masterHost = node.ip; server.masterPort = node.port;
         managers.notifySetReplication(node.ip, node.port);
     }
 
     public void replicationUnsetMaster() {
         logger.info("replication unset [" + server.masterHost + ":" + server.masterPort + "]");
         managers.notifyUnsetReplication();
-        server.masterHost = null;
-        server.masterPort = 0;
+        server.masterHost = null; server.masterPort = 0;
     }
 
     public long replicationGetSlaveOffset() {

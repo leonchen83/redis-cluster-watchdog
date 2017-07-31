@@ -37,45 +37,33 @@ public class ClusterDelSlotsCommandHandler extends AbstractCommandHandler {
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
 
         if (!managers.configuration.isMaster()) {
-            replyError(t, "Unsupported COMMAND");
-            return;
+            replyError(t, "Unsupported COMMAND"); return;
         }
 
         if (message.length < 3) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         byte[] slots = new byte[CLUSTER_SLOTS];
         for (int i = 2; i < message.length; i++) {
             try {
                 int slot = parseInt(message[i]);
-                if (slot < 0 || slot > 16384) {
-                    replyError(t, "Invalid slot:" + slot);
-                    return;
-                }
-
+                if (slot < 0 || slot > 16384) { replyError(t, "Invalid slot:" + slot); return; }
                 if (server.cluster.slots[slot] == null) {
-                    replyError(t, "Slot " + slot + " is already unassigned");
-                    return;
+                    replyError(t, "Slot " + slot + " is already unassigned"); return;
                 }
-
                 if (slots[slot]++ == 1) {
-                    replyError(t, "Slot " + slot + " specified multiple times");
-                    return;
+                    replyError(t, "Slot " + slot + " specified multiple times"); return;
                 }
             } catch (Exception e) {
-                replyError(t, "Invalid slot:" + message[i]);
-                return;
+                replyError(t, "Invalid slot:" + message[i]); return;
             }
         }
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (slots[i] == 0) continue;
-            if (server.cluster.importing[i] != null)
-                server.cluster.importing[i] = null;
+            if (server.cluster.importing[i] != null) server.cluster.importing[i] = null;
             managers.slots.clusterDelSlot(i);
         }
-        managers.states.clusterUpdateState();
-        reply(t, "OK");
+        managers.states.clusterUpdateState(); reply(t, "OK");
     }
 }

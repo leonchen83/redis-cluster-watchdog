@@ -16,6 +16,7 @@
 
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Predicate;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V0;
@@ -42,23 +44,24 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 public class ClusterMessageManager {
 
     private static final Log logger = LogFactory.getLog(ClusterMessageManager.class);
+
     private ServerState server;
     private ClusterManagers managers;
+    private ClusterConfiguration configuration;
 
     public ClusterMessageManager(ClusterManagers managers) {
         this.managers = managers;
         this.server = managers.server;
+        this.configuration = managers.configuration;
     }
 
     public void clusterSendMessage(ClusterLink link, ClusterMessage hdr) {
         try {
             link.fd.send(hdr).get();
-            if (hdr.type < CLUSTERMSG_TYPE_COUNT)
-                server.cluster.messagesSent[hdr.type]++;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            logger.error("send RCmb message failed, link: " + link.fd + ",message type:" + hdr.type);
+            if (hdr.type < CLUSTERMSG_TYPE_COUNT) server.cluster.messagesSent[hdr.type]++;
+        } catch (InterruptedException | ExecutionException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            else logger.error("send RCmb message failed, link: " + link.fd + ",message type:" + hdr.type);
         }
     }
 
@@ -69,29 +72,19 @@ public class ClusterMessageManager {
     }
 
     public ClusterMessage clusterBuildMessageHdr(int type) {
+        ClusterNode myself = server.myself;
+        boolean isMaster = nodeIsSlave(myself) && myself.master != null;
+        ClusterNode myMaster = isMaster ? server.myself.master : myself;
+        //
         ClusterMessage hdr = new ClusterMessage();
-        ClusterNode master = (nodeIsSlave(server.myself) && server.myself.master != null) ? server.myself.master : server.myself;
-        hdr.version = managers.configuration.getVersion();
-        hdr.signature = "RCmb";
-        hdr.type = type;
-        hdr.name = server.myself.name;
-        hdr.ip = managers.configuration.getClusterAnnounceIp();
-
-        hdr.slots = master.slots;
-        if (server.myself.master != null) {
-            hdr.master = server.myself.master.name;
-        }
-
-        hdr.flags = server.myself.flags;
-        hdr.port = managers.configuration.getClusterAnnouncePort();
-        hdr.busPort = managers.configuration.getClusterAnnounceBusPort();
-        hdr.state = server.cluster.state;
-
-        hdr.currentEpoch = server.cluster.currentEpoch;
-        hdr.configEpoch = master.configEpoch;
-
-        if (nodeIsSlave(server.myself))
-            hdr.offset = managers.replications.replicationGetSlaveOffset();
+        hdr.name = myself.name; hdr.flags = myself.flags;
+        hdr.busPort = configuration.getClusterAnnounceBusPort();
+        if (myself.master != null) hdr.master = myself.master.name;
+        hdr.type = type; hdr.signature = "RCmb"; hdr.slots = myMaster.slots;
+        hdr.state = server.cluster.state; hdr.configEpoch = myMaster.configEpoch;
+        hdr.version = configuration.getVersion(); hdr.ip = configuration.getClusterAnnounceIp();
+        if (nodeIsSlave(myself)) hdr.offset = managers.replications.replicationGetSlaveOffset();
+        hdr.currentEpoch = server.cluster.currentEpoch; hdr.port = configuration.getClusterAnnouncePort();
         return hdr;
     }
 
@@ -100,23 +93,16 @@ public class ClusterMessageManager {
     }
 
     public void clusterSetGossipEntry(ClusterMessage hdr, ClusterNode n) {
-        ClusterMessageDataGossip gossip = new ClusterMessageDataGossip();
-        gossip.ip = n.ip;
-        gossip.name = n.name;
-        gossip.port = n.port;
-        gossip.flags = n.flags;
-        gossip.busPort = n.busPort;
-        gossip.pingTime = n.pingTime;
-        gossip.pongTime = n.pongTime;
-        hdr.data.gossips.add(gossip);
+        ClusterMessageDataGossip g;
+        g = new ClusterMessageDataGossip();
+        g.flags = n.flags; g.busPort = n.busPort;
+        g.pingTime = n.pingTime; g.name = n.name; g.ip = n.ip;
+        g.pongTime = n.pongTime; g.port = n.port; hdr.data.gossips.add(g);
     }
 
     public void clusterSendPing(ClusterLink link, int type) {
-        if (managers.configuration.getVersion() == PROTOCOL_V0) {
-            clusterSendPingV0(link, type);
-        } else if (managers.configuration.getVersion() == PROTOCOL_V1) {
-            clusterSendPingV1(link, type);
-        }
+        if (configuration.getVersion() == PROTOCOL_V0) clusterSendPingV0(link, type);
+        else if (configuration.getVersion() == PROTOCOL_V1) clusterSendPingV1(link, type);
     }
 
     private void clusterSendPingV0(ClusterLink link, int type) {
@@ -128,28 +114,21 @@ public class ClusterMessageManager {
             link.node.pingTime = System.currentTimeMillis();
 
         ClusterMessage hdr = clusterBuildMessageHdr(type);
+
         int max = wanted * 3, gossips = 0;
         while (actives > 0 && gossips < wanted && max-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
             if (Objects.equals(node, server.myself)) continue;
-
-            if (max > wanted * 2 && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0)
-                continue;
-
-            if ((node.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (node.link == null && node.assignedSlots == 0))
-                continue;
-
+            if (max > wanted * 2 && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) continue;
+            if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
+            if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
+            if (node.link == null && node.assignedSlots == 0) continue;
             if (clusterNodeIsInGossipSection(hdr, gossips, node)) continue;
-
-            clusterSetGossipEntry(hdr, node);
-            actives--;
-            gossips++;
+            clusterSetGossipEntry(hdr, node); actives--; gossips++;
         }
-
-        hdr.count = gossips;
-        clusterSendMessage(link, hdr);
+        hdr.count = gossips; clusterSendMessage(link, hdr);
     }
 
     private void clusterSendPingV1(ClusterLink link, int type) {
@@ -162,39 +141,30 @@ public class ClusterMessageManager {
             link.node.pingTime = System.currentTimeMillis();
 
         ClusterMessage hdr = clusterBuildMessageHdr(type);
+
         int max = wanted * 3, gossips = 0;
         while (actives > 0 && gossips < wanted && max-- > 0) {
             List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
             ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
             if (Objects.equals(node, server.myself)) continue;
-
             if ((node.flags & CLUSTER_NODE_PFAIL) != 0) continue;
-
-            if ((node.flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR)) != 0 || (node.link == null && node.assignedSlots == 0))
-                continue;
-
+            if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
+            if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
+            if (node.link == null && node.assignedSlots == 0) continue;
             if (clusterNodeIsInGossipSection(hdr, gossips, node)) continue;
-
-            clusterSetGossipEntry(hdr, node);
-            actives--;
-            gossips++;
+            clusterSetGossipEntry(hdr, node); actives--; gossips++;
         }
 
         if (fWanted != 0) {
             List<ClusterNode> nodes = new ArrayList<>(server.cluster.nodes.values());
             for (int i = 0; i < nodes.size() && fWanted > 0; i++) {
-                ClusterNode node = nodes.get(i);
-                if (nodeInHandshake(node) || nodeWithoutAddr(node) || !nodePFailed(node)) continue;
-                clusterSetGossipEntry(hdr, node);
-                actives--;
-                gossips++;
-                fWanted--;
+                ClusterNode node = nodes.get(i); if (nodeInHandshake(node)) continue;
+                if (nodeWithoutAddr(node)) continue; if (!nodePFailed(node)) continue;
+                clusterSetGossipEntry(hdr, node); actives--; gossips++; fWanted--;
             }
         }
-
-        hdr.count = gossips;
-        clusterSendMessage(link, hdr);
+        hdr.count = gossips; clusterSendMessage(link, hdr);
     }
 
     public void clusterBroadcastPong(int target) {
@@ -202,10 +172,9 @@ public class ClusterMessageManager {
             if (node.link == null) continue;
             if (Objects.equals(node, server.myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
-                boolean local = nodeIsSlave(node)
-                        && node.master != null
-                        && (Objects.equals(node.master, server.myself) || Objects.equals(node.master, server.myself.master));
-                if (!local) continue;
+                Predicate<ClusterNode> t = e -> nodeIsSlave(e) && e.master != null;
+                t = t.and(e -> Objects.equals(e.master, server.myself) || Objects.equals(e.master, server.myself.master));
+                if (!t.test(node)) continue;
             }
             clusterSendPing(node.link, CLUSTERMSG_TYPE_PONG);
         }
@@ -213,25 +182,22 @@ public class ClusterMessageManager {
 
     public void clusterSendFail(String name) {
         ClusterMessage hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAIL);
-        hdr.data.fail.name = name;
-        clusterBroadcastMessage(hdr);
+        hdr.data.fail.name = name; clusterBroadcastMessage(hdr);
     }
 
     public void clusterSendUpdate(ClusterLink link, ClusterNode node) {
         if (link == null) return;
         ClusterMessage hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_UPDATE);
-        hdr.data.config.name = node.name;
-        hdr.data.config.configEpoch = node.configEpoch;
-        hdr.data.config.slots = node.slots;
-        clusterSendMessage(link, hdr);
-    }
-
-    public void clusterSendFailoverAuth(ClusterNode node) {
-        if (node.link == null) return;
-        clusterSendMessage(node.link, clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK));
+        hdr.data.config.name = node.name; hdr.data.config.slots = node.slots;
+        hdr.data.config.configEpoch = node.configEpoch; clusterSendMessage(link, hdr);
     }
 
     public void clusterRequestFailoverAuth() {
         clusterBroadcastMessage(clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST));
     }
+
+    public void clusterSendFailoverAuth(ClusterNode node) {
+        if (node.link != null) clusterSendMessage(node.link, clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK));
+    }
+
 }

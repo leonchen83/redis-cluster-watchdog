@@ -31,6 +31,8 @@ import java.util.Map;
 public class ClusterCommandHandler extends AbstractCommandHandler {
 
     private Map<String, CommandHandler> clusterHandlers = new HashMap<>();
+    public CommandHandler get(String name) { return clusterHandlers.get(name.toLowerCase()); }
+    public void register(String name, CommandHandler handler) { clusterHandlers.put(name.toLowerCase(), handler); }
 
     public ClusterCommandHandler(ClusterManagers managers) {
         super(managers);
@@ -58,24 +60,13 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
 
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length < 2 || message[1] == null) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         CommandHandler handler = get(message[1]);
         if (handler == null) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
-
         handler.handle(t, message, rawMessage);
-    }
-
-    public void register(String name, CommandHandler handler) {
-        clusterHandlers.put(name.toLowerCase(), handler);
-    }
-
-    public CommandHandler get(String name) {
-        return clusterHandlers.get(name.toLowerCase());
     }
 }

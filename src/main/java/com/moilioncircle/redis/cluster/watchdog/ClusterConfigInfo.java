@@ -14,8 +14,7 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @since 1.0.0
  */
 public class ClusterConfigInfo {
-    public long currentEpoch;
-    public long lastVoteEpoch;
+    public long currentEpoch; public long lastVoteEpoch;
     public String[] migrating = new String[CLUSTER_SLOTS];
     public String[] importing = new String[CLUSTER_SLOTS];
     public Map<String, ClusterNodeInfo> nodes = new LinkedHashMap<>();
@@ -31,14 +30,9 @@ public class ClusterConfigInfo {
         for (ClusterNode node : state.nodes.values()) {
             info.nodes.put(node.name, ClusterNodeInfo.valueOf(node, state.myself));
         }
-
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (state.migrating[i] != null) {
-                info.migrating[i] = state.migrating[i].name;
-            }
-            if (state.importing[i] != null) {
-                info.importing[i] = state.importing[i].name;
-            }
+            if (state.migrating[i] != null) info.migrating[i] = state.migrating[i].name;
+            if (state.importing[i] != null) info.importing[i] = state.importing[i].name;
         }
         return info;
     }

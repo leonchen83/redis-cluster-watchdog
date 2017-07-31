@@ -18,17 +18,15 @@ public class ClusterBlacklistManager {
         this.server = managers.server;
     }
 
-    public void clusterBlacklistCleanup() {
-        server.cluster.blacklist.values().removeIf(e -> e.getV1() < System.currentTimeMillis());
-    }
-
     public void clusterBlacklistAddNode(ClusterNode node) {
-        clusterBlacklistCleanup();
-        server.cluster.blacklist.put(node.name, of(System.currentTimeMillis() + CLUSTER_BLACKLIST_TTL, node));
+        long now = System.currentTimeMillis();
+        server.cluster.blacklist.values().removeIf(e -> e.getV1() < now);
+        server.cluster.blacklist.put(node.name, of(now + CLUSTER_BLACKLIST_TTL, node));
     }
 
     public boolean clusterBlacklistExists(String name) {
-        clusterBlacklistCleanup();
+        long now = System.currentTimeMillis();
+        server.cluster.blacklist.values().removeIf(e -> e.getV1() < now);
         return server.cluster.blacklist.containsKey(name);
     }
 }

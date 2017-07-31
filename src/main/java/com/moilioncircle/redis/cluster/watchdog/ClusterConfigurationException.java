@@ -15,15 +15,15 @@ public class ClusterConfigurationException extends RuntimeException {
         super(message);
     }
 
-    public ClusterConfigurationException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
     public ClusterConfigurationException(Throwable cause) {
         super(cause);
     }
 
-    protected ClusterConfigurationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+    public ClusterConfigurationException(String message, Throwable c) {
+        super(message, c);
+    }
+
+    protected ClusterConfigurationException(String message, Throwable c, boolean suppression, boolean writable) {
+        super(message, c, suppression, writable);
     }
 }

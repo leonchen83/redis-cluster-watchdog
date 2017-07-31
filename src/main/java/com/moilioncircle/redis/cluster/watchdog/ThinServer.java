@@ -54,9 +54,7 @@ public class ThinServer {
         acceptor.setTransportListener(new TransportListener<Object>() {
             @Override
             public void onConnected(Transport<Object> transport) {
-                if (managers.configuration.isVerbose()) {
-                    logger.info("[acceptor] > " + transport);
-                }
+                if (managers.configuration.isVerbose()) logger.info("[acceptor] > " + transport);
             }
 
             @Override
@@ -65,26 +63,20 @@ public class ThinServer {
                     ClusterConfigInfo previous = valueOf(managers.server.cluster);
                     managers.commands.handleCommand(transport, (byte[][]) message);
                     ClusterConfigInfo next = valueOf(managers.server.cluster);
-                    if (!previous.equals(next))
-                        managers.config.submit(() -> managers.configs.clusterSaveConfig(next, false));
+                    if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
                 });
             }
 
             @Override
             public void onDisconnected(Transport<Object> transport, Throwable cause) {
-                if (managers.configuration.isVerbose()) {
-                    logger.info("[acceptor] < " + transport);
-                }
+                if (managers.configuration.isVerbose()) logger.info("[acceptor] < " + transport);
             }
         });
         try {
             acceptor.connect(null, managers.configuration.getClusterAnnouncePort()).get();
         } catch (InterruptedException | ExecutionException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            } else {
-                throw new UnsupportedOperationException(e.getCause());
-            }
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            else throw new UnsupportedOperationException(e.getCause());
         }
     }
 

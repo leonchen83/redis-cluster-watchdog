@@ -16,70 +16,68 @@
 
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
+import static java.util.concurrent.ThreadLocalRandom.current;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
 public class ClusterFailoverManager {
+
     private static final Log logger = LogFactory.getLog(ClusterFailoverManager.class);
+
     private ServerState server;
     private ClusterManagers managers;
+    private ClusterConfiguration configuration;
 
     public ClusterFailoverManager(ClusterManagers managers) {
         this.managers = managers;
         this.server = managers.server;
+        this.configuration = managers.configuration;
     }
 
     public void clusterHandleSlaveFailover() {
-        if (!managers.configuration.isMaster()) return;
-        long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
-        long authTimeout = Math.max(managers.configuration.getClusterNodeTimeout() * 2, 2000);
-        long authRetryTime = authTimeout * 2;
-        int quorum = (server.cluster.size / 2) + 1;
-
-        if (nodeIsMaster(server.myself) || server.myself.master == null ||
-                !nodeFailed(server.myself.master) || server.myself.master.assignedSlots == 0) {
-            return;
-        }
+        if (!configuration.isMaster()) return;
+        if (nodeIsMaster(server.myself)) return;
+        if (server.myself.master == null) return;
+        if (!nodeFailed(server.myself.master)) return;
+        if (server.myself.master.assignedSlots == 0) return;
 
         long now = System.currentTimeMillis();
+        long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
+        long authTimeout = Math.max(configuration.getClusterNodeTimeout() * 2, 2000);
+        long authRetryTime = authTimeout * 2; int quorum = (server.cluster.size / 2) + 1;
+
         if (authAge > authRetryTime) {
-            server.cluster.failoverAuthTime = now + 500 + ThreadLocalRandom.current().nextInt(500);
-            server.cluster.failoverAuthCount = 0;
-            server.cluster.failoverAuthSent = false;
+            server.cluster.failoverAuthTime = now + 500 + current().nextInt(500);
             server.cluster.failoverAuthRank = managers.nodes.clusterGetSlaveRank();
             server.cluster.failoverAuthTime += server.cluster.failoverAuthRank * 1000;
-            logger.info("Start of election delayed for " + (server.cluster.failoverAuthTime - now) + " milliseconds (rank #" + server.cluster.failoverAuthRank + ", offset " + managers.replications.replicationGetSlaveOffset() + ").");
+            server.cluster.failoverAuthCount = 0; server.cluster.failoverAuthSent = false;
             managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES);
             return;
         }
 
-        if (!server.cluster.failoverAuthSent) {
-            int rank = managers.nodes.clusterGetSlaveRank();
-            if (rank > server.cluster.failoverAuthRank) {
-                long delay = (rank - server.cluster.failoverAuthRank) * 1000;
-                server.cluster.failoverAuthTime += delay;
-                server.cluster.failoverAuthRank = rank;
-                logger.info("Slave rank updated to #" + rank + ", added " + delay + " milliseconds of delay.");
-            }
+        int rank;
+        if (!server.cluster.failoverAuthSent && (rank = managers.nodes.clusterGetSlaveRank()) > server.cluster.failoverAuthRank) {
+            long delay = (rank - server.cluster.failoverAuthRank) * 1000;
+            server.cluster.failoverAuthTime += delay; server.cluster.failoverAuthRank = rank;
+            logger.info("Slave rank updated to #" + rank + ", added " + delay + " milliseconds of delay.");
         }
 
-        if (System.currentTimeMillis() < server.cluster.failoverAuthTime || authAge > authTimeout) {
-            return;
-        }
+        now = System.currentTimeMillis();
+        if (now < server.cluster.failoverAuthTime) return;
+        if (authAge > authTimeout) return;
 
         if (!server.cluster.failoverAuthSent) {
             server.cluster.currentEpoch++;
@@ -114,7 +112,7 @@ public class ClusterFailoverManager {
         }
 
         managers.states.clusterUpdateState();
-        managers.configs.clusterSaveConfig(valueOf(server.cluster), false);
+        managers.configs.clusterSaveConfig(valueOf(server.cluster));
         managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_ALL);
     }
 }

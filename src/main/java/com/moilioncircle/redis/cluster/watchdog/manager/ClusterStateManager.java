@@ -30,59 +30,40 @@ public class ClusterStateManager {
     public void clusterUpdateState() {
         long now = System.currentTimeMillis();
         if (server.stateSaveTime == 0) server.stateSaveTime = now;
-        if (nodeIsMaster(server.myself)
-                && server.cluster.state == CLUSTER_FAIL
-                && now - server.stateSaveTime < CLUSTER_WRITABLE_DELAY)
-            return;
+        if (nodeIsMaster(server.myself) && server.cluster.state == CLUSTER_FAIL
+                && now - server.stateSaveTime < CLUSTER_WRITABLE_DELAY) return;
 
         ClusterState state = CLUSTER_OK;
-
         if (managers.configuration.isClusterRequireFullCoverage()) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                if (server.cluster.slots[i] == null || (server.cluster.slots[i].flags & CLUSTER_NODE_FAIL) != 0) {
-                    state = CLUSTER_FAIL;
-                    break;
-                }
+                if (server.cluster.slots[i] == null) { state = CLUSTER_FAIL; break; }
+                if ((server.cluster.slots[i].flags & CLUSTER_NODE_FAIL) != 0) { state = CLUSTER_FAIL; break; }
             }
         }
 
-        int masters = 0;
-        server.cluster.size = 0;
+        int masters = 0; server.cluster.size = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (nodeIsMaster(node) && node.assignedSlots != 0) {
-                server.cluster.size++;
-                if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0)
-                    masters++;
+                server.cluster.size++; if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0) masters++;
             }
         }
-
+        //
         int quorum = (server.cluster.size / 2) + 1;
-
-        if (masters < quorum) {
-            state = CLUSTER_FAIL;
-            server.amongMinorityTime = now;
-        }
-
+        if (masters < quorum) { state = CLUSTER_FAIL; server.amongMinorityTime = now; }
         if (state != server.cluster.state) {
-            long rejoin = max(min(managers.configuration.getClusterNodeTimeout(), CLUSTER_MAX_REJOIN_DELAY), CLUSTER_MIN_REJOIN_DELAY);
-
-            if (state == CLUSTER_OK && nodeIsMaster(server.myself) && now - server.amongMinorityTime < rejoin) {
-                return;
-            }
-
+            long timeout = managers.configuration.getClusterNodeTimeout();
+            long rejoin = max(min(timeout, CLUSTER_MAX_REJOIN_DELAY), CLUSTER_MIN_REJOIN_DELAY);
+            if (state == CLUSTER_OK && nodeIsMaster(server.myself) && now - server.amongMinorityTime < rejoin) return;
             logger.info("Cluster state changed: " + state.getDisplay());
-            server.cluster.state = state;
-            managers.notifyStateChanged(state);
+            server.cluster.state = state; managers.notifyStateChanged(state);
         }
     }
 
     public boolean clusterBumpConfigEpochWithoutConsensus() {
         long max = managers.nodes.clusterGetMaxEpoch();
         if (server.myself.configEpoch == 0 || server.myself.configEpoch != max) {
-            server.cluster.currentEpoch++;
-            server.myself.configEpoch = server.cluster.currentEpoch;
-            logger.info("New configEpoch set to " + server.myself.configEpoch);
-            return true;
+            server.cluster.currentEpoch++; server.myself.configEpoch = server.cluster.currentEpoch;
+            logger.info("New configEpoch set to " + server.myself.configEpoch); return true;
         }
         return false;
     }

@@ -31,10 +31,7 @@ public class DBSizeCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-        if (message.length == 1) {
-            replyNumber(t, "0");
-        } else {
-            replyError(t, "wrong number of arguments for 'dbsize' command");
-        }
+        if (message.length == 1) replyNumber(t, "0");
+        else replyError(t, "wrong number of arguments for 'dbsize' command");
     }
 }

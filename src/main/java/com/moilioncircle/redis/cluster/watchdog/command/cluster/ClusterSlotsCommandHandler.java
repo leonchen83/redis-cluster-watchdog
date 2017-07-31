@@ -39,10 +39,8 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
-
         t.write(clusterReplyMultiBulkSlots().getBytes(), true);
     }
 
@@ -51,17 +49,14 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
         StringBuilder r = new StringBuilder();
         for (ClusterNode node : server.cluster.nodes.values()) {
             int start = -1;
-            if (!nodeIsMaster(node) || node.assignedSlots == 0) continue;
-
+            if (!nodeIsMaster(node)) continue;
+            if (node.assignedSlots == 0) continue;
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
-                boolean bit;
-                if ((bit = bitmapTestBit(node.slots, i)) && start == -1) {
-                    start = i;
-                }
+                boolean bit = bitmapTestBit(node.slots, i);
+                if (bit && start == -1) start = i;
                 if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
                     StringBuilder builder = new StringBuilder();
-                    int elements = 3;
-                    if (bit) i++;
+                    int elements = 3; if (bit) i++;
                     if (start == i - 1) {
                         builder.append(":").append(start).append("\r\n");
                         builder.append(":").append(start).append("\r\n");
@@ -69,8 +64,7 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
                         builder.append(":").append(start).append("\r\n");
                         builder.append(":").append(i - 1).append("\r\n");
                     }
-                    start = -1;
-                    builder.append("*3\r\n");
+                    start = -1; builder.append("*3\r\n");
                     builder.append("$").append(node.ip.length()).append("\r\n").append(node.ip).append("\r\n");
                     builder.append(":").append(node.port).append("\r\n");
                     builder.append("$").append(node.name.length()).append("\r\n").append(node.name).append("\r\n");
@@ -83,12 +77,10 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
                         elements++;
                     }
                     builder.insert(0, "*" + elements + "\r\n");
-                    r.append(builder.toString());
-                    masters++;
+                    r.append(builder.toString()); masters++;
                 }
             }
         }
-        r.insert(0, "*" + masters + "\r\n");
-        return r.toString();
+        return r.insert(0, "*" + masters + "\r\n").toString();
     }
 }

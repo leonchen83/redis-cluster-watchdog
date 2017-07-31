@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
  * @since 1.0.0
  */
 public class RedisClusterWatchdog extends AbstractClusterWatchdog {
+
     protected final ThinServer server;
     protected final ThinGossip gossip;
 

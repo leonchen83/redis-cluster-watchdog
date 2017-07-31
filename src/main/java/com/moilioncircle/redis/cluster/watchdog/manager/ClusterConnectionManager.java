@@ -8,10 +8,10 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
  * @since 1.0.0
  */
 public class ClusterConnectionManager {
+
     public synchronized ClusterLink createClusterLink(ClusterNode node) {
-        ClusterLink link = new ClusterLink();
-        link.node = node;
-        return link;
+        ClusterLink connection = new ClusterLink();
+        connection.node = node; return connection;
     }
 
     public synchronized void freeClusterLink(ClusterLink link) {

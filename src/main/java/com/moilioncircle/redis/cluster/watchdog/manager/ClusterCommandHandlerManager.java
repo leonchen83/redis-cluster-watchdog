@@ -19,24 +19,21 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 import com.moilioncircle.redis.cluster.watchdog.command.DefaultCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.stream;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
 public class ClusterCommandHandlerManager {
+
     private DefaultCommandHandler handler;
 
     public ClusterCommandHandlerManager(ClusterManagers managers) {
         this.handler = new DefaultCommandHandler(managers);
     }
 
-    public void handleCommand(Transport<Object> t, byte[][] rawMessage) {
-        String[] message = new String[rawMessage.length];
-        for (int i = 0; i < message.length; i++) {
-            message[i] = new String(rawMessage[i], UTF_8);
-        }
-        this.handler.handle(t, message, rawMessage);
+    public void handleCommand(Transport<Object> t, byte[][] raw) {
+        this.handler.handle(t, stream(raw).map(String::new).toArray(String[]::new), raw);
     }
 }

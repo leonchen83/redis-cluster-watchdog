@@ -28,9 +28,13 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     protected final ClusterConfiguration configuration;
 
     protected AbstractClusterWatchdog(ClusterConfiguration configuration) {
-        this.configuration = configuration;
-        this.configuration.validate();
+        this.configuration = configuration.validate();
         this.managers = new ClusterManagers(configuration, this);
+    }
+
+    @Override
+    public ClusterConfiguration getClusterConfiguration() {
+        return this.configuration;
     }
 
     @Override
@@ -56,10 +60,5 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     @Override
     public RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
         return managers.setRestoreCommandListener(restoreCommandListener);
-    }
-
-    @Override
-    public ClusterConfiguration getClusterConfiguration() {
-        return this.configuration;
     }
 }

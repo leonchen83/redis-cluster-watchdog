@@ -12,17 +12,12 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @since 1.0.0
  */
 public class ClusterNodeInfo {
-    public int port;
-    public String ip;
-    public int flags;
-    public int busPort;
-    public String name;
-    public String link;
-    public long pingTime;
-    public long pongTime;
-    public String master;
-    public long configEpoch;
+
+    public long pingTime; public long pongTime;
+    public String master; public long configEpoch;
     public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
+    public String ip; public int port; public int busPort;
+    public int flags; public String name; public String link;
 
     @Override
     public boolean equals(Object o) {
@@ -56,17 +51,17 @@ public class ClusterNodeInfo {
         return result;
     }
 
+    public static ClusterNodeInfo valueOf(ClusterNode myself) {
+        return valueOf(myself, myself);
+    }
+
     public static ClusterNodeInfo valueOf(ClusterNode node, ClusterNode myself) {
         ClusterNodeInfo n = new ClusterNodeInfo();
-        n.ip = node.ip;
-        n.name = node.name;
-        n.port = node.port;
-        n.flags = node.flags;
-        n.busPort = node.busPort;
-        n.pingTime = node.pingTime;
-        n.pongTime = node.pongTime;
         n.configEpoch = node.configEpoch;
+        n.name = node.name; n.flags = node.flags;
+        n.pingTime = node.pingTime; n.pongTime = node.pongTime;
         n.master = node.master == null ? null : node.master.name;
+        n.ip = node.ip; n.port = node.port; n.busPort = node.busPort;
         System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
         n.link = node.link != null || Objects.equals(node, myself) ? "connected" : "disconnected";
         return n;

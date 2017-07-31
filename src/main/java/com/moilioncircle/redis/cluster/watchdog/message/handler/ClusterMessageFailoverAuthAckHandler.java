@@ -27,8 +27,7 @@ public class ClusterMessageFailoverAuthAckHandler extends AbstractClusterMessage
 
         if (sender == null) return true;
         if (nodeIsMaster(sender) && sender.assignedSlots > 0 && hdr.currentEpoch >= server.cluster.failoverAuthEpoch) {
-            server.cluster.failoverAuthCount++;
-            managers.failovers.clusterHandleSlaveFailover();
+            server.cluster.failoverAuthCount++; managers.failovers.clusterHandleSlaveFailover();
         }
         return true;
     }

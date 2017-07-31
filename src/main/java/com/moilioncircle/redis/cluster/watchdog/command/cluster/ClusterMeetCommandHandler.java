@@ -41,54 +41,28 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 4 && message.length != 5) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         int port, busPort;
-
-        try {
-            port = parseInt(message[3]);
-        } catch (Exception e) {
-            replyError(t, "Invalid port:" + message[3]);
-            return;
-        }
+        try { port = parseInt(message[3]); }
+        catch (Exception e) { replyError(t, "Invalid port:" + message[3]); return; }
 
         if (message.length == 5) {
-            try {
-                busPort = parseInt(message[4]);
-            } catch (Exception e) {
-                replyError(t, "Invalid bus port:" + message[4]);
-                return;
-            }
-        } else {
-            busPort = port + CLUSTER_PORT_INCR;
-        }
+            try { busPort = parseInt(message[4]); }
+            catch (Exception e) { replyError(t, "Invalid bus port:" + message[4]); return; }
+        } else busPort = port + CLUSTER_PORT_INCR;
 
         if (managers.configuration.getVersion() == PROTOCOL_V0) {
             busPort = port + CLUSTER_PORT_INCR;
-            logger.warn("bus port force set to " + busPort + ", cause version is 0.");
+            logger.warn("bus port force set to " + busPort + ", cause cluster protocol version is 0.");
         }
 
-        if (port <= 0 || port > 65535) {
-            replyError(t, "Invalid port:" + port);
-            return;
-        }
+        if (port <= 0 || port > 65535) { replyError(t, "Invalid port:" + port); return; }
+        if (busPort <= 0 || busPort > 65535) { replyError(t, "Invalid bus port:" + busPort); return; }
+        if (message[2] == null || message[2].length() == 0) { replyError(t, "Invalid address:" + message[2]); return; }
 
-        if (busPort <= 0 || busPort > 65535) {
-            replyError(t, "Invalid bus port:" + busPort);
-            return;
-        }
-
-        if (message[2] == null || message[2].length() == 0) {
-            replyError(t, "Invalid address:" + message[2]);
-            return;
-        }
-
-        if (managers.nodes.clusterStartHandshake(message[2], port, busPort)) {
-            reply(t, "OK");
-        } else {
-            replyError(t, "Invalid node address specified:" + message[2] + ":" + message[3]);
-        }
+        if (managers.nodes.clusterStartHandshake(message[2], port, busPort)) reply(t, "OK");
+        else replyError(t, "Invalid node address specified:" + message[2] + ":" + message[3]);
     }
 }

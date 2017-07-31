@@ -21,6 +21,7 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @since 1.0.0
  */
 public interface ClusterNodeListener {
+
     void onNodePFailed(ClusterNodeInfo pFailed);
 
     void onUnsetNodePFailed(ClusterNodeInfo pFailed);

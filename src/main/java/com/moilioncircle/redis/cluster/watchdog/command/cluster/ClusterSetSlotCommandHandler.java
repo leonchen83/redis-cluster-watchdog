@@ -44,87 +44,57 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
 
         if (!managers.configuration.isMaster()) {
-            replyError(t, "Unsupported COMMAND");
-            return;
+            replyError(t, "Unsupported COMMAND"); return;
         }
 
         if (message.length < 4) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         if (nodeIsSlave(server.myself)) {
-            replyError(t, "Please use SETSLOT only with masters.");
-            return;
+            replyError(t, "Please use SETSLOT only with masters."); return;
         }
 
         int slot;
-        try {
-            slot = parseInt(message[2]);
-        } catch (Exception e) {
-            replyError(t, "Invalid slot:" + message[2]);
-            return;
-        }
-
-        if (slot < 0 || slot > 16384) {
-            replyError(t, "Invalid slot:" + slot);
-            return;
-        }
+        try { slot = parseInt(message[2]); }
+        catch (Exception e) { replyError(t, "Invalid slot:" + message[2]); return; }
+        if (slot < 0 || slot > 16384) { replyError(t, "Invalid slot:" + slot); return; }
 
         if (message[3] == null) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
+
         if (message[3].equalsIgnoreCase("migrating") && message.length == 5) {
             if (!Objects.equals(server.cluster.slots[slot], server.myself)) {
-                replyError(t, "I'm not the owner of hash slot " + slot);
-                return;
+                replyError(t, "I'm not the owner of hash slot " + slot); return;
             }
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
-            if (n == null) {
-                replyError(t, "I don't know fail node " + message[4]);
-                return;
-            }
+            if (n == null) { replyError(t, "I don't know fail node " + message[4]); return; }
             server.cluster.migrating[slot] = n;
         } else if (message[3].equalsIgnoreCase("importing") && message.length == 5) {
             if (Objects.equals(server.cluster.slots[slot], server.myself)) {
-                replyError(t, "I'm already the owner of hash slot " + slot);
-                return;
+                replyError(t, "I'm already the owner of hash slot " + slot); return;
             }
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
-            if (n == null) {
-                replyError(t, "I don't know fail node " + message[4]);
-                return;
-            }
+            if (n == null) { replyError(t, "I don't know fail node " + message[4]); return; }
             server.cluster.importing[slot] = n;
         } else if (message[3].equalsIgnoreCase("stable") && message.length == 4) {
-            /* CLUSTER SETSLOT <SLOT> STABLE */
-            server.cluster.importing[slot] = null;
-            server.cluster.migrating[slot] = null;
+            server.cluster.importing[slot] = null; server.cluster.migrating[slot] = null;
         } else if (message[3].equalsIgnoreCase("node") && message.length == 5) {
             /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
-
-            if (n == null) {
-                replyError(t, "Unknown node " + message[4]);
-                return;
-            }
-
-            if (server.cluster.migrating[slot] != null)
-                server.cluster.migrating[slot] = null;
-
+            if (n == null) { replyError(t, "Unknown node " + message[4]); return; }
+            if (server.cluster.migrating[slot] != null) server.cluster.migrating[slot] = null;
             if (Objects.equals(n, server.myself) && server.cluster.importing[slot] != null) {
                 if (managers.states.clusterBumpConfigEpochWithoutConsensus()) {
                     logger.info("configEpoch updated after importing slot " + slot);
                 }
                 server.cluster.importing[slot] = null;
             }
-            managers.slots.clusterDelSlot(slot);
-            managers.slots.clusterAddSlot(n, slot);
+            managers.slots.clusterDelSlot(slot); managers.slots.clusterAddSlot(n, slot);
         } else {
-            replyError(t, "Invalid CLUSTER SETSLOT action or number of arguments");
-            return;
+            replyError(t, "Invalid CLUSTER SETSLOT action or number of arguments"); return;
         }
-        managers.states.clusterUpdateState();
-        reply(t, "OK");
+        managers.states.clusterUpdateState(); reply(t, "OK");
     }
 }

@@ -40,20 +40,16 @@ public class ClusterSlavesCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
-
         if (node == null) {
-            replyError(t, "Unknown node " + message[2]);
-            return;
+            replyError(t, "Unknown node " + message[2]); return;
         }
 
         if (nodeIsSlave(node)) {
-            replyError(t, "The specified node is not a master");
-            return;
+            replyError(t, "The specified node is not a master"); return;
         }
 
         StringBuilder builder = new StringBuilder();
@@ -62,8 +58,8 @@ public class ClusterSlavesCommandHandler extends AbstractCommandHandler {
             Version version = managers.configuration.getVersion();
             ClusterConfigInfo configInfo = ClusterConfigInfo.valueOf(server.cluster);
             ClusterNodeInfo nodeInfo = ClusterNodeInfo.valueOf(slave, server.cluster.myself);
-            String description = clusterGenNodeDescription(configInfo, nodeInfo, version);
-            builder.append("$").append(description.length()).append("\r\n").append(description).append("\r\n");
+            String nodeDescription = clusterGenNodeDescription(configInfo, nodeInfo, version);
+            builder.append("$").append(nodeDescription.length()).append("\r\n").append(nodeDescription).append("\r\n");
         }
         t.write(builder.toString().getBytes(), true);
     }

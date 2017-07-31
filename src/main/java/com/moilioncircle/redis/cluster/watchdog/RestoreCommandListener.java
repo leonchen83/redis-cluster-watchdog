@@ -23,5 +23,7 @@ import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
  * @since 2.1.0
  */
 public interface RestoreCommandListener {
+
     void onRestoreCommand(KeyValuePair<?> kv, boolean replace);
+
 }

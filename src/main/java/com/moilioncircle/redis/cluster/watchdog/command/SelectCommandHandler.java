@@ -34,25 +34,13 @@ public class SelectCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "wrong number of arguments for 'select' command");
-            return;
+            replyError(t, "wrong number of arguments for 'select' command"); return;
         }
 
         try {
             int db = parseInt(message[1]);
-            if (db < 0 || db >= 16) {
-                replyError(t, "ERR DB index is out of range");
-                return;
-            }
-
-            if (db != 0) {
-                replyError(t, "SELECT is not allowed in cluster mode");
-                return;
-            }
-
-            reply(t, "OK");
-        } catch (Exception e) {
-            replyError(t, "Invalid db number:" + message[1]);
-        }
+            if (db < 0 || db >= 16) { replyError(t, "ERR DB index is out of range"); return; }
+            if (db != 0) { replyError(t, "SELECT is not allowed in cluster mode"); return; } reply(t, "OK");
+        } catch (Exception e) { replyError(t, "Invalid db number:" + message[1]); }
     }
 }

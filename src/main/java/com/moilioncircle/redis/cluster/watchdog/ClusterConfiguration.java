@@ -133,7 +133,7 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public void validate() {
+    public ClusterConfiguration validate() {
         if (version == null) {
             throw new ClusterConfigurationException("illegal version: " + version);
         }
@@ -145,7 +145,7 @@ public class ClusterConfiguration {
         if (clusterAnnounceBusPort == 0 || version == PROTOCOL_V0) {
             clusterAnnounceBusPort = clusterAnnouncePort + CLUSTER_PORT_INCR;
             if (version == PROTOCOL_V0)
-                logger.warn("clusterAnnouncePort force set to " + clusterAnnounceBusPort + ", cause version is 0.");
+                logger.warn("clusterAnnouncePort force set to " + clusterAnnounceBusPort + ", cause cluster protocol version is 0.");
         }
 
         if (clusterAnnounceBusPort <= 0 || clusterAnnounceBusPort > 65535) {
@@ -168,5 +168,7 @@ public class ClusterConfiguration {
         if (clusterNodeTimeout <= 0) {
             throw new ClusterConfigurationException("illegal node timeout: " + clusterNodeTimeout);
         }
+
+        return this;
     }
 }

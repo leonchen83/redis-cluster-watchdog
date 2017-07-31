@@ -37,41 +37,22 @@ public class ClusterGetKeysInSlotCommandHandler extends AbstractCommandHandler {
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
 
         if (!managers.configuration.isMaster()) {
-            replyError(t, "Unsupported COMMAND");
-            return;
+            replyError(t, "Unsupported COMMAND"); return;
         }
 
         if (message.length != 4) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments");
-            return;
+            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         int slot;
-
-        try {
-            slot = parseInt(message[2]);
-        } catch (Exception e) {
-            replyError(t, "Invalid slot:" + message[2]);
-            return;
-        }
-
-        if (slot < 0 || slot > 16384) {
-            replyError(t, "Invalid slot:" + slot);
-            return;
-        }
+        try { slot = parseInt(message[2]); }
+        catch (Exception e) { replyError(t, "Invalid slot:" + message[2]); return; }
+        if (slot < 0 || slot > 16384) { replyError(t, "Invalid slot:" + slot); return; }
 
         long max;
-        try {
-            max = parseLong(message[3]);
-        } catch (Exception e) {
-            replyError(t, "Invalid number of keys:" + message[3]);
-            return;
-        }
-
-        if (max < 0) {
-            replyError(t, "Invalid number of keys:" + max);
-            return;
-        }
+        try { max = parseLong(message[3]); }
+        catch (Exception e) { replyError(t, "Invalid number of keys:" + message[3]); return; }
+        if (max < 0) { replyError(t, "Invalid number of keys:" + max); return; }
 
         t.write("*0\r\n".getBytes(), true);
     }

@@ -1,6 +1,7 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
 import com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo;
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo;
 import com.moilioncircle.redis.cluster.watchdog.Version;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.util.stream.Collectors.joining;
@@ -26,28 +28,31 @@ import static java.util.stream.Collectors.joining;
  */
 public class ClusterConfigManager {
     private static final Log logger = LogFactory.getLog(ClusterConfigManager.class);
+
     private ServerState server;
     private ClusterManagers managers;
+    private ClusterConfiguration configuration;
 
     public ClusterConfigManager(ClusterManagers managers) {
         this.managers = managers;
         this.server = managers.server;
+        this.configuration = managers.configuration;
     }
 
     public static Map<Byte, String> flags = new ByteMap<>();
 
     static {
+        flags.put((byte) CLUSTER_NODE_FAIL, "fail");
+        flags.put((byte) CLUSTER_NODE_PFAIL, "fail?");
+        flags.put((byte) CLUSTER_NODE_SLAVE, "slave");
         flags.put((byte) CLUSTER_NODE_MYSELF, "myself");
         flags.put((byte) CLUSTER_NODE_MASTER, "master");
-        flags.put((byte) CLUSTER_NODE_SLAVE, "slave");
-        flags.put((byte) CLUSTER_NODE_PFAIL, "fail?");
-        flags.put((byte) CLUSTER_NODE_FAIL, "fail");
-        flags.put((byte) CLUSTER_NODE_HANDSHAKE, "handshake");
         flags.put((byte) CLUSTER_NODE_NOADDR, "noaddr");
+        flags.put((byte) CLUSTER_NODE_HANDSHAKE, "handshake");
     }
 
     public boolean clusterLoadConfig() {
-        String file = managers.configuration.getClusterConfigFile();
+        String file = configuration.getClusterConfigFile();
         try (BufferedReader r = new BufferedReader(new FileReader(new File(file)))) {
             String line;
             while ((line = r.readLine()) != null) {
@@ -75,49 +80,48 @@ public class ClusterConfigManager {
                     if (!hostAndPort.contains(":")) {
                         throw new UnsupportedOperationException("Unrecoverable error: corrupted cluster config file.");
                     }
-                    int colonIdx = hostAndPort.indexOf(":");
-                    int atIdx = hostAndPort.indexOf("@");
-                    String ip = hostAndPort.substring(0, colonIdx);
+                    int cIdx = hostAndPort.indexOf(":");
+                    int aIdx = hostAndPort.indexOf("@");
+                    String ip = hostAndPort.substring(0, cIdx);
                     node.ip = ip.equalsIgnoreCase("0.0.0.0") ? null : ip;
-                    node.port = parseInt(hostAndPort.substring(colonIdx + 1, atIdx == -1 ? hostAndPort.length() : atIdx));
-                    node.busPort = atIdx == -1 ? node.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(atIdx + 1));
-                    String[] roles = args.get(2).split(",");
+                    node.port = parseInt(hostAndPort.substring(cIdx + 1, aIdx == -1 ? hostAndPort.length() : aIdx));
+                    node.busPort = aIdx == -1 ? node.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(aIdx + 1));
+
                     long now = System.currentTimeMillis();
-                    for (String role : roles) {
+                    for (String role : args.get(2).split(",")) {
                         switch (role) {
-                            case "myself":
-                                server.myself = server.cluster.myself = node;
-                                node.flags |= CLUSTER_NODE_MYSELF;
-                                break;
-                            case "master":
-                                node.flags |= CLUSTER_NODE_MASTER;
-                                break;
-                            case "slave":
-                                node.flags |= CLUSTER_NODE_SLAVE;
-                                break;
-                            case "fail?":
-                                node.flags |= CLUSTER_NODE_PFAIL;
+                            case "noflags":
                                 break;
                             case "fail":
                                 node.flags |= CLUSTER_NODE_FAIL;
                                 node.failTime = now;
                                 break;
-                            case "handshake":
-                                node.flags |= CLUSTER_NODE_HANDSHAKE;
+                            case "fail?":
+                                node.flags |= CLUSTER_NODE_PFAIL;
+                                break;
+                            case "slave":
+                                node.flags |= CLUSTER_NODE_SLAVE;
                                 break;
                             case "noaddr":
                                 node.flags |= CLUSTER_NODE_NOADDR;
                                 break;
-                            case "noflags":
+                            case "master":
+                                node.flags |= CLUSTER_NODE_MASTER;
+                                break;
+                            case "handshake":
+                                node.flags |= CLUSTER_NODE_HANDSHAKE;
+                                break;
+                            case "myself":
+                                node.flags |= CLUSTER_NODE_MYSELF;
+                                server.myself = server.cluster.myself = node;
                                 break;
                             default:
                                 throw new UnsupportedOperationException("Unknown flag in redis cluster config file");
                         }
                     }
 
-                    ClusterNode master;
                     if (!args.get(3).equals("-")) {
-                        master = managers.nodes.clusterLookupNode(args.get(3));
+                        ClusterNode master = managers.nodes.clusterLookupNode(args.get(3));
                         if (master == null) {
                             master = managers.nodes.createClusterNode(args.get(3), 0);
                             managers.nodes.clusterAddNode(master);
@@ -166,18 +170,15 @@ public class ClusterConfigManager {
             logger.info("Node configuration loaded, I'm " + server.myself.name);
 
             long maxEpoch = managers.nodes.clusterGetMaxEpoch();
-            if (maxEpoch > server.cluster.currentEpoch) {
-                server.cluster.currentEpoch = maxEpoch;
-            }
+            server.cluster.currentEpoch = Math.max(maxEpoch, server.cluster.currentEpoch);
+
             for (ClusterNode node : server.cluster.nodes.values()) {
                 ClusterNodeInfo info = ClusterNodeInfo.valueOf(node, server.myself);
                 managers.notifyNodeAdded(info);
-                if ((node.flags & CLUSTER_NODE_PFAIL) != 0) {
+                if ((node.flags & CLUSTER_NODE_PFAIL) != 0)
                     managers.notifyNodePFailed(info);
-                }
-                if ((node.flags & CLUSTER_NODE_FAIL) != 0) {
+                if ((node.flags & CLUSTER_NODE_FAIL) != 0)
                     managers.notifyNodeFailed(info);
-                }
             }
             managers.notifyConfigChanged(ClusterConfigInfo.valueOf(server.cluster));
             return true;
@@ -186,17 +187,23 @@ public class ClusterConfigManager {
         }
     }
 
+    public boolean clusterSaveConfig(ClusterConfigInfo info) {
+        return clusterSaveConfig(info, false);
+    }
+
     public boolean clusterSaveConfig(ClusterConfigInfo info, boolean force) {
         BufferedWriter r = null;
         try {
-            File file = new File(managers.configuration.getClusterConfigFile());
+            File file = new File(configuration.getClusterConfigFile());
             if (!file.exists() && !file.createNewFile()) return false;
             r = new BufferedWriter(new FileWriter(file));
-            Version version = managers.configuration.getVersion();
-            String line = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE, version) +
-                    "vars currentEpoch " + info.currentEpoch +
-                    " lastVoteEpoch " + info.lastVoteEpoch;
-            r.write(line);
+            Version v = configuration.getVersion();
+            String d = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE, v);
+
+            StringBuilder builder = new StringBuilder(d);
+            builder.append("vars currentEpoch ").append(info.currentEpoch);
+            builder.append(" lastVoteEpoch ").append(info.lastVoteEpoch);
+            r.write(builder.toString());
             r.flush();
             if (!force) managers.notifyConfigChanged(info);
             return true;
@@ -214,61 +221,53 @@ public class ClusterConfigManager {
     public static String representClusterNodeFlags(int flags) {
         if (flags == 0) return "noflags";
         return ClusterConfigManager.flags.entrySet().stream().
-                filter(e -> (flags & e.getKey()) != 0).
+                filter(node -> (flags & node.getKey()) != 0).
                 map(Map.Entry::getValue).collect(joining(","));
     }
 
-    public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node, Version version) {
-        StringBuilder builder = new StringBuilder();
+    public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node, Version v) {
+        String ip = node.ip == null ? "0.0.0.0" : node.ip;
+        String master = node.master == null ? "-" : node.master;
+        long pongTime = node.pongTime, configEpoch = node.configEpoch;
+        boolean connected = node.link != null || (node.flags & CLUSTER_NODE_MYSELF) != 0;
 
-        builder.append(node.name).append(" ").append(node.ip == null ? "0.0.0.0" : node.ip);
-        builder.append(":").append(node.port);
-        if (version == PROTOCOL_V1)
-            builder.append("@").append(node.busPort);
-        builder.append(" ");
-        builder.append(representClusterNodeFlags(node.flags)).append(" ");
-        builder.append(node.master == null ? "-" : node.master).append(" ");
-        builder.append(node.pingTime).append(" ").append(node.pongTime);
-        builder.append(" ").append(node.configEpoch).append(" ");
-        builder.append((node.link != null || (node.flags & CLUSTER_NODE_MYSELF) != 0) ? "connected" : "disconnected");
+        StringBuilder builder = new StringBuilder(node.name);
+        builder.append(" ").append(ip).append(":").append(node.port);
+        if (v == PROTOCOL_V1) builder.append("@").append(node.busPort);
+        builder.append(" ").append(representClusterNodeFlags(node.flags));
+        builder.append(" ").append(master).append(" ").append(node.pingTime);
+        builder.append(" ").append(pongTime).append(" ").append(configEpoch);
+        builder.append(" ").append(connected ? "connected" : "disconnected");
 
         int st = -1;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            boolean bit;
-
-            if ((bit = ClusterSlotManger.bitmapTestBit(node.slots, i)) && st == -1) {
-                st = i;
-            }
+            boolean bit = bitmapTestBit(node.slots, i);
+            if (bit && st == -1) st = i;
             if (st != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
                 if (bit) i++;
-                if (st == i - 1) {
-                    builder.append(" ").append(st);
-                } else {
-                    builder.append(" ").append(st).append("-").append(i - 1);
-                }
+                if (st == i - 1) builder.append(" ").append(st);
+                else builder.append(" ").append(st).append("-").append(i - 1);
                 st = -1;
             }
         }
 
-        if ((node.flags & CLUSTER_NODE_MYSELF) != 0) {
-            for (int j = 0; j < CLUSTER_SLOTS; j++) {
-                if (info.migrating[j] != null) {
-                    builder.append(" [").append(j).append("->-").append(info.migrating[j]).append("]");
-                } else if (info.importing[j] != null) {
-                    builder.append(" [").append(j).append("-<-").append(info.importing[j]).append("]");
-                }
+        if ((node.flags & CLUSTER_NODE_MYSELF) == 0) return builder.toString();
+
+        for (int j = 0; j < CLUSTER_SLOTS; j++) {
+            if (info.migrating[j] != null) {
+                builder.append(" [").append(j).append("->-").append(info.migrating[j]).append("]");
+            } else if (info.importing[j] != null) {
+                builder.append(" [").append(j).append("-<-").append(info.importing[j]).append("]");
             }
         }
-
         return builder.toString();
     }
 
-    public static String clusterGenNodesDescription(ClusterConfigInfo info, int filter, Version version) {
+    public static String clusterGenNodesDescription(ClusterConfigInfo info, int filter, Version v) {
         StringBuilder builder = new StringBuilder();
         for (ClusterNodeInfo node : info.nodes.values()) {
             if ((node.flags & filter) != 0) continue;
-            builder.append(clusterGenNodeDescription(info, node, version));
-            builder.append("\n");
+            builder.append(clusterGenNodeDescription(info, node, v)).append("\n");
         }
         return builder.toString();
     }
@@ -283,18 +282,19 @@ public class ClusterConfigManager {
                 return "meet";
             case CLUSTERMSG_TYPE_FAIL:
                 return "fail";
-            case CLUSTERMSG_TYPE_PUBLISH:
-                return "publish";
-            case CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST:
-                return "auth-req";
-            case CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK:
-                return "auth-ack";
             case CLUSTERMSG_TYPE_UPDATE:
                 return "update";
             case CLUSTERMSG_TYPE_MFSTART:
                 return "mfstart";
+            case CLUSTERMSG_TYPE_PUBLISH:
+                return "publish";
+            case CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK:
+                return "auth-ack";
+            case CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST:
+                return "auth-req";
+            default:
+                return "unknown";
         }
-        return "unknown";
     }
 
     public static List<String> parseLine(String line) {

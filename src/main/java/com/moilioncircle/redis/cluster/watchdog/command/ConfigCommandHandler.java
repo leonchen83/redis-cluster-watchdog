@@ -35,22 +35,15 @@ public class ConfigCommandHandler extends AbstractCommandHandler {
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length == 4 && message[1] != null && message[1].equalsIgnoreCase("set")) {
             if (message[2] == null || !message[2].equalsIgnoreCase("cluster-node-timeout")) {
-                replyError(t, "wrong number of arguments for 'config' command");
-                return;
+                replyError(t, "wrong number of arguments for 'config' command"); return;
             }
-
             if (message[3] == null) {
-                replyError(t, "wrong number of arguments for 'config' command");
-                return;
+                replyError(t, "wrong number of arguments for 'config' command"); return;
             }
-
             try {
                 long timeout = parseLong(message[3]);
-                managers.configuration.setClusterNodeTimeout(timeout);
-                reply(t, "OK");
-            } catch (Exception e) {
-                replyError(t, "wrong number of arguments for 'config' command");
-            }
+                managers.configuration.setClusterNodeTimeout(timeout); reply(t, "OK");
+            } catch (Exception e) { replyError(t, "wrong number of arguments for 'config' command"); }
         } else if (message.length == 2 && message[1] != null && message[1].equalsIgnoreCase("rewrite")) {
             reply(t, "OK");
         } else {

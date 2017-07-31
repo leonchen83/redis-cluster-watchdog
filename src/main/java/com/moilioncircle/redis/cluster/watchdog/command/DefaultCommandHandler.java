@@ -30,6 +30,8 @@ import java.util.Map;
 public class DefaultCommandHandler extends AbstractCommandHandler {
 
     private Map<String, CommandHandler> handlers = new HashMap<>();
+    public CommandHandler get(String name) { return handlers.get(name.toLowerCase()); }
+    public void register(String name, CommandHandler handler) { handlers.put(name.toLowerCase(), handler); }
 
     public DefaultCommandHandler(ClusterManagers managers) {
         super(managers);
@@ -40,33 +42,20 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         register("select", new SelectCommandHandler(managers));
         register("cluster", new ClusterCommandHandler(managers));
         register("restore", new RestoreCommandHandler(managers));
-//        register("readonly", new ReadonlyCommandHandler(managers));
         register("shutdown", new ShutdownCommandHandler(managers));
-//        register("readwrite", new ReadWriteCommandHandler(managers));
         register("restore-asking", new RestoreCommandHandler(managers));
     }
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
         if (message.length <= 0 || message[0] == null) {
-            replyError(t, "Unsupported COMMAND");
-            return;
+            replyError(t, "Unsupported COMMAND"); return;
         }
-
         CommandHandler handler = get(message[0]);
         if (handler == null) {
-            replyError(t, "Unsupported COMMAND");
-            return;
+            replyError(t, "Unsupported COMMAND"); return;
         }
-
         handler.handle(t, message, rawMessage);
     }
 
-    public void register(String name, CommandHandler handler) {
-        handlers.put(name.toLowerCase(), handler);
-    }
-
-    public CommandHandler get(String name) {
-        return handlers.get(name.toLowerCase());
-    }
 }

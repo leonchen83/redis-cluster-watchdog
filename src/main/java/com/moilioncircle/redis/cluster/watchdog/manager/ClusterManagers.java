@@ -78,32 +78,27 @@ public class ClusterManagers {
 
     public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
         ClusterNodeListener r = this.clusterNodeListener;
-        this.clusterNodeListener = clusterNodeListener;
-        return r;
+        this.clusterNodeListener = clusterNodeListener; return r;
     }
 
     public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
         ReplicationListener r = this.replicationListener;
-        this.replicationListener = replicationListener;
-        return r;
+        this.replicationListener = replicationListener; return r;
     }
 
     public synchronized ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener) {
         ClusterStateListener r = this.clusterStateListener;
-        this.clusterStateListener = clusterStateListener;
-        return r;
+        this.clusterStateListener = clusterStateListener; return r;
     }
 
     public synchronized ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener) {
         ClusterConfigListener r = this.clusterConfigListener;
-        this.clusterConfigListener = clusterConfigListener;
-        return r;
+        this.clusterConfigListener = clusterConfigListener; return r;
     }
 
     public synchronized RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
         RestoreCommandListener r = this.restoreCommandListener;
-        this.restoreCommandListener = restoreCommandListener;
-        return r;
+        this.restoreCommandListener = restoreCommandListener; return r;
     }
 
     public void notifySetReplication(String ip, int host) {
@@ -122,8 +117,7 @@ public class ClusterManagers {
 
     public long notifyReplicationGetSlaveOffset() {
         ReplicationListener r = this.replicationListener;
-        if (r == null) return 0L;
-        return r.onGetSlaveOffset();
+        if (r == null) return 0L; return r.onGetSlaveOffset();
     }
 
     public void notifyConfigChanged(ClusterConfigInfo info) {

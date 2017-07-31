@@ -58,40 +58,23 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
 
         if (!managers.configuration.isMaster()) {
-            replyError(t, "Unsupported COMMAND");
-            return;
+            replyError(t, "Unsupported COMMAND"); return;
         }
 
         if (rawMessage.length != 4 && rawMessage.length != 5) {
-            replyError(t, "wrong number of arguments for 'restore' command");
-            return;
+            replyError(t, "wrong number of arguments for 'restore' command"); return;
         }
 
         byte[] key = rawMessage[1];
-        if (key == null) {
-            replyError(t, "Invalid key: null");
-            return;
-        }
+        if (key == null) { replyError(t, "Invalid key: null"); return; }
 
         long ttl;
-        try {
-            ttl = parseLong(message[2]);
-        } catch (Exception e) {
-            replyError(t, "Invalid ttl: " + message[2]);
-            return;
-        }
-
-        if (ttl < 0) {
-            replyError(t, "Invalid ttl: " + ttl);
-            return;
-        }
+        try { ttl = parseLong(message[2]); }
+        catch (Exception e) { replyError(t, "Invalid ttl: " + message[2]); return; }
+        if (ttl < 0) { replyError(t, "Invalid ttl: " + ttl); return; }
 
         byte[] serialized = rawMessage[3];
-
-        if (serialized == null) {
-            replyError(t, "Invalid serialized-value: null");
-            return;
-        }
+        if (serialized == null) { replyError(t, "Invalid serialized-value: null"); return; }
 
         boolean replace;
         if (rawMessage.length == 5) {
@@ -116,11 +99,8 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
                 managers.notifyRestoreCommand(kv, replace);
             }
         });
-        try {
-            replicator.open();
-        } catch (IOException e) {
-            throw new java.io.UncheckedIOException(e);
-        }
+        try { replicator.open(); }
+        catch (IOException e) { replyError(t, "Internal Error."); return; }
         reply(t, "OK");
     }
 

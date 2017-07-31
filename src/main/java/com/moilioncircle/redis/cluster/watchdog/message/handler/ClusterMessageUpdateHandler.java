@@ -25,12 +25,11 @@ public class ClusterMessageUpdateHandler extends AbstractClusterMessageHandler {
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Update packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
         if (sender == null) return true;
+        String name = hdr.data.config.name;
         long configEpoch = hdr.data.config.configEpoch;
-        ClusterNode node = managers.nodes.clusterLookupNode(hdr.data.config.name);
+        ClusterNode node = managers.nodes.clusterLookupNode(name);
         if (node == null || node.configEpoch >= configEpoch) return true;
-        if (nodeIsSlave(node)) managers.nodes.clusterSetNodeAsMaster(node);
-        node.configEpoch = configEpoch;
-        clusterUpdateSlotsConfigWith(node, configEpoch, hdr.data.config.slots);
-        return true;
+        if (nodeIsSlave(node)) managers.nodes.clusterSetNodeAsMaster(node); node.configEpoch = configEpoch;
+        clusterUpdateSlotsConfigWith(node, configEpoch, hdr.data.config.slots); return true;
     }
 }

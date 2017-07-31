@@ -35,7 +35,6 @@ public class ReadWriteCommandHandler extends AbstractCommandHandler {
             replyError(t, "wrong number of arguments for 'readwrite' command");
             return;
         }
-
         reply(t, "OK");
     }
 }

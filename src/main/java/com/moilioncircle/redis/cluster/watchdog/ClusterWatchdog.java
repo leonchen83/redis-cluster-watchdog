@@ -23,6 +23,13 @@ import java.util.concurrent.TimeUnit;
  * @since 1.0.0
  */
 public interface ClusterWatchdog {
+
+    void start();
+
+    void stop(long timeout, TimeUnit unit);
+
+    ClusterConfiguration getClusterConfiguration();
+
     ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener);
 
     ReplicationListener setReplicationListener(ReplicationListener replicationListener);
@@ -32,10 +39,4 @@ public interface ClusterWatchdog {
     ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener);
 
     RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener);
-
-    ClusterConfiguration getClusterConfiguration();
-
-    void start();
-
-    void stop(long timeout, TimeUnit unit);
 }
