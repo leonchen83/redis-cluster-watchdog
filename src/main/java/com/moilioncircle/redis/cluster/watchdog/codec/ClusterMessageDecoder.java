@@ -24,8 +24,7 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         ClusterMessage msg = decode(in);
-        if (msg == null) return;
-        out.add(msg);
+        if (msg != null) out.add(msg);
     }
 
     protected ClusterMessage decode(ByteBuf in) {

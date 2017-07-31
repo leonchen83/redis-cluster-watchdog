@@ -19,8 +19,8 @@ public class RedisDecoder extends ByteToMessageDecoder {
         in.markReaderIndex();
         try {
             Object request = decode(ctx, in);
-            if (request instanceof byte[]) out.add(new byte[][]{(byte[]) request});
-            else if (request instanceof byte[][]) out.add(request);
+            if (request instanceof byte[][]) out.add(request);
+            else if (request instanceof byte[]) out.add(new byte[][]{(byte[]) request});
         } catch (Exception e) { in.resetReaderIndex(); }
     }
 
