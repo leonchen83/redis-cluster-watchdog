@@ -55,7 +55,7 @@ public class ClusterFailoverManager {
         if (server.myself.master.assignedSlots == 0) return;
 
         long now = System.currentTimeMillis();
-        long authAge = System.currentTimeMillis() - server.cluster.failoverAuthTime;
+        long authAge = now - server.cluster.failoverAuthTime;
         long authTimeout = Math.max(configuration.getClusterNodeTimeout() * 2, 2000);
         long authRetryTime = authTimeout * 2; int quorum = (server.cluster.size / 2) + 1;
 
@@ -64,8 +64,7 @@ public class ClusterFailoverManager {
             server.cluster.failoverAuthRank = managers.nodes.clusterGetSlaveRank();
             server.cluster.failoverAuthTime += server.cluster.failoverAuthRank * 1000;
             server.cluster.failoverAuthCount = 0; server.cluster.failoverAuthSent = false;
-            managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES);
-            return;
+            managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES); return;
         }
 
         int rank;
@@ -84,13 +83,11 @@ public class ClusterFailoverManager {
             server.cluster.failoverAuthEpoch = server.cluster.currentEpoch;
             logger.info("Starting a failover election for epoch " + server.cluster.currentEpoch + ".");
             managers.messages.clusterRequestFailoverAuth();
-            server.cluster.failoverAuthSent = true;
-            return;
+            server.cluster.failoverAuthSent = true; return;
         }
 
         if (server.cluster.failoverAuthCount >= quorum) {
             logger.info("Failover election won: I'm the new master.");
-
             if (server.myself.configEpoch < server.cluster.failoverAuthEpoch) {
                 server.myself.configEpoch = server.cluster.failoverAuthEpoch;
                 logger.info("configEpoch set to " + server.myself.configEpoch + " after successful failover");
@@ -100,17 +97,17 @@ public class ClusterFailoverManager {
     }
 
     public void clusterFailoverReplaceMyMaster() {
-        ClusterNode previous = server.myself.master;
-        if (nodeIsMaster(server.myself) || previous == null) return;
-        managers.nodes.clusterSetNodeAsMaster(server.myself);
+        ClusterNode myself = server.myself;
+        if (nodeIsMaster(myself)) return;
+        if (myself.master == null) return;
+        ClusterNode previous = myself.master;
+        managers.nodes.clusterSetNodeAsMaster(myself);
         managers.replications.replicationUnsetMaster();
-
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(previous.slots, i)) continue;
             managers.slots.clusterDelSlot(i);
-            managers.slots.clusterAddSlot(server.myself, i);
+            managers.slots.clusterAddSlot(myself, i);
         }
-
         managers.states.clusterUpdateState();
         managers.configs.clusterSaveConfig(valueOf(server.cluster));
         managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_ALL);

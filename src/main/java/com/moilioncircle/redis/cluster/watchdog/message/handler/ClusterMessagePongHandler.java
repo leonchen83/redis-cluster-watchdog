@@ -92,14 +92,12 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
 
     public void clearNodeFailureIfNeeded(ClusterNode node) {
         long now = System.currentTimeMillis();
+        long timeout = managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_UNDO_TIME_MULTI;
 
         if (nodeIsSlave(node) || node.assignedSlots == 0) {
-            logger.info("Clear FAIL state for node " + node.name + ": " + (nodeIsSlave(node) ? "slave" : "master without slots") + " is reachable again.");
             node.flags &= ~CLUSTER_NODE_FAIL; managers.notifyUnsetNodeFailed(valueOf(node, server.myself));
         }
-
-        if (nodeIsMaster(node) && node.assignedSlots > 0 && now - node.failTime > managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_UNDO_TIME_MULTI) {
-            logger.info("Clear FAIL state for node " + node.name + ": is reachable again and nobody is serving its slots after some createTime.");
+        if (nodeIsMaster(node) && node.assignedSlots > 0 && now - node.failTime > timeout) {
             node.flags &= ~CLUSTER_NODE_FAIL; managers.notifyUnsetNodeFailed(valueOf(node, server.myself));
         }
     }

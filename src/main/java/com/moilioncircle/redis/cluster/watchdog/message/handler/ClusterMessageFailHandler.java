@@ -7,8 +7,11 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_PFAIL;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMyself;
 
 /**
  * @author Leon Chen
@@ -32,7 +35,7 @@ public class ClusterMessageFailHandler extends AbstractClusterMessageHandler {
         }
 
         ClusterNode failing = managers.nodes.clusterLookupNode(hdr.data.fail.name);
-        if (failing != null && (failing.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_MYSELF)) == 0) {
+        if (failing != null && !nodeIsMyself(failing.flags) && !nodeFailed(failing.flags)) {
             logger.info("FAIL message received from " + hdr.name + " fail " + hdr.data.fail.name);
             failing.flags |= CLUSTER_NODE_FAIL; failing.failTime = System.currentTimeMillis();
             failing.flags &= ~CLUSTER_NODE_PFAIL; managers.notifyNodeFailed(valueOf(failing, server.myself));

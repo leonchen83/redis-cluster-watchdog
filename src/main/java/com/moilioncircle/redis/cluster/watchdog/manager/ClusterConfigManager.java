@@ -19,6 +19,7 @@ import java.util.function.Predicate;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.util.stream.Collectors.joining;
@@ -158,9 +159,7 @@ public class ClusterConfigManager {
                             int idx = arg.indexOf("-");
                             st = parseInt(arg.substring(0, idx));
                             ed = parseInt(arg.substring(idx + 1));
-                        } else {
-                            st = ed = parseInt(arg);
-                        }
+                        } else st = ed = parseInt(arg);
                         while (st <= ed) managers.slots.clusterAddSlot(node, st++);
                     }
                 }
@@ -176,10 +175,8 @@ public class ClusterConfigManager {
             for (ClusterNode node : server.cluster.nodes.values()) {
                 ClusterNodeInfo info = ClusterNodeInfo.valueOf(node, server.myself);
                 managers.notifyNodeAdded(info);
-                if ((node.flags & CLUSTER_NODE_PFAIL) != 0)
-                    managers.notifyNodePFailed(info);
-                if ((node.flags & CLUSTER_NODE_FAIL) != 0)
-                    managers.notifyNodeFailed(info);
+                if (nodePFailed(node.flags)) managers.notifyNodePFailed(info);
+                if (nodeFailed(node.flags)) managers.notifyNodeFailed(info);
             }
             managers.notifyConfigChanged(ClusterConfigInfo.valueOf(server.cluster));
             return true;
@@ -245,7 +242,7 @@ public class ClusterConfigManager {
             }
         }
 
-        if ((node.flags & CLUSTER_NODE_MYSELF) == 0) return builder.toString();
+        if (!nodeIsMyself(node.flags)) return builder.toString();
 
         for (int j = 0; j < CLUSTER_SLOTS; j++) {
             if (info.migrating[j] != null) {

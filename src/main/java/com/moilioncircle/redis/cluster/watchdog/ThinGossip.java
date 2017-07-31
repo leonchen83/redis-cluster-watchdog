@@ -161,8 +161,9 @@ public class ThinGossip implements Resourcable {
             managers.server.cluster.pFailNodes = 0;
             long handshakeTimeout = max(nodeTimeout, 1000);
             for (ClusterNode node : new ArrayList<>(managers.server.cluster.nodes.values())) {
-                if ((node.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_NOADDR)) != 0) continue;
-                if ((node.flags & CLUSTER_NODE_PFAIL) != 0) managers.server.cluster.pFailNodes++;
+                if (nodeIsMyself(node.flags)) continue;
+                if (nodeWithoutAddr(node.flags)) continue;
+                if (nodePFailed(node.flags)) managers.server.cluster.pFailNodes++;
                 if (nodeInHandshake(node) && now - node.createTime > handshakeTimeout) {
                     managers.nodes.clusterDelNode(node); continue;
                 }
@@ -186,7 +187,7 @@ public class ThinGossip implements Resourcable {
                     if (node.pingTime == 0) node.pingTime = System.currentTimeMillis(); continue;
                 }
                 node.link = link; link.createTime = System.currentTimeMillis();
-                long previousPingTime = node.pingTime; boolean meet = (node.flags & CLUSTER_NODE_MEET) != 0;
+                long previousPingTime = node.pingTime; boolean meet = nodeInMeet(node.flags);
                 managers.messages.clusterSendPing(link, meet ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
                 if (previousPingTime != 0) node.pingTime = previousPingTime; node.flags &= ~CLUSTER_NODE_MEET;
             }
@@ -198,8 +199,9 @@ public class ThinGossip implements Resourcable {
                     List<ClusterNode> list = new ArrayList<>(managers.server.cluster.nodes.values());
                     ClusterNode t = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
+                    if (nodeIsMyself(t.flags)) continue;
+                    if (nodeInHandshake(t.flags)) continue;
                     if (t.link == null || t.pingTime != 0) continue;
-                    if ((t.flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE)) != 0) continue;
                     if (minPongNode == null || minPongTime > t.pongTime) {
                         minPongNode = t; minPongTime = t.pongTime;
                     }
@@ -215,12 +217,12 @@ public class ThinGossip implements Resourcable {
             for (ClusterNode node : managers.server.cluster.nodes.values()) {
                 now = System.currentTimeMillis();
 
-                if ((node.flags & CLUSTER_NODE_MYSELF) != 0) continue;
-                if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
-                if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
+                if (nodeIsMyself(node.flags)) continue;
+                if (nodeWithoutAddr(node.flags)) continue;
+                if (nodeInHandshake(node.flags)) continue;
                 if (nodeIsSlave(myself) && nodeIsMaster(node) && !nodeFailed(node)) {
                     int slaves = managers.nodes.clusterCountNonFailingSlaves(node);
-                    if (slaves == 0 && node.assignedSlots > 0 && (node.flags & CLUSTER_NODE_MIGRATE_TO) != 0) isolated++;
+                    if (slaves == 0 && node.assignedSlots > 0 && nodeInMigrate(node.flags)) isolated++;
                     if (slaves > maxSlaves) maxSlaves = slaves;
                     if (Objects.equals(myself.master, node)) mySlaves = slaves;
                 }
@@ -239,7 +241,7 @@ public class ThinGossip implements Resourcable {
 
                 if (node.pingTime == 0) continue;
 
-                if (now - node.pingTime > nodeTimeout && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) {
+                if (now - node.pingTime > nodeTimeout && !nodePFailed(node.flags) && !nodeFailed(node.flags)) {
                     logger.debug("*** NODE " + node.name + " possibly failing");
                     node.flags |= CLUSTER_NODE_PFAIL; update = true;
                     managers.notifyNodePFailed(ClusterNodeInfo.valueOf(node, myself));
@@ -276,8 +278,9 @@ public class ThinGossip implements Resourcable {
         ClusterNode candidate = managers.server.myself;
         for (ClusterNode node : managers.server.cluster.nodes.values()) {
             boolean isolated = true;
-            if (nodeIsSlave(node) || nodeFailed(node)) isolated = false;
-            if ((node.flags & CLUSTER_NODE_MIGRATE_TO) == 0) isolated = false;
+            if (nodeFailed(node)) isolated = false;
+            if (nodeIsSlave(node)) isolated = false;
+            if (!nodeInMigrate(node.flags)) isolated = false;
             if ((slaves = managers.nodes.clusterCountNonFailingSlaves(node)) > 0) isolated = false;
 
             if (!isolated) node.isolatedTime = 0;

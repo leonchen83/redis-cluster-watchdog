@@ -83,7 +83,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
             ClusterNode node = managers.nodes.clusterLookupNode(gossip.name);
 
             if (node == null) {
-                if (sender != null && (gossip.flags & CLUSTER_NODE_NOADDR) == 0
+                if (sender != null && nodeHasAddr(gossip.flags)
                         && !managers.blacklists.clusterBlacklistExists(gossip.name)) {
                     managers.nodes.clusterStartHandshake(gossip.ip, gossip.port, gossip.busPort);
                 }
@@ -91,7 +91,7 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
             }
 
             if (sender != null && nodeIsMaster(sender) && !Objects.equals(node, server.myself)) {
-                if ((gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0) {
+                if (nodePFailed(gossip.flags) || nodeFailed(gossip.flags)) {
                     if (managers.nodes.clusterNodeAddFailureReport(node, sender) && configuration.isVerbose()) {
                         logger.info("Node " + sender.name + " reported node " + node.name + " as not reachable.");
                     }
@@ -102,14 +102,14 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
             }
 
             if (configuration.getVersion() == PROTOCOL_V1
-                    && (gossip.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0
+                    && !nodePFailed(gossip.flags) && !nodeFailed(gossip.flags)
                     && node.pingTime == 0 && managers.nodes.clusterNodeFailureReportsCount(node) == 0
                     && gossip.pongTime <= (System.currentTimeMillis() + 500) && gossip.pongTime > node.pongTime) {
                 node.pongTime = gossip.pongTime;
             }
 
-            if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) != 0
-                    && (gossip.flags & (CLUSTER_NODE_NOADDR | CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0
+            if ((nodePFailed(node.flags) || nodeFailed(node.flags))
+                    && nodeHasAddr(gossip.flags) && !nodePFailed(gossip.flags) && !nodeFailed(gossip.flags)
                     && (!node.ip.equalsIgnoreCase(gossip.ip) || node.port != gossip.port || node.busPort != gossip.busPort)) {
 
                 if (node.link != null) managers.connections.freeClusterLink(node.link);

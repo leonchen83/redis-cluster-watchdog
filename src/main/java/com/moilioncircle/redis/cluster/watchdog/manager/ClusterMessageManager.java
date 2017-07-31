@@ -121,9 +121,9 @@ public class ClusterMessageManager {
             ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
             if (Objects.equals(node, server.myself)) continue;
-            if (max > wanted * 2 && (node.flags & (CLUSTER_NODE_PFAIL | CLUSTER_NODE_FAIL)) == 0) continue;
-            if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
-            if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
+            if (max > wanted * 2 && !nodePFailed(node.flags) && !nodeFailed(node.flags)) continue;
+            if (nodeWithoutAddr(node.flags)) continue;
+            if (nodeInHandshake(node.flags)) continue;
             if (node.link == null && node.assignedSlots == 0) continue;
             if (clusterNodeIsInGossipSection(hdr, gossips, node)) continue;
             clusterSetGossipEntry(hdr, node); actives--; gossips++;
@@ -148,9 +148,9 @@ public class ClusterMessageManager {
             ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
 
             if (Objects.equals(node, server.myself)) continue;
-            if ((node.flags & CLUSTER_NODE_PFAIL) != 0) continue;
-            if ((node.flags & CLUSTER_NODE_NOADDR) != 0) continue;
-            if ((node.flags & CLUSTER_NODE_HANDSHAKE) != 0) continue;
+            if (nodePFailed(node.flags)) continue;
+            if (nodeWithoutAddr(node.flags)) continue;
+            if (nodeInHandshake(node.flags)) continue;
             if (node.link == null && node.assignedSlots == 0) continue;
             if (clusterNodeIsInGossipSection(hdr, gossips, node)) continue;
             clusterSetGossipEntry(hdr, node); actives--; gossips++;
@@ -168,12 +168,13 @@ public class ClusterMessageManager {
     }
 
     public void clusterBroadcastPong(int target) {
+        ClusterNode myself = server.myself;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (node.link == null) continue;
-            if (Objects.equals(node, server.myself) || nodeInHandshake(node)) continue;
+            if (Objects.equals(node, myself) || nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
                 Predicate<ClusterNode> t = e -> nodeIsSlave(e) && e.master != null;
-                t = t.and(e -> Objects.equals(e.master, server.myself) || Objects.equals(e.master, server.myself.master));
+                t = t.and(e -> Objects.equals(e.master, myself) || Objects.equals(e.master, myself.master));
                 if (!t.test(node)) continue;
             }
             clusterSendPing(node.link, CLUSTERMSG_TYPE_PONG);

@@ -32,7 +32,8 @@ public class ClusterMessageMeetHandler extends AbstractClusterMessageHandler {
         logger.debug("Meet packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
 
         if (server.myself.ip == null && managers.configuration.getClusterAnnounceIp() == null) {
-            String ip = link.fd.getLocalAddress(null); if (!Objects.equals(ip, server.myself.ip)) server.myself.ip = ip;
+            String ip = link.fd.getLocalAddress(null);
+            if (!Objects.equals(ip, server.myself.ip)) server.myself.ip = ip;
         }
 
         if (sender == null) {

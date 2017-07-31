@@ -9,7 +9,7 @@ import org.apache.commons.logging.LogFactory;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
-import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -44,7 +44,7 @@ public class ClusterStateManager {
         int masters = 0; server.cluster.size = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (nodeIsMaster(node) && node.assignedSlots != 0) {
-                server.cluster.size++; if ((node.flags & (CLUSTER_NODE_FAIL | CLUSTER_NODE_PFAIL)) == 0) masters++;
+                server.cluster.size++; if (!nodeFailed(node.flags) && !nodePFailed(node.flags)) masters++;
             }
         }
         //
