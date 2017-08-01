@@ -49,15 +49,15 @@ public class ClusterNodeManager {
         return server.cluster.nodes.put(node.name, node) == null;
     }
 
+    public ClusterNode createClusterNode(String name, int flags) {
+        ClusterNode n = new ClusterNode();
+        n.name = name == null ? getRandomHexChars() : name; n.flags = flags; return n;
+    }
+
     public void clusterRenameNode(ClusterNode node, String name) {
         logger.info("Renaming node " + node.name + " into " + name);
         server.cluster.nodes.remove(node.name); node.name = name; clusterAddNode(node);
         managers.notifyNodeAdded(valueOf(node, server.myself));
-    }
-
-    public ClusterNode createClusterNode(String name, int flags) {
-        ClusterNode n = new ClusterNode();
-        n.name = name == null ? getRandomHexChars() : name; n.flags = flags; return n;
     }
 
     public void clusterDelNode(ClusterNode node) {

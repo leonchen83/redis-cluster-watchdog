@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
-import static com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration.defaultSetting;
 
 /**
  * @author Leon Chen
@@ -51,8 +50,7 @@ public class ThinServer implements Resourcable {
 
     @Override
     public void start() {
-        acceptor = new NioBootstrapImpl<>(true, defaultSetting());
-        //
+        acceptor = new NioBootstrapImpl<>();
         acceptor.setEncoder(RedisEncoder::new);
         acceptor.setDecoder(RedisDecoder::new); acceptor.setup();
         acceptor.setTransportListener(new RedisTransportListener());
@@ -62,6 +60,11 @@ public class ThinServer implements Resourcable {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             else throw new UnsupportedOperationException(e.getCause());
         }
+    }
+
+    @Override
+    public void stop() {
+        stop(0, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -91,8 +94,7 @@ public class ThinServer implements Resourcable {
                 previous = valueOf(managers.server.cluster);
                 managers.commands.handleCommand(t, (byte[][]) message);
                 ClusterConfigInfo next = valueOf(managers.server.cluster);
-                if (!previous.equals(next))
-                    managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+                if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
             });
         }
 

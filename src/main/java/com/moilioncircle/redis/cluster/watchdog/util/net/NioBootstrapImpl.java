@@ -31,6 +31,14 @@ public class NioBootstrapImpl<T> implements NioBootstrap<T> {
 
     private NioBootstrap<T> wrapper;
 
+    public NioBootstrapImpl() {
+        this(true);
+    }
+
+    public NioBootstrapImpl(boolean server) {
+        this(server, NetworkConfiguration.defaultSetting());
+    }
+
     public NioBootstrapImpl(boolean server, NetworkConfiguration configuration) {
         if (server) wrapper = new NioAcceptor<>(configuration);
         else wrapper = new NioInitiator<>(configuration);

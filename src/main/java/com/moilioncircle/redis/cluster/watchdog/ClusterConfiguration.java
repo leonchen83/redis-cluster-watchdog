@@ -142,23 +142,23 @@ public class ClusterConfiguration {
     /**
      *
      */
-    public ClusterConfiguration validate() {
+    ClusterConfiguration validate() {
         if (version == null) {
             throw new ClusterConfigurationException("illegal version: " + version);
         }
 
         if (clusterAnnouncePort <= 0 || clusterAnnouncePort > 65535) {
-            throw new ClusterConfigurationException("illegal port: " + clusterAnnouncePort);
+            throw new ClusterConfigurationException("illegal clusterAnnouncePort: " + clusterAnnouncePort);
         }
 
         if (clusterAnnounceBusPort == 0 || version == PROTOCOL_V0) {
             clusterAnnounceBusPort = clusterAnnouncePort + CLUSTER_PORT_INCR;
             if (version == PROTOCOL_V0)
-                logger.warn("clusterAnnouncePort force set to " + clusterAnnounceBusPort + ", cause cluster protocol version is 0.");
+                logger.warn("clusterAnnounceBusPort force set to " + clusterAnnounceBusPort + ", cause cluster protocol version is 0.");
         }
 
         if (clusterAnnounceBusPort <= 0 || clusterAnnounceBusPort > 65535) {
-            throw new ClusterConfigurationException("illegal bus port: " + clusterAnnounceBusPort);
+            throw new ClusterConfigurationException("illegal clusterAnnounceBusPort: " + clusterAnnounceBusPort);
         }
 
         if (clusterAnnounceIp != null && version == PROTOCOL_V0) {
@@ -170,11 +170,11 @@ public class ClusterConfiguration {
         }
 
         if (clusterMigrationBarrier < 1) {
-            throw new ClusterConfigurationException("illegal migration barrier: " + clusterMigrationBarrier);
+            throw new ClusterConfigurationException("illegal clusterMigrationBarrier: " + clusterMigrationBarrier);
         }
 
         if (clusterNodeTimeout <= 0) {
-            throw new ClusterConfigurationException("illegal node timeout: " + clusterNodeTimeout);
+            throw new ClusterConfigurationException("illegal clusterNodeTimeout: " + clusterNodeTimeout);
         }
 
         return this;

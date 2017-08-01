@@ -27,6 +27,10 @@ public class RedisClusterWatchdog extends AbstractClusterWatchdog {
     protected final Resourcable server;
     protected final Resourcable gossip;
 
+    public RedisClusterWatchdog() {
+        this(ClusterConfiguration.defaultSetting());
+    }
+
     public RedisClusterWatchdog(ClusterConfiguration configuration) {
         super(configuration);
         this.server = new ThinServer(managers);
@@ -35,13 +39,18 @@ public class RedisClusterWatchdog extends AbstractClusterWatchdog {
 
     @Override
     public void start() {
-        server.start();
-        gossip.start();
+        Resourcable.startQuietly(server);
+        Resourcable.startQuietly(gossip);
+    }
+
+    @Override
+    public void stop() {
+        stop(0, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void stop(long timeout, TimeUnit unit) {
-        gossip.stop(timeout, unit);
-        server.stop(timeout, unit);
+        Resourcable.stopQuietly(gossip, timeout, unit);
+        Resourcable.stopQuietly(server, timeout, unit);
     }
 }

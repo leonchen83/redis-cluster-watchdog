@@ -30,7 +30,6 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
-import static com.moilioncircle.redis.cluster.watchdog.util.net.NetworkConfiguration.defaultSetting;
 import static java.lang.Math.max;
 
 /**
@@ -58,6 +57,11 @@ public class ThinGossip implements Resourcable {
             clusterCron(); ClusterConfigInfo next = valueOf(managers.server.cluster);
             if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
         }, 0, 100, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void stop() {
+        stop(0, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -127,8 +131,7 @@ public class ThinGossip implements Resourcable {
             managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
         }
 
-        acceptor = new NioBootstrapImpl<>(true, defaultSetting());
-        //
+        acceptor = new NioBootstrapImpl<>();
         acceptor.setEncoder(ClusterMessageEncoder::new);
         acceptor.setDecoder(ClusterMessageDecoder::new); acceptor.setup();
         acceptor.setTransportListener(new AcceptorTransportListener());
@@ -321,8 +324,7 @@ public class ThinGossip implements Resourcable {
                 ClusterMessage hdr = (ClusterMessage) message;
                 managers.handlers.get(hdr.type).handle(link, hdr);
                 ClusterConfigInfo next = valueOf(managers.server.cluster);
-                if (!previous.equals(next))
-                    managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+                if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
             });
         }
 
@@ -350,8 +352,7 @@ public class ThinGossip implements Resourcable {
                 ClusterLink link = managers.server.cfd.get(t);
                 managers.handlers.get(hdr.type).handle(link, hdr);
                 ClusterConfigInfo next = valueOf(managers.server.cluster);
-                if (!previous.equals(next))
-                    managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+                if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
             });
         }
 

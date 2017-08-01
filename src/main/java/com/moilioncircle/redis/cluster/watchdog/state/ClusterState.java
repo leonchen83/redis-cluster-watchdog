@@ -17,11 +17,11 @@ public class ClusterState {
     public int size = 1; public long pFailNodes = 0;
     public long currentEpoch = 0; public long lastVoteEpoch = 0;
     public ClusterNode[] slots = new ClusterNode[CLUSTER_SLOTS];
-    public Map<String, ClusterNode> nodes = new LinkedHashMap<>();
     public long[] messagesSent = new long[CLUSTERMSG_TYPE_COUNT];
-    public long[] messagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
+    public Map<String, ClusterNode> nodes = new LinkedHashMap<>();
     public ClusterNode[] migrating = new ClusterNode[CLUSTER_SLOTS];
     public ClusterNode[] importing = new ClusterNode[CLUSTER_SLOTS];
+    public long[] messagesReceived = new long[CLUSTERMSG_TYPE_COUNT];
     public int failoverAuthRank = 0; public ClusterNode myself = null;
     public long failoverAuthTime = 0; public int failoverAuthCount = 0;
     public long failoverAuthEpoch = 0; public boolean failoverAuthSent = false;

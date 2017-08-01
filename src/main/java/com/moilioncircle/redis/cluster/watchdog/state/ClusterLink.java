@@ -8,7 +8,6 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.session.Session;
  * @since 1.0.0
  */
 public class ClusterLink {
-
     public volatile long createTime;
     public volatile ClusterNode node;
     public volatile Session<RCmbMessage> fd;

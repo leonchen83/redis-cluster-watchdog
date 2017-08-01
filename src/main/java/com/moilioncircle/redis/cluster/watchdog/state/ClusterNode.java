@@ -10,7 +10,6 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @since 1.0.0
  */
 public class ClusterNode {
-
     public long failTime; public long pingTime;
     public long pongTime; public long votedTime;
     public long createTime; public long isolatedTime;
