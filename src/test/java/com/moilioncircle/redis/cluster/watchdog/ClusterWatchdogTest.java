@@ -16,8 +16,6 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
-import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
-
 import java.io.IOException;
 
 /**
@@ -30,20 +28,15 @@ public class ClusterWatchdogTest {
             final int j = i;
             new Thread(() -> {
                 ClusterConfiguration c = ClusterConfiguration.defaultSetting();
-                c.setMaster(true);
-                c.setVersion(Version.PROTOCOL_V1);
-                c.setClusterAnnouncePort(10000 + j);
+                c.setMaster(true).setVersion(Version.PROTOCOL_V1).setClusterAnnouncePort(10000 + j);
+
                 ClusterWatchdog watchdog = new RedisClusterWatchdog(c);
-                watchdog.setRestoreCommandListener(new RestoreCommandListener() {
-                    @Override
-                    public void onRestoreCommand(KeyValuePair<?> kv, boolean replace) {
-                        System.out.println(kv);
-                        System.out.println(replace);
-                    }
+                watchdog.setRestoreCommandListener((kv, replace) -> {
+                    System.out.println(kv);
+                    System.out.println(replace);
                 });
                 watchdog.start();
             }).start();
         }
-        System.in.read();
     }
 }

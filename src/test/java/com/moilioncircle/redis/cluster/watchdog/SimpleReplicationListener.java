@@ -31,8 +31,8 @@ import java.io.IOException;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class TestReplicationListener implements ReplicationListener {
-    private static final Log logger = LogFactory.getLog(TestReplicationListener.class);
+public class SimpleReplicationListener implements ReplicationListener {
+    private static final Log logger = LogFactory.getLog(SimpleReplicationListener.class);
     private volatile Replicator replicator;
 
     @Override
