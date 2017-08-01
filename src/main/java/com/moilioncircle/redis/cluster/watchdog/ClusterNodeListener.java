@@ -22,15 +22,15 @@ package com.moilioncircle.redis.cluster.watchdog;
  */
 public interface ClusterNodeListener {
 
-    void onNodePFailed(ClusterNodeInfo pFailed);
-
-    void onUnsetNodePFailed(ClusterNodeInfo pFailed);
-
-    void onNodeFailed(ClusterNodeInfo failed);
-
-    void onUnsetNodeFailed(ClusterNodeInfo failed);
-
     void onNodeAdded(ClusterNodeInfo node);
 
     void onNodeDeleted(ClusterNodeInfo node);
+
+    void onNodeFailed(ClusterNodeInfo failed);
+
+    void onNodePFailed(ClusterNodeInfo pFailed);
+
+    void onUnsetNodeFailed(ClusterNodeInfo failed);
+
+    void onUnsetNodePFailed(ClusterNodeInfo pFailed);
 }

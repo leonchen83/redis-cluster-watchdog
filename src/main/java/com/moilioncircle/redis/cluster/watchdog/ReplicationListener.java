@@ -22,9 +22,9 @@ package com.moilioncircle.redis.cluster.watchdog;
  */
 public interface ReplicationListener {
 
-    void onSetReplication(String ip, int port);
+    long onGetSlaveOffset();
 
     void onUnsetReplication();
 
-    long onGetSlaveOffset();
+    void onSetReplication(String ip, int port);
 }
