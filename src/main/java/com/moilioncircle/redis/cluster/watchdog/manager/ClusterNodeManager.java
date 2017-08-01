@@ -3,6 +3,7 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNodeFailReport;
+import com.moilioncircle.redis.cluster.watchdog.state.NodeStates;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,6 +19,7 @@ import java.util.function.ToLongFunction;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
+import static java.lang.Math.max;
 import static java.util.Comparator.comparingLong;
 import static java.util.concurrent.ThreadLocalRandom.current;
 
@@ -69,7 +71,7 @@ public class ClusterNodeManager {
         server.cluster.nodes.values().stream().filter(t).forEach(c); freeClusterNode(node);
     }
 
-    /*
+    /**
      *
      */
     public int clusterNodeFailureReportsCount(ClusterNode node) {
@@ -97,7 +99,7 @@ public class ClusterNodeManager {
         long now = System.currentTimeMillis(); reports.removeIf(e -> now - e.createTime > max);
     }
 
-    /*
+    /**
      *
      */
     public int clusterCountNonFailingSlaves(ClusterNode node) {
@@ -131,16 +133,16 @@ public class ClusterNodeManager {
     }
 
     public long clusterGetMaxEpoch() {
+        long epoch = server.cluster.currentEpoch;
         Function<ClusterNode, Long> t1 = e -> e.configEpoch;
         ToLongFunction<ClusterNode> t2 = e -> e.configEpoch;
-        long max = server.cluster.nodes.values().stream().max(comparingLong(t2)).map(t1).orElse(0L);
-        return max > server.cluster.currentEpoch ? max : server.cluster.currentEpoch;
+        return max(server.cluster.nodes.values().stream().max(comparingLong(t2)).map(t1).orElse(0L), epoch);
     }
 
     public boolean clusterStartHandshake(String ip, int port, int busPort) {
-        Predicate<ClusterNode> t = e -> nodeInHandshake(e);
+        Predicate<ClusterNode> t = NodeStates::nodeInHandshake;
         t = t.and(e -> e.ip.equalsIgnoreCase(ip) && e.port == port && e.busPort == busPort);
-        if (server.cluster.nodes.values().stream().anyMatch(t)) return false;
+        if (server.cluster.nodes.values().stream().anyMatch(t)) return false; //no handshake.
         ClusterNode node = createClusterNode(null, CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_MEET);
         node.ip = ip; node.port = port; node.busPort = busPort; clusterAddNode(node); return true;
     }

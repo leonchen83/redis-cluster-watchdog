@@ -9,7 +9,7 @@ public class ClusterNodeFailReport {
     public ClusterNode node;
 
     public ClusterNodeFailReport(ClusterNode node) {
-        this.createTime = System.currentTimeMillis();
         this.node = node;
+        this.createTime = System.currentTimeMillis();
     }
 }

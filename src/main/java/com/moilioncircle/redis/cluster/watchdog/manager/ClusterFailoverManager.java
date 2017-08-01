@@ -66,13 +66,12 @@ public class ClusterFailoverManager {
     }
 
     public void clusterHandleSlaveFailover() {
+        long now = System.currentTimeMillis();
         if (!configuration.isMaster()) return;
         if (nodeIsMaster(server.myself)) return;
         if (server.myself.master == null) return;
         if (!nodeFailed(server.myself.master)) return;
         if (server.myself.master.assignedSlots == 0) return;
-
-        long now = System.currentTimeMillis();
         long authAge = now - server.cluster.failoverAuthTime;
         long authTimeout = max(configuration.getClusterNodeTimeout() * 2, 2000);
         long authRetryTime = authTimeout * 2; int quorum = (server.cluster.size / 2) + 1;
@@ -84,22 +83,23 @@ public class ClusterFailoverManager {
             server.cluster.failoverAuthCount = 0; server.cluster.failoverAuthSent = false;
             managers.messages.clusterBroadcastPong(CLUSTER_BROADCAST_LOCAL_SLAVES); return;
         }
-
+        //
+        int authRank = server.cluster.failoverAuthRank;
         int rank = managers.nodes.clusterGetSlaveRank();
-        if (!server.cluster.failoverAuthSent && rank > server.cluster.failoverAuthRank) {
+        if (!server.cluster.failoverAuthSent && rank > authRank) {
             long delay = (rank - server.cluster.failoverAuthRank) * 1000;
             server.cluster.failoverAuthTime += delay; server.cluster.failoverAuthRank = rank;
             logger.info("Slave rank updated to #" + rank + ", added " + delay + " milliseconds of delay.");
         }
-
         now = System.currentTimeMillis();
-        if (now < server.cluster.failoverAuthTime) return; if (authAge > authTimeout) return;
+        if (now < server.cluster.failoverAuthTime || authAge > authTimeout) return;
+        //
         if (!server.cluster.failoverAuthSent) {
             server.cluster.currentEpoch++; server.cluster.failoverAuthEpoch = server.cluster.currentEpoch;
             logger.info("Starting a failover election for the epoch " + server.cluster.currentEpoch + ".");
             managers.messages.clusterRequestFailoverAuth(); server.cluster.failoverAuthSent = true; return;
         }
-
+        //
         if (server.cluster.failoverAuthCount >= quorum) {
             logger.info("Failover election won: I'm the new master.");
             server.myself.configEpoch = max(server.cluster.failoverAuthEpoch, server.myself.configEpoch);

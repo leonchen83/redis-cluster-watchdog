@@ -12,8 +12,5 @@ public class ClusterLink {
     public volatile long createTime;
     public volatile ClusterNode node;
     public volatile Session<RCmbMessage> fd;
-
-    public ClusterLink() {
-        this.createTime = System.currentTimeMillis();
-    }
+    public ClusterLink() { this.createTime = System.currentTimeMillis(); }
 }

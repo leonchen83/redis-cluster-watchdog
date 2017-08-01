@@ -21,8 +21,5 @@ public class ClusterNode {
     public int flags; public String name; public long offset;
     public ClusterNode master; public volatile ClusterLink link;
     public List<ClusterNodeFailReport> failReports = new ArrayList<>();
-
-    public ClusterNode() {
-        this.createTime = System.currentTimeMillis();
-    }
+    public ClusterNode() { this.createTime = System.currentTimeMillis(); }
 }

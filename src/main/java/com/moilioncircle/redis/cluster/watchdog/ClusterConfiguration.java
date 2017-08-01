@@ -24,7 +24,7 @@ public class ClusterConfiguration {
     private volatile Version version = PROTOCOL_V0;
     private volatile int clusterMigrationBarrier = 1;
     private volatile long clusterNodeTimeout = 15000;
-    private volatile boolean clusterRequireFullCoverage = true;
+    private volatile boolean clusterFullCoverage = true;
     private NetworkConfiguration networkConfiguration = NetworkConfiguration.defaultSetting();
 
     private ClusterConfiguration() {
@@ -69,12 +69,12 @@ public class ClusterConfiguration {
         return clusterAnnounceBusPort;
     }
 
-    public int getClusterMigrationBarrier() {
-        return clusterMigrationBarrier;
+    public boolean isClusterFullCoverage() {
+        return clusterFullCoverage;
     }
 
-    public boolean isClusterRequireFullCoverage() {
-        return clusterRequireFullCoverage;
+    public int getClusterMigrationBarrier() {
+        return clusterMigrationBarrier;
     }
 
     public NetworkConfiguration getNetworkConfiguration() {
@@ -119,6 +119,11 @@ public class ClusterConfiguration {
         return this;
     }
 
+    public ClusterConfiguration setClusterFullCoverage(boolean clusterFullCoverage) {
+        this.clusterFullCoverage = clusterFullCoverage;
+        return this;
+    }
+
     public ClusterConfiguration setClusterAnnounceBusPort(int clusterAnnounceBusPort) {
         this.clusterAnnounceBusPort = clusterAnnounceBusPort;
         return this;
@@ -126,11 +131,6 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setClusterMigrationBarrier(int clusterMigrationBarrier) {
         this.clusterMigrationBarrier = clusterMigrationBarrier;
-        return this;
-    }
-
-    public ClusterConfiguration setClusterRequireFullCoverage(boolean clusterRequireFullCoverage) {
-        this.clusterRequireFullCoverage = clusterRequireFullCoverage;
         return this;
     }
 

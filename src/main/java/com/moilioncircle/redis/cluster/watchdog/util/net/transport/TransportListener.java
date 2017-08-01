@@ -5,6 +5,7 @@ package com.moilioncircle.redis.cluster.watchdog.util.net.transport;
  * @since 1.0.0
  */
 public interface TransportListener<T> {
+
     default void onConnected(Transport<T> transport) {
     }
 
@@ -16,4 +17,5 @@ public interface TransportListener<T> {
 
     default void onDisconnected(Transport<T> transport, Throwable cause) {
     }
+
 }

@@ -1,5 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.ClusterState;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
@@ -18,13 +19,26 @@ import static java.lang.Math.min;
  * @since 1.0.0
  */
 public class ClusterStateManager {
+
     private static final Log logger = LogFactory.getLog(ClusterStateManager.class);
+
     private ServerState server;
     private ClusterManagers managers;
+    private ClusterConfiguration configuration;
 
     public ClusterStateManager(ClusterManagers managers) {
         this.managers = managers;
         this.server = managers.server;
+        this.configuration = managers.configuration;
+    }
+
+    public boolean clusterBumpConfigEpochWithoutConsensus() {
+        long max = managers.nodes.clusterGetMaxEpoch();
+        if (server.myself.configEpoch == 0 || server.myself.configEpoch != max) {
+            server.cluster.currentEpoch++; server.myself.configEpoch = server.cluster.currentEpoch;
+            logger.info("New config epoch was set to : " + server.myself.configEpoch); return true;
+        }
+        return false;
     }
 
     public void clusterUpdateState() {
@@ -32,40 +46,31 @@ public class ClusterStateManager {
         if (server.stateSaveTime == 0) server.stateSaveTime = now;
         if (nodeIsMaster(server.myself) && server.cluster.state == CLUSTER_FAIL
                 && now - server.stateSaveTime < CLUSTER_WRITABLE_DELAY) return;
-
+        //
         ClusterState state = CLUSTER_OK;
-        if (managers.configuration.isClusterRequireFullCoverage()) {
+        if (configuration.isClusterFullCoverage()) {
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 ClusterNode n = server.cluster.slots[i];
                 if (n == null || nodeFailed(n.flags)) { state = CLUSTER_FAIL; break; }
             }
         }
-
+        //
         int masters = 0; server.cluster.size = 0;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (nodeIsMaster(node) && node.assignedSlots != 0) {
-                server.cluster.size++;
-                if (!nodeFailed(node.flags) && !nodePFailed(node.flags)) masters++;
+                server.cluster.size++; if (!nodeFailed(node.flags) && !nodePFailed(node.flags)) masters++;
             }
         }
         //
         int quorum = (server.cluster.size / 2) + 1;
         if (masters < quorum) { state = CLUSTER_FAIL; server.amongMinorityTime = now; }
+        //
         if (state != server.cluster.state) {
-            long timeout = managers.configuration.getClusterNodeTimeout();
+            long timeout = configuration.getClusterNodeTimeout();
             long rejoin = max(min(timeout, CLUSTER_MAX_REJOIN_DELAY), CLUSTER_MIN_REJOIN_DELAY);
             if (state == CLUSTER_OK && nodeIsMaster(server.myself) && now - server.amongMinorityTime < rejoin) return;
             logger.info("Cluster state changed: " + state.getDisplay());
             server.cluster.state = state; managers.notifyStateChanged(state);
         }
-    }
-
-    public boolean clusterBumpConfigEpochWithoutConsensus() {
-        long max = managers.nodes.clusterGetMaxEpoch();
-        if (server.myself.configEpoch == 0 || server.myself.configEpoch != max) {
-            server.cluster.currentEpoch++; server.myself.configEpoch = server.cluster.currentEpoch;
-            logger.info("New configEpoch set to " + server.myself.configEpoch); return true;
-        }
-        return false;
     }
 }

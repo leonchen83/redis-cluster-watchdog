@@ -29,48 +29,28 @@ public interface CompletableFuture<T> extends Future<T> {
 
     default boolean isSuccess() {
         if (!isDone()) return false;
-        try {
-            get();
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        } catch (ExecutionException e) {
-            return false;
-        }
+        try { get(); return true; }
+        catch (ExecutionException e) { return false; }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
     }
 
     default Throwable cause() {
         if (!isDone()) return null;
-        try {
-            get();
-            return null;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return null;
-        } catch (ExecutionException e) {
-            return e.getCause();
-        }
+        try { get(); return null; }
+        catch (ExecutionException e) { return e.getCause(); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return null; }
     }
 
-    default boolean success(T value) {
-        throw new UnsupportedOperationException();
-    }
+    default boolean success(T value) { throw new UnsupportedOperationException(); }
 
-    default boolean failure(Throwable cause) {
-        throw new UnsupportedOperationException();
-    }
+    default boolean failure(Throwable cause) { throw new UnsupportedOperationException(); }
 
     default <U> CompletableFuture<U> map(Function<T, U> function) {
         CompletableFuture<U> r = new ListenableFuture<>();
         this.addListener(f -> {
-            try {
-                r.success(function.apply(f.get()));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } catch (ExecutionException e) {
-                r.failure(e);
-            }
+            try { r.success(function.apply(f.get())); }
+            catch (ExecutionException e) { r.failure(e); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         });
         return r;
     }

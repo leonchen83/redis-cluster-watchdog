@@ -53,9 +53,7 @@ public abstract class AbstractTransport<T> extends SimpleChannelInboundHandler<T
 
     @Override
     public synchronized TransportListener<T> setTransportListener(TransportListener<T> listener) {
-        TransportListener<T> r = this.listener;
-        this.listener = listener;
-        return r;
+        TransportListener<T> r = this.listener; this.listener = listener; return r;
     }
 
     @Override

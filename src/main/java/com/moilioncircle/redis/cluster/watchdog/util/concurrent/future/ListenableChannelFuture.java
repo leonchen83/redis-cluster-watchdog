@@ -63,10 +63,7 @@ public class ListenableChannelFuture<T> extends AbstractCompletableFuture<T> imp
 
     @Override
     public void operationComplete(Future<T> future) throws Exception {
-        if (!listeners.isEmpty()) {
-            for (FutureListener<T> listener : listeners) {
-                listener.onComplete(this);
-            }
-        }
+        if (listeners.isEmpty()) return;
+        for (FutureListener<T> listener : listeners) listener.onComplete(this);
     }
 }

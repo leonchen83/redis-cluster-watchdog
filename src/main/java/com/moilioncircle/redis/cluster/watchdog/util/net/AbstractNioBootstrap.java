@@ -67,9 +67,7 @@ public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
 
     @Override
     public TransportListener<T> setTransportListener(TransportListener<T> listener) {
-        TransportListener<T> oldListener = this.listener;
-        this.listener = listener;
-        return oldListener;
+        TransportListener<T> r = this.listener; this.listener = listener; return r;
     }
 
     public Supplier<ChannelHandler> getEncoder() {

@@ -39,11 +39,8 @@ public class ListenableRunnableFuture<T> extends FutureTask<T> implements Comple
 
     @Override
     protected void done() {
-        if (!listeners.isEmpty()) {
-            for (FutureListener<T> listener : listeners) {
-                listener.onComplete(this);
-            }
-        }
+        if (listeners.isEmpty()) return;
+        for (FutureListener<T> listener : listeners) listener.onComplete(this);
     }
 
     @Override

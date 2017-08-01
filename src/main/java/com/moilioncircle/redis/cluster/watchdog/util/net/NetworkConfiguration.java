@@ -16,7 +16,7 @@
 
 package com.moilioncircle.redis.cluster.watchdog.util.net;
 
-import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Leon Chen
@@ -49,9 +49,9 @@ public class NetworkConfiguration {
 
     protected boolean autoReconnect = false;
 
-    protected volatile long connectTimeout = TimeUnit.SECONDS.toMillis(5);
+    protected volatile long connectTimeout = SECONDS.toMillis(5);
 
-    protected volatile long reconnectInterval = TimeUnit.SECONDS.toMillis(5);
+    protected volatile long reconnectInterval = SECONDS.toMillis(5);
 
     public int getSoLinger() {
         return soLinger;

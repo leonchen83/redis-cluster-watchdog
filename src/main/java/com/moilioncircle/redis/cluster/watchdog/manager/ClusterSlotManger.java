@@ -40,23 +40,21 @@ public class ClusterSlotManger {
     }
 
     public boolean clusterNodeSetSlotBit(ClusterNode node, int slot) {
-        boolean previous = bitmapTestBit(node.slots, slot);
-        bitmapSetBit(node.slots, slot); if (previous) return true;
+        boolean r = bitmapTestBit(node.slots, slot);
+        bitmapSetBit(node.slots, slot); if (r) return true;
         if (++node.assignedSlots == 1 && clusterMastersHaveSlaves())
             node.flags |= CLUSTER_NODE_MIGRATE_TO;
         return false;
     }
 
     public boolean clusterNodeClearSlotBit(ClusterNode node, int slot) {
-        boolean previous = bitmapTestBit(node.slots, slot);
-        bitmapClearBit(node.slots, slot); if (previous) node.assignedSlots--;
-        return previous;
+        boolean r = bitmapTestBit(node.slots, slot);
+        bitmapClearBit(node.slots, slot); if (r) node.assignedSlots--; return r;
     }
 
     public boolean clusterAddSlot(ClusterNode node, int slot) {
         if (server.cluster.slots[slot] != null) return false;
-        clusterNodeSetSlotBit(node, slot); server.cluster.slots[slot] = node;
-        return true;
+        clusterNodeSetSlotBit(node, slot); server.cluster.slots[slot] = node; return true;
     }
 
     public boolean clusterDelSlot(int slot) {
@@ -68,8 +66,7 @@ public class ClusterSlotManger {
     public int clusterDelNodeSlots(ClusterNode node) {
         int deleted = 0;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            if (!bitmapTestBit(node.slots, i)) continue;
-            clusterDelSlot(i); deleted++;
+            if (bitmapTestBit(node.slots, i)) { clusterDelSlot(i); deleted++; }
         }
         return deleted;
     }
