@@ -77,35 +77,7 @@ public class ClusterManagers {
         this.cron = Executors.newSingleThreadScheduledExecutor();
     }
 
-    /*
-     *
-     */
-    public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
-        ClusterNodeListener r = this.clusterNodeListener;
-        this.clusterNodeListener = clusterNodeListener; return r;
-    }
-
-    public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
-        ReplicationListener r = this.replicationListener;
-        this.replicationListener = replicationListener; return r;
-    }
-
-    public synchronized ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener) {
-        ClusterStateListener r = this.clusterStateListener;
-        this.clusterStateListener = clusterStateListener; return r;
-    }
-
-    public synchronized ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener) {
-        ClusterConfigListener r = this.clusterConfigListener;
-        this.clusterConfigListener = clusterConfigListener; return r;
-    }
-
-    public synchronized RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
-        RestoreCommandListener r = this.restoreCommandListener;
-        this.restoreCommandListener = restoreCommandListener; return r;
-    }
-
-    /*
+    /**
      *
      */
     public long notifyReplicationGetSlaveOffset() {
@@ -166,5 +138,28 @@ public class ClusterManagers {
     public void notifyRestoreCommand(KeyValuePair<?> kv, boolean replace) {
         RestoreCommandListener r = this.restoreCommandListener;
         worker.submit(() -> { if (r != null) r.onRestoreCommand(kv, replace); });
+    }
+
+    /**
+     *
+     */
+    public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
+        ClusterNodeListener r = this.clusterNodeListener; this.clusterNodeListener = clusterNodeListener; return r;
+    }
+
+    public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
+        ReplicationListener r = this.replicationListener; this.replicationListener = replicationListener; return r;
+    }
+
+    public synchronized ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener) {
+        ClusterStateListener r = this.clusterStateListener; this.clusterStateListener = clusterStateListener; return r;
+    }
+
+    public synchronized ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener) {
+        ClusterConfigListener r = this.clusterConfigListener; this.clusterConfigListener = clusterConfigListener; return r;
+    }
+
+    public synchronized RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
+        RestoreCommandListener r = this.restoreCommandListener; this.restoreCommandListener = restoreCommandListener; return r;
     }
 }
