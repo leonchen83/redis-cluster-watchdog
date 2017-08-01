@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
@@ -31,6 +30,7 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 import static java.lang.Math.max;
+import static java.util.concurrent.ThreadLocalRandom.current;
 
 /**
  * @author Leon Chen
@@ -122,13 +122,14 @@ public class ThinGossip implements Resourcable {
         if (!managers.configs.clusterLoadConfig()) {
             int flags = CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER;
             managers.server.myself = managers.nodes.createClusterNode(null, flags);
-            managers.server.cluster.myself = managers.server.myself;
+            //
             String name = managers.server.myself.name;
+            managers.server.cluster.myself = managers.server.myself;
             logger.info("No cluster configuration found, I'm " + name);
-            managers.nodes.clusterAddNode(managers.server.myself);
+            managers.nodes.clusterAddNode(this.managers.server.myself);
             managers.notifyNodeAdded(ClusterNodeInfo.valueOf(managers.server.myself));
-            ClusterConfigInfo next = valueOf(managers.server.cluster);
-            managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+            ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
+            managers.config.submit(() -> this.managers.configs.clusterSaveConfig(next));
         }
 
         acceptor = new NioBootstrapImpl<>();
@@ -194,12 +195,12 @@ public class ThinGossip implements Resourcable {
                 if (previousPingTime != 0) node.pingTime = previousPingTime; node.flags &= ~CLUSTER_NODE_MEET;
             }
 
-            long minPongTime = 0;
-            ClusterNode minPongNode = null;
+            long minPongTime = 0; ClusterNode minPongNode = null;
+            List<ClusterNode> list = new ArrayList<>(managers.server.cluster.nodes.values());
+
             if (managers.server.iteration % 10 == 0) {
                 for (int i = 0; i < 5; i++) {
-                    List<ClusterNode> list = new ArrayList<>(managers.server.cluster.nodes.values());
-                    ClusterNode t = list.get(ThreadLocalRandom.current().nextInt(list.size()));
+                    ClusterNode t = list.get(current().nextInt(list.size()));
 
                     if (nodeIsMyself(t.flags)) continue;
                     if (nodeInHandshake(t.flags)) continue;

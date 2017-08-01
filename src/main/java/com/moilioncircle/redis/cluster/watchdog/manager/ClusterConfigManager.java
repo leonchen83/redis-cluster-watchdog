@@ -84,8 +84,8 @@ public class ClusterConfigManager {
                     }
                     int cIdx = hostAndPort.indexOf(":");
                     int aIdx = hostAndPort.indexOf("@");
-                    String ip = hostAndPort.substring(0, cIdx);
-                    node.ip = ip.equalsIgnoreCase("0.0.0.0") ? null : ip;
+                    String ip = hostAndPort.substring(0, cIdx).trim();
+                    node.ip = ip.equalsIgnoreCase("0.0.0.0") || ip.length() == 0 ? null : ip;
                     node.port = parseInt(hostAndPort.substring(cIdx + 1, aIdx == -1 ? hostAndPort.length() : aIdx));
                     node.busPort = aIdx == -1 ? node.port + CLUSTER_PORT_INCR : parseInt(hostAndPort.substring(aIdx + 1));
 
@@ -195,14 +195,13 @@ public class ClusterConfigManager {
             File file = new File(configuration.getClusterConfigFile());
             if (!file.exists() && !file.createNewFile()) return false;
             r = new BufferedWriter(new FileWriter(file));
-            Version v = configuration.getVersion();
-            String d = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE, v);
+            Version vs = this.configuration.getVersion();
+            String d = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE, vs);
 
             StringBuilder builder = new StringBuilder(d);
             builder.append("vars currentEpoch ").append(info.getCurrentEpoch());
-            builder.append(" lastVoteEpoch ").append(info.getLastVoteEpoch());
-            r.write(builder.toString()); r.flush();
-            if (!force) managers.notifyConfigChanged(info); return true;
+            builder.append(" ").append("lastVoteEpoch ").append(info.getLastVoteEpoch());
+            r.write(builder.toString()); r.flush(); if (!force) managers.notifyConfigChanged(info); return true;
         } catch (IOException e) { return false;
         } finally {
             if (r != null) try { r.close(); }
@@ -219,16 +218,14 @@ public class ClusterConfigManager {
     public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node, Version v) {
         String ip = node.getIp() == null ? "0.0.0.0" : node.getIp();
         String master = node.getMaster() == null ? "-" : node.getMaster();
-        long pongTime = node.getPongTime(), configEpoch = node.getConfigEpoch();
-        boolean connected = node.getLink() != null || nodeIsMyself(node.getFlags());
+        long pongTime = node.getPongTime(), epoch = node.getConfigEpoch();
 
         StringBuilder builder = new StringBuilder(node.getName());
         builder.append(" ").append(ip).append(":").append(node.getPort());
         if (v == PROTOCOL_V1) builder.append("@").append(node.getBusPort());
         builder.append(" ").append(representClusterNodeFlags(node.getFlags()));
         builder.append(" ").append(master).append(" ").append(node.getPingTime());
-        builder.append(" ").append(pongTime).append(" ").append(configEpoch);
-        builder.append(" ").append(connected ? "connected" : "disconnected");
+        builder.append(" ").append(pongTime).append(" ").append(epoch).append(" ").append(node.getLink());
 
         int st = -1;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
