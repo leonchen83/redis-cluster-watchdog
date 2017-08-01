@@ -23,7 +23,7 @@ import static java.lang.Integer.parseInt;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class SelectCommandHandler extends AbstractCommandHandler {
 

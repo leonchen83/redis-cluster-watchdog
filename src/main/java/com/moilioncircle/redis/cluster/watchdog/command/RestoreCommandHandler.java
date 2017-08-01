@@ -46,7 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public class RestoreCommandHandler extends AbstractCommandHandler {
 

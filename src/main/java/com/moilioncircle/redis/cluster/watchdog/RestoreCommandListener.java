@@ -20,7 +20,7 @@ import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
 
 /**
  * @author Leon Chen
- * @since 2.1.0
+ * @since 1.0.0
  */
 public interface RestoreCommandListener {
 
