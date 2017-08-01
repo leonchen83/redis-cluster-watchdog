@@ -26,17 +26,11 @@ public enum ClusterState {
     private final byte state;
     private final String display;
 
+    public byte getState() { return state; }
+    public String getDisplay() { return display; }
+
     ClusterState(byte state, String display) {
-        this.state = state;
-        this.display = display;
-    }
-
-    public byte getState() {
-        return state;
-    }
-
-    public String getDisplay() {
-        return display;
+        this.state = state; this.display = display;
     }
 
     public static ClusterState valueOf(byte state) {

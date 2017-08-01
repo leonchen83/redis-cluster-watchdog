@@ -24,14 +24,8 @@ public enum Version {
     PROTOCOL_V0(0), PROTOCOL_V1(1);
 
     private int version;
-
-    Version(int version) {
-        this.version = version;
-    }
-
-    public int getVersion() {
-        return version;
-    }
+    public int getVersion() { return version; }
+    Version(int version) { this.version = version; }
 
     public static Version valueOf(int version) {
         if (version == 0) return PROTOCOL_V0;

@@ -19,16 +19,16 @@ public class ClusterSlotManger {
         this.server = managers.server;
     }
 
-    public static boolean bitmapTestBit(byte[] bitmap, int pos) {
-        return (bitmap[pos / 8] & (1 << (pos & 7))) != 0;
-    }
-
     public static void bitmapSetBit(byte[] bitmap, int pos) {
         bitmap[pos / 8] |= 1 << (pos & 7);
     }
 
     public static void bitmapClearBit(byte[] bitmap, int pos) {
         bitmap[pos / 8] &= ~(1 << (pos & 7));
+    }
+
+    public static boolean bitmapTestBit(byte[] bitmap, int pos) {
+        return (bitmap[pos / 8] & (1 << (pos & 7))) != 0;
     }
 
     public boolean clusterMastersHaveSlaves() {

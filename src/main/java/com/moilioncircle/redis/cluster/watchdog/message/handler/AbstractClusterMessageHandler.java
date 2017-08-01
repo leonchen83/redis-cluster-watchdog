@@ -146,10 +146,12 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
     }
 
     public void clusterHandleConfigEpochCollision(ClusterNode sender) {
-        if (sender.configEpoch != server.myself.configEpoch) return;
-        if (nodeIsSlave(sender) || nodeIsSlave(server.myself)) return;
+        ClusterNode myself = server.myself;
+        long configEpoch = myself.configEpoch;
+        if (sender.configEpoch != configEpoch) return;
+        if (nodeIsSlave(sender) || nodeIsSlave(myself)) return;
         if (sender.name.compareTo(server.myself.name) <= 0) return;
-        server.cluster.currentEpoch++; server.myself.configEpoch = server.cluster.currentEpoch;
-        logger.info("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + server.myself.configEpoch);
+        server.cluster.currentEpoch++; myself.configEpoch = configEpoch = server.cluster.currentEpoch;
+        logger.info("WARNING: configEpoch collision with node " + sender.name + ". configEpoch set to " + configEpoch);
     }
 }

@@ -29,7 +29,13 @@ import java.util.concurrent.ScheduledExecutorService;
  * @since 1.0.0
  */
 public class ClusterManagers {
-
+    //
+    public ServerState server;
+    public ExecutorService config;
+    public ExecutorService worker;
+    public ClusterWatchdog watchdog;
+    public ScheduledExecutorService cron;
+    //
     public ClusterSlotManger slots;
     public ClusterNodeManager nodes;
     public ClusterStateManager states;
@@ -43,13 +49,6 @@ public class ClusterManagers {
     public ClusterCommandHandlerManager commands;
     public ClusterMessageHandlerManager handlers;
 
-    public ExecutorService config;
-    public ExecutorService worker;
-    public ScheduledExecutorService cron;
-
-    public ClusterWatchdog watchdog;
-    public ServerState server = new ServerState();
-
     private volatile ClusterNodeListener clusterNodeListener;
     private volatile ReplicationListener replicationListener;
     private volatile ClusterStateListener clusterStateListener;
@@ -58,7 +57,9 @@ public class ClusterManagers {
 
     public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
         this.watchdog = watchdog;
+        this.server = new ServerState();
         this.configuration = configuration;
+        //
         this.slots = new ClusterSlotManger(this);
         this.nodes = new ClusterNodeManager(this);
         this.states = new ClusterStateManager(this);
@@ -70,12 +71,15 @@ public class ClusterManagers {
         this.blacklists = new ClusterBlacklistManager(this);
         this.commands = new ClusterCommandHandlerManager(this);
         this.handlers = new ClusterMessageHandlerManager(this);
-
+        //
         this.config = Executors.newSingleThreadExecutor();
         this.worker = Executors.newSingleThreadExecutor();
         this.cron = Executors.newSingleThreadScheduledExecutor();
     }
 
+    /*
+     *
+     */
     public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
         ClusterNodeListener r = this.clusterNodeListener;
         this.clusterNodeListener = clusterNodeListener; return r;
@@ -101,85 +105,66 @@ public class ClusterManagers {
         this.restoreCommandListener = restoreCommandListener; return r;
     }
 
-    public void notifySetReplication(String ip, int host) {
-        worker.submit(() -> {
-            ReplicationListener r = this.replicationListener;
-            if (r != null) r.onSetReplication(ip, host);
-        });
-    }
-
-    public void notifyUnsetReplication() {
-        worker.submit(() -> {
-            ReplicationListener r = this.replicationListener;
-            if (r != null) r.onUnsetReplication();
-        });
-    }
-
+    /*
+     *
+     */
     public long notifyReplicationGetSlaveOffset() {
         ReplicationListener r = this.replicationListener;
         if (r == null) return 0L; return r.onGetSlaveOffset();
     }
 
-    public void notifyConfigChanged(ClusterConfigInfo info) {
-        worker.submit(() -> {
-            ClusterConfigListener r = this.clusterConfigListener;
-            if (r != null) r.onConfigChanged(info);
-        });
-    }
-
-    public void notifyStateChanged(ClusterState state) {
-        worker.submit(() -> {
-            ClusterStateListener r = this.clusterStateListener;
-            if (r != null) r.onStateChanged(state);
-        });
-    }
-
-    public void notifyNodePFailed(ClusterNodeInfo pfailed) {
-        worker.submit(() -> {
-            ClusterNodeListener r = this.clusterNodeListener;
-            if (r != null) r.onNodePFailed(pfailed);
-        });
-    }
-
-    public void notifyNodeFailed(ClusterNodeInfo failed) {
-        worker.submit(() -> {
-            ClusterNodeListener r = this.clusterNodeListener;
-            if (r != null) r.onNodeFailed(failed);
-        });
-    }
-
-    public void notifyUnsetNodePFailed(ClusterNodeInfo pfailed) {
-        worker.submit(() -> {
-            ClusterNodeListener r = this.clusterNodeListener;
-            if (r != null) r.onUnsetNodePFailed(pfailed);
-        });
-    }
-
-    public void notifyUnsetNodeFailed(ClusterNodeInfo failed) {
-        worker.submit(() -> {
-            ClusterNodeListener r = this.clusterNodeListener;
-            if (r != null) r.onUnsetNodeFailed(failed);
-        });
-    }
-
-    public void notifyRestoreCommand(KeyValuePair<?> kv, boolean replace) {
-        worker.submit(() -> {
-            RestoreCommandListener r = this.restoreCommandListener;
-            if (r != null) r.onRestoreCommand(kv, replace);
-        });
-    }
-
     public void notifyNodeAdded(ClusterNodeInfo node) {
-        worker.submit(() -> {
-            ClusterNodeListener r = this.clusterNodeListener;
-            if (r != null) r.onNodeAdded(node);
-        });
+        ClusterNodeListener r = this.clusterNodeListener;
+        worker.submit(() -> { if (r != null) r.onNodeAdded(node); });
     }
 
     public void notifyNodeDeleted(ClusterNodeInfo node) {
-        worker.submit(() -> {
-            ClusterNodeListener r = this.clusterNodeListener;
-            if (r != null) r.onNodeDeleted(node);
-        });
+        ClusterNodeListener r = this.clusterNodeListener;
+        worker.submit(() -> { if (r != null) r.onNodeDeleted(node); });
+    }
+
+    public void notifyNodeFailed(ClusterNodeInfo failed) {
+        ClusterNodeListener r = this.clusterNodeListener;
+        worker.submit(() -> { if (r != null) r.onNodeFailed(failed); });
+    }
+
+    public void notifyUnsetReplication() {
+        ReplicationListener r = this.replicationListener;
+        worker.submit(() -> { if (r != null) r.onUnsetReplication(); });
+    }
+
+    public void notifyConfigChanged(ClusterConfigInfo info) {
+        ClusterConfigListener r = this.clusterConfigListener;
+        worker.submit(() -> { if (r != null) r.onConfigChanged(info); });
+    }
+
+    public void notifyStateChanged(ClusterState state) {
+        ClusterStateListener r = this.clusterStateListener;
+        worker.submit(() -> { if (r != null) r.onStateChanged(state); });
+    }
+
+    public void notifyNodePFailed(ClusterNodeInfo pfailed) {
+        ClusterNodeListener r = this.clusterNodeListener;
+        worker.submit(() -> { if (r != null) r.onNodePFailed(pfailed); });
+    }
+
+    public void notifyUnsetNodeFailed(ClusterNodeInfo failed) {
+        ClusterNodeListener r = this.clusterNodeListener;
+        worker.submit(() -> { if (r != null) r.onUnsetNodeFailed(failed); });
+    }
+
+    public void notifySetReplication(String ip, int host) {
+        ReplicationListener r = this.replicationListener;
+        worker.submit(() -> { if (r != null) r.onSetReplication(ip, host); });
+    }
+
+    public void notifyUnsetNodePFailed(ClusterNodeInfo pfailed) {
+        ClusterNodeListener r = this.clusterNodeListener;
+        worker.submit(() -> { if (r != null) r.onUnsetNodePFailed(pfailed); });
+    }
+
+    public void notifyRestoreCommand(KeyValuePair<?> kv, boolean replace) {
+        RestoreCommandListener r = this.restoreCommandListener;
+        worker.submit(() -> { if (r != null) r.onRestoreCommand(kv, replace); });
     }
 }

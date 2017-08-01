@@ -45,8 +45,7 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(hdr.slots, i)) continue;
             if (server.cluster.slots[i] == null) continue;
-            if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue;
-            return;
+            if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue; return;
         }
 
         managers.messages.clusterSendFailoverAuth(node);

@@ -39,13 +39,23 @@ public class ClusterNodeManager {
         this.configuration = managers.configuration;
     }
 
-    public void freeClusterNode(ClusterNode node) {
-        if (nodeIsSlave(node) && node.master != null) clusterNodeRemoveSlave(node.master, node);
-        server.cluster.nodes.remove(node.name); if (node.link != null) managers.connections.freeClusterLink(node.link);
+    public ClusterNode clusterLookupNode(String name) {
+        return server.cluster.nodes.get(name);
     }
 
     public boolean clusterAddNode(ClusterNode node) {
         return server.cluster.nodes.put(node.name, node) == null;
+    }
+
+    public void clusterRenameNode(ClusterNode node, String name) {
+        logger.info("Renaming node " + node.name + " into " + name);
+        server.cluster.nodes.remove(node.name); node.name = name; clusterAddNode(node);
+        managers.notifyNodeAdded(valueOf(node, server.myself));
+    }
+
+    public ClusterNode createClusterNode(String name, int flags) {
+        ClusterNode n = new ClusterNode();
+        n.name = name == null ? getRandomHexChars() : name; n.flags = flags; return n;
     }
 
     public void clusterDelNode(ClusterNode node) {
@@ -59,22 +69,11 @@ public class ClusterNodeManager {
         server.cluster.nodes.values().stream().filter(t).forEach(c); freeClusterNode(node);
     }
 
-    public ClusterNode clusterLookupNode(String name) {
-        return server.cluster.nodes.get(name);
-    }
-
-    public void clusterRenameNode(ClusterNode node, String name) {
-        logger.info("Renaming node " + node.name + " into " + name);
-        server.cluster.nodes.remove(node.name);
-        node.name = name; clusterAddNode(node);
-        managers.notifyNodeAdded(valueOf(node, server.myself));
-    }
-
-    public ClusterNode createClusterNode(String name, int flags) {
-        ClusterNode node = new ClusterNode();
-        if (name != null) node.name = name;
-        else node.name = getRandomHexChars();
-        node.flags = flags; return node;
+    /*
+     *
+     */
+    public int clusterNodeFailureReportsCount(ClusterNode node) {
+        clusterNodeCleanupFailureReports(node); return node.failReports.size();
     }
 
     public boolean clusterNodeAddFailureReport(ClusterNode failing, ClusterNode sender) {
@@ -85,27 +84,24 @@ public class ClusterNodeManager {
         failing.failReports.add(new ClusterNodeFailReport(sender)); return true;
     }
 
+    public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
+        Predicate<ClusterNodeFailReport> t = e -> Objects.equals(e.node, sender);
+        Optional<ClusterNodeFailReport> r = node.failReports.stream().filter(t).findFirst();
+        if (!r.isPresent()) return false; node.failReports.remove(r.get());
+        clusterNodeCleanupFailureReports(node); return true;
+    }
+
     public void clusterNodeCleanupFailureReports(ClusterNode node) {
         List<ClusterNodeFailReport> reports = node.failReports;
         long max = configuration.getClusterNodeTimeout() * CLUSTER_FAIL_REPORT_VALIDITY_MULTI;
         long now = System.currentTimeMillis(); reports.removeIf(e -> now - e.createTime > max);
     }
 
-    public boolean clusterNodeDelFailureReport(ClusterNode node, ClusterNode sender) {
-        Predicate<ClusterNodeFailReport> t = e -> Objects.equals(e.node, sender);
-        Optional<ClusterNodeFailReport> report = node.failReports.stream().filter(t).findFirst();
-        if (!report.isPresent()) return false; node.failReports.remove(report.get());
-        clusterNodeCleanupFailureReports(node); return true;
-    }
-
-    public int clusterNodeFailureReportsCount(ClusterNode node) {
-        clusterNodeCleanupFailureReports(node); return node.failReports.size();
-    }
-
-    public boolean clusterNodeRemoveSlave(ClusterNode master, ClusterNode slave) {
-        boolean rs = master.slaves.remove(slave);
-        if (rs && master.slaves.size() == 0) master.flags &= ~CLUSTER_NODE_MIGRATE_TO;
-        return rs;
+    /*
+     *
+     */
+    public int clusterCountNonFailingSlaves(ClusterNode node) {
+        return (int) node.slaves.stream().filter(e -> !nodeFailed(e)).count();
     }
 
     public boolean clusterNodeAddSlave(ClusterNode master, ClusterNode slave) {
@@ -113,8 +109,16 @@ public class ClusterNodeManager {
         master.slaves.add(slave); master.flags |= CLUSTER_NODE_MIGRATE_TO; return true;
     }
 
-    public int clusterCountNonFailingSlaves(ClusterNode node) {
-        return (int) node.slaves.stream().filter(e -> !nodeFailed(e)).count();
+    public int clusterGetSlaveRank() {
+        if (server.myself.master == null) return 0;
+        long offset = managers.replications.replicationGetSlaveOffset();
+        Predicate<ClusterNode> t = e -> Objects.equals(e, server.myself) && e.offset > offset;
+        return (int) server.myself.master.slaves.stream().filter(t).count();
+    }
+
+    public boolean clusterNodeRemoveSlave(ClusterNode master, ClusterNode slave) {
+        boolean r = master.slaves.remove(slave);
+        if (r && master.slaves.size() == 0) master.flags &= ~CLUSTER_NODE_MIGRATE_TO; return r;
     }
 
     public void clusterSetNodeAsMaster(ClusterNode node) {
@@ -123,16 +127,7 @@ public class ClusterNodeManager {
             clusterNodeRemoveSlave(node.master, node);
             if (Objects.equals(node, server.myself)) node.flags |= CLUSTER_NODE_MIGRATE_TO;
         }
-        node.flags &= ~CLUSTER_NODE_SLAVE;
-        node.flags |= CLUSTER_NODE_MASTER;
-        node.master = null;
-    }
-
-    public int clusterGetSlaveRank() {
-        if (server.myself.master == null) return 0;
-        long offset = managers.replications.replicationGetSlaveOffset();
-        Predicate<ClusterNode> t = e -> Objects.equals(e, server.myself) && e.offset > offset;
-        return (int) server.myself.master.slaves.stream().filter(t).count();
+        node.flags &= ~CLUSTER_NODE_SLAVE; node.flags |= CLUSTER_NODE_MASTER; node.master = null;
     }
 
     public long clusterGetMaxEpoch() {
@@ -158,8 +153,7 @@ public class ClusterNodeManager {
         } else if (server.myself.master != null) {
             clusterNodeRemoveSlave(server.myself.master, server.myself);
         }
-        server.myself.master = node;
-        clusterNodeAddSlave(node, server.myself);
+        clusterNodeAddSlave(server.myself.master = node, server.myself);
         managers.replications.replicationSetMaster(node);
     }
 
@@ -167,5 +161,10 @@ public class ClusterNodeManager {
         StringBuilder r = new StringBuilder();
         for (int i = 0; i < CLUSTER_NAME_LEN; i++) r.append(HEX_CHARS[current().nextInt(HEX_CHARS.length)]);
         return r.toString();
+    }
+
+    public void freeClusterNode(ClusterNode node) {
+        if (nodeIsSlave(node) && node.master != null) clusterNodeRemoveSlave(node.master, node);
+        server.cluster.nodes.remove(node.name); if (node.link != null) managers.connections.freeClusterLink(node.link);
     }
 }

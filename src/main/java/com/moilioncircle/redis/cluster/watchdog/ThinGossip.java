@@ -56,8 +56,7 @@ public class ThinGossip implements Resourcable {
         managers.cron.scheduleAtFixedRate(() -> {
             ClusterConfigInfo previous = valueOf(managers.server.cluster);
             clusterCron(); ClusterConfigInfo next = valueOf(managers.server.cluster);
-            if (!previous.equals(next))
-                managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+            if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
 

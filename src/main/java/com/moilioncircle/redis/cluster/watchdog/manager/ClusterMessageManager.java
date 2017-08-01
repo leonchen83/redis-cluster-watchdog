@@ -21,6 +21,7 @@ import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
+import com.moilioncircle.redis.cluster.watchdog.state.NodeStates;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,13 +30,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V0;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
+import static java.util.concurrent.ThreadLocalRandom.current;
 
 /**
  * @author Leon Chen
@@ -109,21 +110,18 @@ public class ClusterMessageManager {
         int actives = server.cluster.nodes.size() - 2;
         int wanted = server.cluster.nodes.size() / 10;
         wanted = Math.min(Math.max(wanted, 3), actives);
-
-        if (link.node != null && type == CLUSTERMSG_TYPE_PING)
-            link.node.pingTime = System.currentTimeMillis();
-
-        ClusterMessage hdr = clusterBuildMessageHdr(type);
+        List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
+        if (link.node != null && type == CLUSTERMSG_TYPE_PING) link.node.pingTime = System.currentTimeMillis();
 
         int max = wanted * 3, gossips = 0;
+        ClusterMessage hdr = clusterBuildMessageHdr(type);
         while (actives > 0 && gossips < wanted && max-- > 0) {
-            List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
-            ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
+            ClusterNode node = list.get(current().nextInt(list.size()));
 
             if (Objects.equals(node, server.myself)) continue;
             if (max > wanted * 2 && !nodePFailed(node.flags) && !nodeFailed(node.flags)) continue;
-            if (nodeWithoutAddr(node.flags)) continue;
-            if (nodeInHandshake(node.flags)) continue;
+            if (NodeStates.nodeWithoutAddr(node.flags)) continue;
+            if (NodeStates.nodeInHandshake(node.flags)) continue;
             if (node.link == null && node.assignedSlots == 0) continue;
             if (clusterNodeIsInGossipSection(hdr, gossips, node)) continue;
             clusterSetGossipEntry(hdr, node); actives--; gossips++;
@@ -136,21 +134,18 @@ public class ClusterMessageManager {
         int wanted = server.cluster.nodes.size() / 10;
         int fWanted = (int) server.cluster.pFailNodes;
         wanted = Math.min(Math.max(wanted, 3), actives);
-
-        if (link.node != null && type == CLUSTERMSG_TYPE_PING)
-            link.node.pingTime = System.currentTimeMillis();
-
-        ClusterMessage hdr = clusterBuildMessageHdr(type);
+        List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
+        if (link.node != null && type == CLUSTERMSG_TYPE_PING) link.node.pingTime = System.currentTimeMillis();
 
         int max = wanted * 3, gossips = 0;
+        ClusterMessage hdr = clusterBuildMessageHdr(type);
         while (actives > 0 && gossips < wanted && max-- > 0) {
-            List<ClusterNode> list = new ArrayList<>(server.cluster.nodes.values());
-            ClusterNode node = list.get(ThreadLocalRandom.current().nextInt(list.size()));
+            ClusterNode node = list.get(current().nextInt(list.size()));
 
             if (Objects.equals(node, server.myself)) continue;
-            if (nodePFailed(node.flags)) continue;
-            if (nodeWithoutAddr(node.flags)) continue;
-            if (nodeInHandshake(node.flags)) continue;
+            if (NodeStates.nodePFailed(node.flags)) continue;
+            if (NodeStates.nodeWithoutAddr(node.flags)) continue;
+            if (NodeStates.nodeInHandshake(node.flags)) continue;
             if (node.link == null && node.assignedSlots == 0) continue;
             if (clusterNodeIsInGossipSection(hdr, gossips, node)) continue;
             clusterSetGossipEntry(hdr, node); actives--; gossips++;
@@ -171,7 +166,8 @@ public class ClusterMessageManager {
         ClusterNode myself = server.myself;
         for (ClusterNode node : server.cluster.nodes.values()) {
             if (node.link == null) continue;
-            if (Objects.equals(node, myself) || nodeInHandshake(node)) continue;
+            if (Objects.equals(node, myself)) continue;
+            if (NodeStates.nodeInHandshake(node)) continue;
             if (target == CLUSTER_BROADCAST_LOCAL_SLAVES) {
                 Predicate<ClusterNode> t = e -> nodeIsSlave(e) && e.master != null;
                 t = t.and(e -> Objects.equals(e.master, myself) || Objects.equals(e.master, myself.master));
@@ -182,7 +178,8 @@ public class ClusterMessageManager {
     }
 
     public void clusterSendFail(String name) {
-        ClusterMessage hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAIL);
+        ClusterMessage hdr;
+        hdr = clusterBuildMessageHdr(CLUSTERMSG_TYPE_FAIL);
         hdr.data.fail.name = name; clusterBroadcastMessage(hdr);
     }
 

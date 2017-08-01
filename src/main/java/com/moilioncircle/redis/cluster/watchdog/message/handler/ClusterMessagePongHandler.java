@@ -35,8 +35,7 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
             if (nodeInHandshake(link.node)) {
                 if (sender != null) {
                     nodeUpdateAddressIfNeeded(sender, link, hdr);
-                    managers.nodes.clusterDelNode(link.node);
-                    return false;
+                    managers.nodes.clusterDelNode(link.node); return false;
                 }
                 managers.nodes.clusterRenameNode(link.node, hdr.name);
                 link.node.flags &= ~CLUSTER_NODE_HANDSHAKE;

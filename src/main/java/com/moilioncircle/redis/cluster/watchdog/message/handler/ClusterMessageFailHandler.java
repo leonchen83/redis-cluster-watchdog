@@ -29,15 +29,11 @@ public class ClusterMessageFailHandler extends AbstractClusterMessageHandler {
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Fail packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
 
-        if (sender == null) {
-            logger.info("Ignoring FAIL message from unknown node " + hdr.name + " fail " + hdr.data.fail.name);
-            return true;
-        }
-
+        if (sender == null) return true;
         ClusterNode failing = managers.nodes.clusterLookupNode(hdr.data.fail.name);
         if (failing != null && !nodeIsMyself(failing.flags) && !nodeFailed(failing.flags)) {
             logger.info("FAIL message received from " + hdr.name + " fail " + hdr.data.fail.name);
-            failing.flags |= CLUSTER_NODE_FAIL; failing.failTime = System.currentTimeMillis();
+            failing.flags |= CLUSTER_NODE_FAIL; failing.failTime = System.currentTimeMillis(); //fail time
             failing.flags &= ~CLUSTER_NODE_PFAIL; managers.notifyNodeFailed(valueOf(failing, server.myself));
         }
         return true;

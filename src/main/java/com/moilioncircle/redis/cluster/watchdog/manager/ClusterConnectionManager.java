@@ -9,14 +9,13 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
  */
 public class ClusterConnectionManager {
 
-    public synchronized ClusterLink createClusterLink(ClusterNode node) {
-        ClusterLink connection = new ClusterLink();
-        connection.node = node; return connection;
-    }
-
     public synchronized void freeClusterLink(ClusterLink link) {
         if (link == null) return;
         if (link.node != null) link.node.link = null;
         if (link.fd != null) link.fd.disconnect(null);
+    }
+
+    public synchronized ClusterLink createClusterLink(ClusterNode node) {
+        ClusterLink c = new ClusterLink(); c.node = node; return c;
     }
 }

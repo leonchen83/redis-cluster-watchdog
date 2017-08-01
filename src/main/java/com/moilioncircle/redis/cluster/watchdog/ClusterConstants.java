@@ -6,22 +6,16 @@ package com.moilioncircle.redis.cluster.watchdog;
  */
 public class ClusterConstants {
 
-    public static final char[] HEX_CHARS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
+    /**
+     * slot
+     */
     public static final int CLUSTER_SLOTS = 16384;
 
     public static final int CLUSTER_SLOTS_BYTES = 2048;
 
-    public static final int CLUSTER_NAME_LEN = 40;
-
-    public static final int CLUSTER_PORT_INCR = 10000;
-
-    public static final int CLUSTER_FAIL_REPORT_VALIDITY_MULTI = 2;
-
-    public static final int CLUSTER_FAIL_UNDO_TIME_MULTI = 2;
-
-    public static final int CLUSTER_SLAVE_MIGRATION_DELAY = 5000;
-
+    /**
+     * node state
+     */
     public static final int CLUSTER_NODE_MASTER = 1;
 
     public static final int CLUSTER_NODE_SLAVE = 2;
@@ -40,10 +34,9 @@ public class ClusterConstants {
 
     public static final int CLUSTER_NODE_MIGRATE_TO = 256;
 
-    public static final byte[] CLUSTER_NODE_NULL_NAME = new byte[40];
-
-    public static final byte[] CLUSTER_NODE_NULL_IP = new byte[46];
-
+    /**
+     * message type
+     */
     public static final int CLUSTERMSG_TYPE_PING = 0;
 
     public static final int CLUSTERMSG_TYPE_PONG = 1;
@@ -64,17 +57,42 @@ public class ClusterConstants {
 
     public static final int CLUSTERMSG_TYPE_COUNT = 9;
 
+    /**
+     * time related
+     */
     public static final int CLUSTER_BLACKLIST_TTL = 60000;
-
-    public static final int CLUSTER_MAX_REJOIN_DELAY = 5000;
-
-    public static final int CLUSTER_MIN_REJOIN_DELAY = 500;
 
     public static final int CLUSTER_WRITABLE_DELAY = 2000;
 
-    public static final int CLUSTERMSG_FLAG0_FORCEACK = (1 << 1);
+    public static final int CLUSTER_MIN_REJOIN_DELAY = 500;
 
+    public static final int CLUSTER_MAX_REJOIN_DELAY = 5000;
+
+    public static final int CLUSTER_FAIL_UNDO_TIME_MULTI = 2;
+
+    public static final int CLUSTER_SLAVE_MIGRATION_DELAY = 5000;
+
+    public static final int CLUSTER_FAIL_REPORT_VALIDITY_MULTI = 2;
+
+    /**
+     * other
+     */
     public static final int CLUSTER_BROADCAST_ALL = 0;
 
+    public static final int CLUSTER_PORT_INCR = 10000;
+
     public static final int CLUSTER_BROADCAST_LOCAL_SLAVES = 1;
+
+    public static final int CLUSTERMSG_FLAG0_FORCEACK = (1 << 1);
+
+    /**
+     * ip name
+     */
+    public static final byte[] CLUSTER_NODE_NULL_IP = new byte[46];
+
+    public static final byte[] CLUSTER_NODE_NULL_NAME = new byte[40];
+
+    public static final int CLUSTER_NAME_LEN = CLUSTER_NODE_NULL_NAME.length;
+
+    public static final char[] HEX_CHARS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 }

@@ -34,8 +34,59 @@ public class ClusterConfiguration {
         return new ClusterConfiguration();
     }
 
+    /**
+     *
+     */
+    public boolean isMaster() {
+        return master;
+    }
+
     public boolean isVerbose() {
         return verbose;
+    }
+
+    public Version getVersion() {
+        return version;
+    }
+
+    public long getClusterNodeTimeout() {
+        return clusterNodeTimeout;
+    }
+
+    public int getClusterAnnouncePort() {
+        return clusterAnnouncePort;
+    }
+
+    public String getClusterAnnounceIp() {
+        return clusterAnnounceIp;
+    }
+
+    public String getClusterConfigFile() {
+        return clusterConfigFile;
+    }
+
+    public int getClusterAnnounceBusPort() {
+        return clusterAnnounceBusPort;
+    }
+
+    public int getClusterMigrationBarrier() {
+        return clusterMigrationBarrier;
+    }
+
+    public boolean isClusterRequireFullCoverage() {
+        return clusterRequireFullCoverage;
+    }
+
+    public NetworkConfiguration getNetworkConfiguration() {
+        return networkConfiguration;
+    }
+
+    /**
+     *
+     */
+    public ClusterConfiguration setMaster(boolean master) {
+        this.master = master;
+        return this;
     }
 
     public ClusterConfiguration setVerbose(boolean verbose) {
@@ -43,26 +94,9 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public Version getVersion() {
-        return version;
-    }
-
     public ClusterConfiguration setVersion(Version version) {
         this.version = version;
         return this;
-    }
-
-    public boolean isMaster() {
-        return master;
-    }
-
-    public ClusterConfiguration setMaster(boolean master) {
-        this.master = master;
-        return this;
-    }
-
-    public String getClusterAnnounceIp() {
-        return clusterAnnounceIp;
     }
 
     public ClusterConfiguration setClusterAnnounceIp(String clusterAnnounceIp) {
@@ -70,26 +104,9 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public long getClusterNodeTimeout() {
-        return clusterNodeTimeout;
-    }
-
     public ClusterConfiguration setClusterNodeTimeout(long clusterNodeTimeout) {
         this.clusterNodeTimeout = clusterNodeTimeout;
         return this;
-    }
-
-    public int getClusterAnnouncePort() {
-        return clusterAnnouncePort;
-    }
-
-    public ClusterConfiguration setClusterAnnouncePort(int clusterAnnouncePort) {
-        this.clusterAnnouncePort = clusterAnnouncePort;
-        return this;
-    }
-
-    public String getClusterConfigFile() {
-        return clusterConfigFile;
     }
 
     public ClusterConfiguration setClusterConfigFile(String clusterConfigFile) {
@@ -97,17 +114,9 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public int getClusterMigrationBarrier() {
-        return clusterMigrationBarrier;
-    }
-
-    public ClusterConfiguration setClusterMigrationBarrier(int clusterMigrationBarrier) {
-        this.clusterMigrationBarrier = clusterMigrationBarrier;
+    public ClusterConfiguration setClusterAnnouncePort(int clusterAnnouncePort) {
+        this.clusterAnnouncePort = clusterAnnouncePort;
         return this;
-    }
-
-    public int getClusterAnnounceBusPort() {
-        return clusterAnnounceBusPort;
     }
 
     public ClusterConfiguration setClusterAnnounceBusPort(int clusterAnnounceBusPort) {
@@ -115,8 +124,9 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public boolean isClusterRequireFullCoverage() {
-        return clusterRequireFullCoverage;
+    public ClusterConfiguration setClusterMigrationBarrier(int clusterMigrationBarrier) {
+        this.clusterMigrationBarrier = clusterMigrationBarrier;
+        return this;
     }
 
     public ClusterConfiguration setClusterRequireFullCoverage(boolean clusterRequireFullCoverage) {
@@ -124,15 +134,14 @@ public class ClusterConfiguration {
         return this;
     }
 
-    public NetworkConfiguration getNetworkConfiguration() {
-        return networkConfiguration;
-    }
-
     public ClusterConfiguration setNetworkConfiguration(NetworkConfiguration networkConfiguration) {
         this.networkConfiguration = networkConfiguration;
         return this;
     }
 
+    /**
+     *
+     */
     public ClusterConfiguration validate() {
         if (version == null) {
             throw new ClusterConfigurationException("illegal version: " + version);
@@ -153,8 +162,7 @@ public class ClusterConfiguration {
         }
 
         if (clusterAnnounceIp != null && version == PROTOCOL_V0) {
-            clusterAnnounceIp = null;
-            logger.warn("clusterAnnounceIp force set to null, cause version is 0.");
+            clusterAnnounceIp = null; logger.warn("clusterAnnounceIp force set to null, cause version is 0.");
         }
 
         if (clusterConfigFile == null) {
