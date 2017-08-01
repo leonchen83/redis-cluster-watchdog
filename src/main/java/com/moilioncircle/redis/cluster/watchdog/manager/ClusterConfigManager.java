@@ -199,8 +199,8 @@ public class ClusterConfigManager {
             String d = clusterGenNodesDescription(info, CLUSTER_NODE_HANDSHAKE, v);
 
             StringBuilder builder = new StringBuilder(d);
-            builder.append("vars currentEpoch ").append(info.currentEpoch);
-            builder.append(" lastVoteEpoch ").append(info.lastVoteEpoch);
+            builder.append("vars currentEpoch ").append(info.getCurrentEpoch());
+            builder.append(" lastVoteEpoch ").append(info.getLastVoteEpoch());
             r.write(builder.toString()); r.flush();
             if (!force) managers.notifyConfigChanged(info); return true;
         } catch (IOException e) { return false;
@@ -217,22 +217,22 @@ public class ClusterConfigManager {
     }
 
     public static String clusterGenNodeDescription(ClusterConfigInfo info, ClusterNodeInfo node, Version v) {
-        String ip = node.ip == null ? "0.0.0.0" : node.ip;
-        String master = node.master == null ? "-" : node.master;
-        long pongTime = node.pongTime, configEpoch = node.configEpoch;
-        boolean connected = node.link != null || nodeIsMyself(node.flags);
+        String ip = node.getIp() == null ? "0.0.0.0" : node.getIp();
+        String master = node.getMaster() == null ? "-" : node.getMaster();
+        long pongTime = node.getPongTime(), configEpoch = node.getConfigEpoch();
+        boolean connected = node.getLink() != null || nodeIsMyself(node.getFlags());
 
-        StringBuilder builder = new StringBuilder(node.name);
-        builder.append(" ").append(ip).append(":").append(node.port);
-        if (v == PROTOCOL_V1) builder.append("@").append(node.busPort);
-        builder.append(" ").append(representClusterNodeFlags(node.flags));
-        builder.append(" ").append(master).append(" ").append(node.pingTime);
+        StringBuilder builder = new StringBuilder(node.getName());
+        builder.append(" ").append(ip).append(":").append(node.getPort());
+        if (v == PROTOCOL_V1) builder.append("@").append(node.getBusPort());
+        builder.append(" ").append(representClusterNodeFlags(node.getFlags()));
+        builder.append(" ").append(master).append(" ").append(node.getPingTime());
         builder.append(" ").append(pongTime).append(" ").append(configEpoch);
         builder.append(" ").append(connected ? "connected" : "disconnected");
 
         int st = -1;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            boolean bit = bitmapTestBit(node.slots, i);
+            boolean bit = bitmapTestBit(node.getSlots(), i);
             if (bit && st == -1) st = i;
             if (st != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
                 if (bit) i++;
@@ -242,13 +242,13 @@ public class ClusterConfigManager {
             }
         }
 
-        if (!nodeIsMyself(node.flags)) return builder.toString();
+        if (!nodeIsMyself(node.getFlags())) return builder.toString();
 
         for (int j = 0; j < CLUSTER_SLOTS; j++) {
-            if (info.migrating[j] != null) {
-                builder.append(" [").append(j).append("->-").append(info.migrating[j]).append("]");
-            } else if (info.importing[j] != null) {
-                builder.append(" [").append(j).append("-<-").append(info.importing[j]).append("]");
+            if (info.getMigrating()[j] != null) {
+                builder.append(" [").append(j).append("->-").append(info.getMigrating()[j]).append("]");
+            } else if (info.getImporting()[j] != null) {
+                builder.append(" [").append(j).append("-<-").append(info.getImporting()[j]).append("]");
             }
         }
         return builder.toString();
@@ -256,8 +256,8 @@ public class ClusterConfigManager {
 
     public static String clusterGenNodesDescription(ClusterConfigInfo info, int filter, Version v) {
         StringBuilder builder = new StringBuilder();
-        for (ClusterNodeInfo node : info.nodes.values()) {
-            if ((node.flags & filter) != 0) continue;
+        for (ClusterNodeInfo node : info.getNodes().values()) {
+            if ((node.getFlags() & filter) != 0) continue;
             builder.append(clusterGenNodeDescription(info, node, v)).append("\n");
         }
         return builder.toString();

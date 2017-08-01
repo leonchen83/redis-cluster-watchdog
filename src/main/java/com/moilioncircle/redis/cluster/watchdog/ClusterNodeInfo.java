@@ -13,11 +13,11 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  */
 public class ClusterNodeInfo {
 
-    public long pingTime; public long pongTime;
-    public String master; public long configEpoch;
-    public byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
-    public String ip; public int port; public int busPort;
-    public int flags; public String name; public String link;
+    private long pingTime; private long pongTime;
+    private String master; private long configEpoch;
+    private byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
+    private String ip; private int port; private int busPort;
+    private int flags; private String name; private String link;
 
     @Override
     public boolean equals(Object o) {
@@ -65,6 +65,100 @@ public class ClusterNodeInfo {
         System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
         n.link = node.link != null || Objects.equals(node, myself) ? "connected" : "disconnected";
         return n;
+    }
+
+    /**
+     *
+     */
+    public int getPort() {
+        return port;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public int getFlags() {
+        return flags;
+    }
+
+    public int getBusPort() {
+        return busPort;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getLink() {
+        return link;
+    }
+
+    public byte[] getSlots() {
+        return slots;
+    }
+
+    public long getPingTime() {
+        return pingTime;
+    }
+
+    public long getPongTime() {
+        return pongTime;
+    }
+
+    public String getMaster() {
+        return master;
+    }
+
+    public long getConfigEpoch() {
+        return configEpoch;
+    }
+
+    /**
+     *
+     */
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setFlags(int flags) {
+        this.flags = flags;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setLink(String link) {
+        this.link = link;
+    }
+
+    public void setSlots(byte[] slots) {
+        this.slots = slots;
+    }
+
+    public void setBusPort(int busPort) {
+        this.busPort = busPort;
+    }
+
+    public void setMaster(String master) {
+        this.master = master;
+    }
+
+    public void setPingTime(long pingTime) {
+        this.pingTime = pingTime;
+    }
+
+    public void setPongTime(long pongTime) {
+        this.pongTime = pongTime;
+    }
+
+    public void setConfigEpoch(long configEpoch) {
+        this.configEpoch = configEpoch;
     }
 
     @Override

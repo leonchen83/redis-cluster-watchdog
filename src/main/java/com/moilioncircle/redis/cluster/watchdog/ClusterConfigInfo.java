@@ -14,10 +14,10 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @since 1.0.0
  */
 public class ClusterConfigInfo {
-    public long currentEpoch; public long lastVoteEpoch;
-    public String[] migrating = new String[CLUSTER_SLOTS];
-    public String[] importing = new String[CLUSTER_SLOTS];
-    public Map<String, ClusterNodeInfo> nodes = new LinkedHashMap<>();
+    private long currentEpoch; private long lastVoteEpoch;
+    private String[] migrating = new String[CLUSTER_SLOTS];
+    private String[] importing = new String[CLUSTER_SLOTS];
+    private Map<String, ClusterNodeInfo> nodes = new LinkedHashMap<>();
 
     public static ClusterConfigInfo valueOf(ClusterState state) {
         ClusterConfigInfo info = new ClusterConfigInfo();
@@ -59,6 +59,52 @@ public class ClusterConfigInfo {
         result = 31 * result + Arrays.hashCode(migrating);
         result = 31 * result + Arrays.hashCode(importing);
         return result;
+    }
+
+    /**
+     *
+     */
+    public long getCurrentEpoch() {
+        return currentEpoch;
+    }
+
+    public long getLastVoteEpoch() {
+        return lastVoteEpoch;
+    }
+
+    public String[] getMigrating() {
+        return migrating;
+    }
+
+    public String[] getImporting() {
+        return importing;
+    }
+
+    public Map<String, ClusterNodeInfo> getNodes() {
+        return nodes;
+    }
+
+    /**
+     *
+     */
+    public void setMigrating(String[] migrating) {
+        this.migrating = migrating;
+    }
+
+    public void setImporting(String[] importing) {
+        this.importing = importing;
+    }
+
+    public void setCurrentEpoch(long currentEpoch) {
+        this.currentEpoch = currentEpoch;
+    }
+
+    public void setLastVoteEpoch(long lastVoteEpoch) {
+        this.lastVoteEpoch = lastVoteEpoch;
+    }
+
+    public void setNodes(Map<String, ClusterNodeInfo> nodes) {
+        this.nodes = nodes;
     }
 
     @Override
