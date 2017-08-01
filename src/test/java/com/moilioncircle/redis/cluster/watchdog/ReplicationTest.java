@@ -4,7 +4,7 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ReplicationListenerTest {
+public class ReplicationTest {
     public static void main(String[] args) {
         ClusterConfiguration configuration = ClusterConfiguration.defaultSetting();
         configuration.setMaster(true).setVersion(Version.PROTOCOL_V0);
