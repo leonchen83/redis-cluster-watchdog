@@ -32,38 +32,70 @@ public class NetworkConfiguration {
     }
 
     protected int soLinger = 0;
-
     protected int soTimeout = 0;
-
     protected int soBacklog = 1024;
-
     protected int soSendBufferSize = 0;
-
     protected int soRecvBufferSize = 0;
-
     protected boolean tcpNoDelay = true;
-
     protected boolean soKeepAlive = true;
-
     protected boolean soReuseAddr = true;
-
     protected boolean autoReconnect = false;
-
     protected volatile long connectTimeout = SECONDS.toMillis(5);
-
     protected volatile long reconnectInterval = SECONDS.toMillis(5);
 
+    /**
+     *
+     */
     public int getSoLinger() {
         return soLinger;
     }
 
+    public int getSoTimeout() {
+        return soTimeout;
+    }
+
+    public int getSoBacklog() {
+        return soBacklog;
+    }
+
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+
+    public boolean isSoKeepAlive() {
+        return soKeepAlive;
+    }
+
+    public boolean isSoReuseAddr() {
+        return soReuseAddr;
+    }
+
+    public long getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public boolean isAutoReconnect() {
+        return autoReconnect;
+    }
+
+    public int getSoSendBufferSize() {
+        return soSendBufferSize;
+    }
+
+    public int getSoRecvBufferSize() {
+        return soRecvBufferSize;
+    }
+
+    public long getReconnectInterval() {
+        return reconnectInterval;
+    }
+
+    /**
+     *
+     */
     public NetworkConfiguration setSoLinger(int soLinger) {
         this.soLinger = soLinger;
         return this;
-    }
-
-    public int getSoTimeout() {
-        return soTimeout;
     }
 
     public NetworkConfiguration setSoTimeout(int soTimeout) {
@@ -71,35 +103,9 @@ public class NetworkConfiguration {
         return this;
     }
 
-    public int getSoBacklog() {
-        return soBacklog;
-    }
-
     public NetworkConfiguration setSoBacklog(int soBacklog) {
         this.soBacklog = soBacklog;
         return this;
-    }
-
-    public int getSoSendBufferSize() {
-        return soSendBufferSize;
-    }
-
-    public NetworkConfiguration setSoSendBufferSize(int soSendBufferSize) {
-        this.soSendBufferSize = soSendBufferSize;
-        return this;
-    }
-
-    public int getSoRecvBufferSize() {
-        return soRecvBufferSize;
-    }
-
-    public NetworkConfiguration setSoRecvBufferSize(int soRecvBufferSize) {
-        this.soRecvBufferSize = soRecvBufferSize;
-        return this;
-    }
-
-    public boolean isTcpNoDelay() {
-        return tcpNoDelay;
     }
 
     public NetworkConfiguration setTcpNoDelay(boolean tcpNoDelay) {
@@ -107,17 +113,9 @@ public class NetworkConfiguration {
         return this;
     }
 
-    public boolean isSoKeepAlive() {
-        return soKeepAlive;
-    }
-
     public NetworkConfiguration setSoKeepAlive(boolean soKeepAlive) {
         this.soKeepAlive = soKeepAlive;
         return this;
-    }
-
-    public boolean isSoReuseAddr() {
-        return soReuseAddr;
     }
 
     public NetworkConfiguration setSoReuseAddr(boolean soReuseAddr) {
@@ -125,8 +123,9 @@ public class NetworkConfiguration {
         return this;
     }
 
-    public boolean isAutoReconnect() {
-        return autoReconnect;
+    public NetworkConfiguration setConnectTimeout(long connectTimeout) {
+        this.connectTimeout = connectTimeout;
+        return this;
     }
 
     public NetworkConfiguration setAutoReconnect(boolean autoReconnect) {
@@ -134,17 +133,14 @@ public class NetworkConfiguration {
         return this;
     }
 
-    public long getConnectTimeout() {
-        return connectTimeout;
-    }
-
-    public NetworkConfiguration setConnectTimeout(long connectTimeout) {
-        this.connectTimeout = connectTimeout;
+    public NetworkConfiguration setSoSendBufferSize(int soSendBufferSize) {
+        this.soSendBufferSize = soSendBufferSize;
         return this;
     }
 
-    public long getReconnectInterval() {
-        return reconnectInterval;
+    public NetworkConfiguration setSoRecvBufferSize(int soRecvBufferSize) {
+        this.soRecvBufferSize = soRecvBufferSize;
+        return this;
     }
 
     public NetworkConfiguration setReconnectInterval(long reconnectInterval) {
