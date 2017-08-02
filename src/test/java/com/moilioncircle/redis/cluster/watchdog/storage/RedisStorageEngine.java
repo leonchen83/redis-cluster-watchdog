@@ -74,6 +74,10 @@ public class RedisStorageEngine implements StorageEngine {
     }
 
     @Override
+    public void persist() {
+    }
+
+    @Override
     public long size(int slot) {
         return slots[slot].size();
     }

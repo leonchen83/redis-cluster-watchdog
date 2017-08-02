@@ -46,6 +46,10 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
+    public void persist() {
+    }
+
+    @Override
     public boolean readonly() {
         return false;
     }

@@ -34,6 +34,8 @@ public interface StorageEngine extends Resourcable {
 
     void clear();
 
+    void persist();
+
     long size(int slot);
 
     void clear(int slot);
