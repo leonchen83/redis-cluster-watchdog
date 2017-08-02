@@ -17,7 +17,6 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
-import com.moilioncircle.redis.cluster.watchdog.util.Tuples;
 import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple4;
 import com.moilioncircle.redis.replicator.Configuration;
 import com.moilioncircle.redis.replicator.RedisReplicator;
@@ -63,7 +62,7 @@ public class SimpleReplicationListener implements ReplicationListener {
                     @Override
                     public void handle(Replicator replicator, Command command) {
                         Tuple4<byte[], Object, Long, Boolean> kv = extract(command);
-                        engine.save(kv.getV1(), kv.getV2(), kv.getV3(), kv.getV4());
+                        if (kv != null) engine.save(kv.getV1(), kv.getV2(), kv.getV3(), kv.getV4());
                     }
                 });
                 replicator.open();
@@ -75,7 +74,7 @@ public class SimpleReplicationListener implements ReplicationListener {
 
     private Tuple4<byte[], Object, Long, Boolean> extract(Command command) {
         // extract command to key value pair.
-        return Tuples.of(new byte[0], null, 0L, true);
+        return null;
     }
 
     @Override

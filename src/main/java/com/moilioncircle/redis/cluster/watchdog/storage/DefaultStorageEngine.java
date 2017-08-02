@@ -74,16 +74,6 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public Iterator<byte[]> keys(long max) {
-        return EMPTY;
-    }
-
-    @Override
-    public Iterator<byte[]> keys(int slot, long max) {
-        return EMPTY;
-    }
-
-    @Override
     public void delete(byte[] key) {
     }
 

@@ -42,10 +42,6 @@ public interface StorageEngine extends Resourcable {
 
     Iterator<byte[]> keys(int slot);
 
-    Iterator<byte[]> keys(long max);
-
-    Iterator<byte[]> keys(int slot, long max);
-
     /**
      *
      */

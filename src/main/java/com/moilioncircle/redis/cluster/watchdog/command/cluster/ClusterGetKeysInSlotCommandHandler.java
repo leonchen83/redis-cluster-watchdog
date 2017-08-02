@@ -52,13 +52,16 @@ public class ClusterGetKeysInSlotCommandHandler extends AbstractCommandHandler {
         if (max < 0) { replyError(t, "Invalid number of keys:" + max); return; }
 
         max = Math.min(managers.slots.countKeysInSlot(slot), max);
-        Iterator<byte[]> it = managers.slots.getKeysInSlot(slot, max);
-        if (!it.hasNext())
+        Iterator<byte[]> it = managers.slots.getKeysInSlot(slot);
+        if (!it.hasNext()) {
             t.write("*0\r\n".getBytes(), true);
-        else
+            return;
+        } else
             t.write(("*" + max + "\r\n").getBytes(), false);
-        while (it.hasNext()) {
+        int idx = 0;
+        while (it.hasNext() && idx++ < max) {
             byte[] key = it.next();
+            t.write(("$" + key.length + "\r\n").getBytes(), false);
             t.write(key, false);
             if (it.hasNext())
                 t.write("\r\n".getBytes(), false);

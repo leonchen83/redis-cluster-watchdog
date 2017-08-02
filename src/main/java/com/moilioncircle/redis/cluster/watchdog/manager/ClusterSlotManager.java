@@ -87,7 +87,7 @@ public class ClusterSlotManager {
         return managers.engine.size(slot);
     }
 
-    public Iterator<byte[]> getKeysInSlot(int slot, long max) {
-        return managers.engine.keys(slot, max);
+    public Iterator<byte[]> getKeysInSlot(int slot) {
+        return managers.engine.keys(slot);
     }
 }
