@@ -46,12 +46,21 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
+    public boolean readonly() {
+        return false;
+    }
+
+    @Override
     public long size(int slot) {
         return 0L;
     }
 
     @Override
     public void clear(int slot) {
+    }
+
+    @Override
+    public void readonly(boolean r) {
     }
 
     @Override

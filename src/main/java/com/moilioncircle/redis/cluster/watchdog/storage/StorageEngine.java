@@ -27,6 +27,7 @@ import static com.moilioncircle.redis.cluster.watchdog.util.CRC16.crc16;
  * @author Leon Chen
  * @since 1.0.0
  */
+//@ThreadSafe
 public interface StorageEngine extends Resourcable {
 
     long size();
@@ -65,6 +66,16 @@ public interface StorageEngine extends Resourcable {
 
     void restore(byte[] key, byte[] serialized, long expire, boolean force);
 
+    /**
+     *
+     */
+    boolean readonly();
+
+    void readonly(boolean r);
+
+    /**
+     *
+     */
     static int keyHashSlot(byte[] key) {
         if (key == null) return 0;
         int st = -1, ed = -1;

@@ -35,11 +35,12 @@ public abstract class AbstractCommandHandler implements CommandHandler {
     }
 
     protected void reply(Transport<Object> t, String message) {
-        t.write(("+" + message + "\r\n").getBytes(), true);
+        reply(t, message.getBytes());
     }
 
-    protected void replyError(Transport<Object> t, String message) {
-        t.write(("-ERR " + message + "\r\n").getBytes(), true);
+    protected void reply(Transport<Object> t, byte[] message) {
+        t.write("+", false);
+        t.write(message, false); t.write("\r\n".getBytes(), true);
     }
 
     protected void replyNumber(Transport<Object> t, long number) {
@@ -53,5 +54,9 @@ public abstract class AbstractCommandHandler implements CommandHandler {
     protected void replyBulk(Transport<Object> t, byte[] message) {
         t.write(("$" + message.length + "\r\n").getBytes(), false);
         t.write(message, false); t.write("\r\n".getBytes(), true);
+    }
+
+    protected void replyError(Transport<Object> t, String message) {
+        t.write(("-ERR " + message + "\r\n").getBytes(), true);
     }
 }

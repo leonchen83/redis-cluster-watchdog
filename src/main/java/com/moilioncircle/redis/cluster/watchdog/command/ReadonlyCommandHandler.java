@@ -35,6 +35,7 @@ public class ReadonlyCommandHandler extends AbstractCommandHandler {
             replyError(t, "wrong number of arguments for 'readonly' command");
             return;
         }
+        managers.engine.readonly(true);
         reply(t, "OK");
     }
 }
