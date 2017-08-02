@@ -57,17 +57,14 @@ $./redis-cli -p 10001
 `CLUSTER COUNT-FAILURE-REPORTS nodename`  
 `CLUSTER SET-CONFIG-EPOCH epoch`  
 `CLUSTER RESET <HARD | SOFT>`  
-  
-Following command **MUST** open `ClusterConfiguration.master`  
-  
 `CLUSTER ADDSLOTS slot <slot>`  
 `CLUSTER DELSLOTS slot <slot>`  
 `CLUSTER SETSLOT slot MIGRATING nodename`  
 `CLUSTER SETSLOT slot IMPORTING nodename`  
 `CLUSTER SETSLOT slot STABLE`  
 `CLUSTER SETSLOT slot NODE nodename`  
-`CLUSTER GETKEYSINSLOT slot count` will always return a zero length array  
-`CLUSTER COUNTKEYSINSLOT slot` will always return zero  
+`CLUSTER GETKEYSINSLOT slot count` 
+`CLUSTER COUNTKEYSINSLOT slot` 
 
 ## Supported redis-trib.rb command
 
@@ -89,6 +86,5 @@ Following command **MUST** open `ClusterConfiguration.master`
 `ClusterNodeListener`  
 `ClusterStateListener`  
 `ClusterConfigListener`  
-`RestoreCommandListener`  
 
 # Have fun!!

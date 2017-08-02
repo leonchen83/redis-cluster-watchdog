@@ -37,6 +37,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         super(managers);
         register("ping", new PingCommandHandler(managers));
         register("info", new InfoCommandHandler(managers));
+        register("dump", new DumpCommandHandler(managers));
         register("dbsize", new DBSizeCommandHandler(managers));
         register("config", new ConfigCommandHandler(managers));
         register("select", new SelectCommandHandler(managers));
