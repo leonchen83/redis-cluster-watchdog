@@ -17,16 +17,20 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
+import com.moilioncircle.redis.cluster.watchdog.util.Tuples;
+import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple4;
 import com.moilioncircle.redis.replicator.Configuration;
 import com.moilioncircle.redis.replicator.RedisReplicator;
 import com.moilioncircle.redis.replicator.Replicator;
 import com.moilioncircle.redis.replicator.UncheckedIOException;
+import com.moilioncircle.redis.replicator.cmd.Command;
+import com.moilioncircle.redis.replicator.cmd.CommandListener;
 import com.moilioncircle.redis.replicator.rdb.RdbListener;
 import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
+
+import static com.moilioncircle.redis.replicator.rdb.datatype.ExpiredType.NONE;
 
 /**
  * @author Leon Chen
@@ -34,27 +38,34 @@ import java.io.IOException;
  */
 public class SimpleReplicationListener implements ReplicationListener {
 
-    private static final Log logger = LogFactory.getLog(SimpleReplicationListener.class);
-
     private volatile Replicator replicator;
 
     @Override
     public void onSetReplication(String ip, int port, StorageEngine engine) {
         new Thread(() -> {
             try {
-                if (replicator != null) {
-                    replicator.close();
-                    replicator = null;
-                }
+                if (replicator != null) { replicator.close(); replicator = null; }
+                //
                 replicator = new RedisReplicator(ip, port, Configuration.defaultSetting());
                 replicator.addRdbListener(new RdbListener.Adaptor() {
                     @Override
+                    public void preFullSync(Replicator replicator) {
+                        engine.clear();
+                    }
+
+                    @Override
                     public void handle(Replicator replicator, KeyValuePair<?> kv) {
-                        logger.info(kv);
+                        long expire = kv.getExpiredType() == NONE ? 0 : kv.getExpiredMs();
+                        engine.save(kv.getRawKey(), kv.getValue(), expire, true);
                     }
                 });
-                replicator.addCommandListener((r, c) -> logger.info(c));
-                replicator.addCloseListener(r -> logger.info("replication closed [" + ip + ":" + port + "]"));
+                replicator.addCommandListener(new CommandListener() {
+                    @Override
+                    public void handle(Replicator replicator, Command command) {
+                        Tuple4<byte[], Object, Long, Boolean> kv = extract(command);
+                        engine.save(kv.getV1(), kv.getV2(), kv.getV3(), kv.getV4());
+                    }
+                });
                 replicator.open();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -62,20 +73,20 @@ public class SimpleReplicationListener implements ReplicationListener {
         }).start();
     }
 
+    private Tuple4<byte[], Object, Long, Boolean> extract(Command command) {
+        // extract command to key value pair.
+        return Tuples.of(new byte[0], null, 0L, true);
+    }
+
     @Override
     public void onUnsetReplication(StorageEngine engine) {
-        try {
-            Replicator replicator = this.replicator;
-            if (replicator != null) replicator.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        try { Replicator r = replicator; if (r != null) r.close(); }
+        catch (IOException e) { throw new UncheckedIOException(e); }
     }
 
     @Override
     public long onGetSlaveOffset() {
-        Replicator replicator = this.replicator;
-        if (replicator == null) return 0L;
-        return replicator.getConfiguration().getReplOffset();
+        Replicator r = this.replicator;
+        if (r == null) return 0L; return r.getConfiguration().getReplOffset();
     }
 }

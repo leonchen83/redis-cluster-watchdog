@@ -51,5 +51,4 @@ public class ReplicationManager {
         logger.info("replication unset [" + server.masterHost + ":" + server.masterPort + "]");
         managers.notifyUnsetReplication(managers.engine); server.masterHost = null; server.masterPort = 0;
     }
-
 }
