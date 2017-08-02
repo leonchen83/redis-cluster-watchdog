@@ -251,8 +251,7 @@ public class RedisStorageEngine implements StorageEngine {
         protected void doOpen() throws IOException {
             RestoreRdbVisitor v = new RestoreRdbVisitor(this);
             submitEvent(v.rdbLoadObject(this.inputStream, null, v.applyType(this.inputStream), 8));
-            int version = this.inputStream.readInt(2);
-            this.inputStream.skip(8);
+            int version = this.inputStream.readInt(2); long checksum = this.inputStream.readLong(8);
         }
 
         @Override
@@ -620,14 +619,6 @@ public class RedisStorageEngine implements StorageEngine {
                 return o6;
             }
 
-            /**
-             * @param in      input stream
-             * @param db      redis db
-             * @param version rdb version
-             * @return module object
-             * @throws IOException IOException
-             * @since 2.3.0
-             */
             @Override
             public Event applyModule2(RedisInputStream in, DB db, int version) throws IOException {
                 BaseRdbParser parser = new BaseRdbParser(in);
