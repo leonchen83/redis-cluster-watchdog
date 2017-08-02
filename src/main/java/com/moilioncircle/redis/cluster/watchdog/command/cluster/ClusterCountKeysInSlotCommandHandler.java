@@ -34,11 +34,6 @@ public class ClusterCountKeysInSlotCommandHandler extends AbstractCommandHandler
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-
-        if (!managers.configuration.isMaster()) {
-            replyError(t, "Unsupported COMMAND"); return;
-        }
-
         if (message.length != 3) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
@@ -46,7 +41,7 @@ public class ClusterCountKeysInSlotCommandHandler extends AbstractCommandHandler
         try {
             int slot = parseInt(message[2]);
             if (slot <= 0 || slot > 65535) { replyError(t, "Invalid slot:" + slot); return; }
-            replyNumber(t, "0");
+            replyNumber(t, managers.slots.countKeysInSlot(slot));
         } catch (Exception e) {
             replyError(t, "Invalid slot:" + message[2]);
         }

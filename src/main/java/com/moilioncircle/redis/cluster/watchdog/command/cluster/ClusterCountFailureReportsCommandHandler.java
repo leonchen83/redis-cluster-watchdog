@@ -39,6 +39,6 @@ public class ClusterCountFailureReportsCommandHandler extends AbstractCommandHan
 
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
         if (node == null) { replyError(t, "Unknown node " + message[2]); }
-        else replyNumber(t, String.valueOf(managers.nodes.clusterNodeFailureReportsCount(node)));
+        else replyNumber(t, managers.nodes.clusterNodeFailureReportsCount(node));
     }
 }

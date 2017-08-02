@@ -16,6 +16,8 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -24,7 +26,7 @@ public interface ReplicationListener {
 
     long onGetSlaveOffset();
 
-    void onUnsetReplication();
+    void onUnsetReplication(StorageEngine engine);
 
-    void onSetReplication(String ip, int port);
+    void onSetReplication(String ip, int port, StorageEngine engine);
 }

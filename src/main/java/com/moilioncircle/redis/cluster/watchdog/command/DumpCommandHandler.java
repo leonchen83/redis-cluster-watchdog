@@ -23,15 +23,20 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @author Leon Chen
  * @since 1.0.0
  */
-public class DBSizeCommandHandler extends AbstractCommandHandler {
+public class DumpCommandHandler extends AbstractCommandHandler {
 
-    public DBSizeCommandHandler(ClusterManagers managers) {
+    public DumpCommandHandler(ClusterManagers managers) {
         super(managers);
     }
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-        if (message.length == 1) replyNumber(t, managers.engine.size());
-        else replyError(t, "wrong number of arguments for 'dbsize' command");
+        if (rawMessage.length != 2) {
+            replyError(t, "wrong number of arguments for 'dump' command"); return;
+        }
+
+        byte[] key = rawMessage[1];
+        if (key == null) { replyError(t, "Invalid key: null"); return; }
+        replyBulk(t, managers.engine.dump(key));
     }
 }

@@ -35,7 +35,6 @@ public class ClusterAddSlotsCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-        if (!managers.configuration.isMaster()) { replyError(t, "Unsupported COMMAND"); return; }
         if (message.length < 3) { replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return; }
         byte[] slots = new byte[CLUSTER_SLOTS];
         for (int i = 2; i < message.length; i++) {

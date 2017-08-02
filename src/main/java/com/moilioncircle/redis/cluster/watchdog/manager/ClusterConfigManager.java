@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
-import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;

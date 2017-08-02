@@ -16,11 +16,15 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
 public interface ClusterWatchdog extends Resourcable {
+
+    void setStorageEngine(StorageEngine engine);
 
     ClusterConfiguration getClusterConfiguration();
 
@@ -31,6 +35,4 @@ public interface ClusterWatchdog extends Resourcable {
     ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener);
 
     ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener);
-
-    RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener);
 }

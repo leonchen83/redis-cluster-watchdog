@@ -24,7 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
-import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
 import static java.lang.Math.max;
@@ -67,7 +67,7 @@ public class ClusterFailoverManager {
 
     public void clusterHandleSlaveFailover() {
         long now = System.currentTimeMillis();
-        if (!configuration.isMaster()) return;
+        if (!configuration.isFailover()) return;
         if (nodeIsMaster(server.myself)) return;
         if (server.myself.master == null) return;
         if (!nodeFailed(server.myself.master)) return;

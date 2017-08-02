@@ -2,6 +2,7 @@ package com.moilioncircle.redis.cluster.watchdog.message.handler;
 
 import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
+import com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessage;
 import com.moilioncircle.redis.cluster.watchdog.message.ClusterMessageDataGossip;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
@@ -10,6 +11,7 @@ import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -17,7 +19,7 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo.valueOf;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterConfigManager.representClusterNodeFlags;
-import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
 import static java.lang.Math.max;
 
@@ -55,21 +57,26 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
     }
 
     public void clusterUpdateSlotsConfigWith(ClusterNode sender, long senderConfigEpoch, byte[] slots) {
-        ClusterNode previous = nodeIsMaster(server.myself) ? server.myself : server.myself.master;
-        if (Objects.equals(sender, server.myself)) { logger.info("Discarding UPDATE message fail myself."); return; }
+        ClusterNode myself = server.myself;
+        ClusterNode previous = nodeIsMaster(myself) ? myself : myself.master;
+        if (Objects.equals(sender, myself)) { logger.info("Discarding UPDATE message fail myself."); return; }
 
         ClusterNode next = null;
+        List<Integer> dirties = new ArrayList<>();
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             ClusterNode s = server.cluster.slots[i];
             if (!bitmapTestBit(slots, i)) continue;
             if (Objects.equals(s, sender)) continue;
             if (server.cluster.importing[i] != null) continue;
             if (s == null || s.configEpoch < senderConfigEpoch) {
+                ClusterSlotManager sm = managers.slots;
                 if (Objects.equals(s, previous)) next = sender;
+                if (Objects.equals(s, myself) && sm.countKeysInSlot(i) > 0) dirties.add(i);
                 managers.slots.clusterDelSlot(i); managers.slots.clusterAddSlot(sender, i);
             }
         }
         if (next != null && previous.assignedSlots == 0) managers.nodes.clusterSetMyMasterTo(sender);
+        else if (!dirties.isEmpty()) dirties.stream().forEach(slot -> managers.slots.delKeysInSlot(slot));
     }
 
     public void clusterProcessGossipSection(ClusterMessage hdr, ClusterLink link) {

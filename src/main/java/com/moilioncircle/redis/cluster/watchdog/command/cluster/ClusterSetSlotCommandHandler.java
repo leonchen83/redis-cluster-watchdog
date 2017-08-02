@@ -42,11 +42,6 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-
-        if (!managers.configuration.isMaster()) {
-            replyError(t, "Unsupported COMMAND"); return;
-        }
-
         if (message.length < 4) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
@@ -84,7 +79,14 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
             /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
             if (n == null) { replyError(t, "Unknown node " + message[4]); return; }
-            if (server.cluster.migrating[slot] != null) server.cluster.migrating[slot] = null;
+            if (Objects.equals(server.cluster.slots[slot], server.myself)
+                    && !Objects.equals(n, server.myself)
+                    && managers.slots.countKeysInSlot(slot) != 0) {
+                replyError(t, "Can't assign hashslot " + slot + " to a different node while I still hold keys for this hash slot.");
+                return;
+            }
+            if (managers.slots.countKeysInSlot(slot) == 0 && server.cluster.migrating[slot] != null)
+                server.cluster.migrating[slot] = null;
             if (Objects.equals(n, server.myself) && server.cluster.importing[slot] != null) {
                 if (managers.states.clusterBumpConfigEpochWithoutConsensus()) {
                     logger.info("configEpoch updated after importing slot " + slot);

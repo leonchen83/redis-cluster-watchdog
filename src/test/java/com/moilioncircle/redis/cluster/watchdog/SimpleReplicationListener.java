@@ -16,6 +16,7 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
 import com.moilioncircle.redis.replicator.Configuration;
 import com.moilioncircle.redis.replicator.RedisReplicator;
 import com.moilioncircle.redis.replicator.Replicator;
@@ -32,11 +33,13 @@ import java.io.IOException;
  * @since 1.0.0
  */
 public class SimpleReplicationListener implements ReplicationListener {
+
     private static final Log logger = LogFactory.getLog(SimpleReplicationListener.class);
+
     private volatile Replicator replicator;
 
     @Override
-    public void onSetReplication(String ip, int port) {
+    public void onSetReplication(String ip, int port, StorageEngine engine) {
         new Thread(() -> {
             try {
                 if (replicator != null) {
@@ -60,7 +63,7 @@ public class SimpleReplicationListener implements ReplicationListener {
     }
 
     @Override
-    public void onUnsetReplication() {
+    public void onUnsetReplication(StorageEngine engine) {
         try {
             Replicator replicator = this.replicator;
             if (replicator != null) replicator.close();

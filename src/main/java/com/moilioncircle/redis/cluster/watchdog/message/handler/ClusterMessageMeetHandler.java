@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
-import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeInHandshake;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
 

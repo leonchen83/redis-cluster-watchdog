@@ -19,8 +19,8 @@ public class ClusterConfiguration {
     private String clusterConfigFile;
     private int clusterAnnounceBusPort;
     private int clusterAnnouncePort = 6379;
-    private volatile boolean master = false;
     private volatile boolean verbose = false;
+    private volatile boolean failover = false;
     private volatile Version version = PROTOCOL_V0;
     private volatile int clusterMigrationBarrier = 1;
     private volatile long clusterNodeTimeout = 15000;
@@ -37,12 +37,12 @@ public class ClusterConfiguration {
     /**
      *
      */
-    public boolean isMaster() {
-        return master;
-    }
-
     public boolean isVerbose() {
         return verbose;
+    }
+
+    public boolean isFailover() {
+        return failover;
     }
 
     public Version getVersion() {
@@ -84,11 +84,6 @@ public class ClusterConfiguration {
     /**
      *
      */
-    public ClusterConfiguration setMaster(boolean master) {
-        this.master = master;
-        return this;
-    }
-
     public ClusterConfiguration setVerbose(boolean verbose) {
         this.verbose = verbose;
         return this;
@@ -96,6 +91,11 @@ public class ClusterConfiguration {
 
     public ClusterConfiguration setVersion(Version version) {
         this.version = version;
+        return this;
+    }
+
+    public ClusterConfiguration setFailover(boolean failover) {
+        this.failover = failover;
         return this;
     }
 

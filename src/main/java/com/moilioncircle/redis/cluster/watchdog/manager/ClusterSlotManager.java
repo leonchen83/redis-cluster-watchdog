@@ -3,19 +3,22 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 
+import java.util.Iterator;
+
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MIGRATE_TO;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
-import static com.moilioncircle.redis.cluster.watchdog.util.CRC16.crc16;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ClusterSlotManger {
+public class ClusterSlotManager {
     private ServerState server;
+    private ClusterManagers managers;
 
-    public ClusterSlotManger(ClusterManagers managers) {
+    public ClusterSlotManager(ClusterManagers managers) {
+        this.managers = managers;
         this.server = managers.server;
     }
 
@@ -76,17 +79,15 @@ public class ClusterSlotManger {
         server.cluster.importing = new ClusterNode[CLUSTER_SLOTS];
     }
 
-    public static int keyHashSlot(byte[] key) {
-        if (key == null) return 0;
-        int st = -1, ed = -1;
-        for (int i = 0, len = key.length; i < len; i++) {
-            if (key[i] == '{' && st == -1) st = i;
-            if (key[i] == '}' && st >= 0) {
-                ed = i; break;
-            }
-        }
-        if (st >= 0 && ed >= 0 && ed > st + 1)
-            return crc16(key, st + 1, ed) & (CLUSTER_SLOTS - 1);
-        return crc16(key) & (CLUSTER_SLOTS - 1);
+    public void delKeysInSlot(int slot) {
+        managers.engine.clear(slot);
+    }
+
+    public long countKeysInSlot(int slot) {
+        return managers.engine.size(slot);
+    }
+
+    public Iterator<byte[]> getKeysInSlot(int slot, long max) {
+        return managers.engine.keys(slot, max);
     }
 }

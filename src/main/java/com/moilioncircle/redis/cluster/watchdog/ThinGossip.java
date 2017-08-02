@@ -94,23 +94,6 @@ public class ThinGossip implements Resourcable {
         } catch (TimeoutException e) {
             logger.error("stop timeout error", e);
         }
-
-        // if myself is a slave. safe to shutdown replication socket.
-        managers.replications.replicationUnsetMaster();
-
-        try {
-            managers.config.shutdown();
-            managers.config.awaitTermination(timeout, unit);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        try {
-            managers.worker.shutdown();
-            managers.worker.awaitTermination(timeout, unit);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     public void clusterInit() {

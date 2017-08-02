@@ -22,7 +22,7 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterNode;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
-import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManger.bitmapTestBit;
+import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
 

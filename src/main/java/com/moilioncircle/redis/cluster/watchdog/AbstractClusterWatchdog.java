@@ -17,6 +17,7 @@
 package com.moilioncircle.redis.cluster.watchdog;
 
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
+import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
 
 /**
  * @author Leon Chen
@@ -30,6 +31,11 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     protected AbstractClusterWatchdog(ClusterConfiguration configuration) {
         this.configuration = configuration.validate();
         this.managers = new ClusterManagers(configuration, this);
+    }
+
+    @Override
+    public void setStorageEngine(StorageEngine engine) {
+        managers.setStorageEngine(engine);
     }
 
     @Override
@@ -55,10 +61,5 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     @Override
     public ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener) {
         return managers.setClusterConfigListener(clusterConfigListener);
-    }
-
-    @Override
-    public RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
-        return managers.setRestoreCommandListener(restoreCommandListener);
     }
 }

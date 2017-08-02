@@ -39,6 +39,7 @@ public class RedisClusterWatchdog extends AbstractClusterWatchdog {
 
     @Override
     public void start() {
+        Resourcable.startQuietly(managers);
         Resourcable.startQuietly(server);
         Resourcable.startQuietly(gossip);
     }
@@ -52,5 +53,6 @@ public class RedisClusterWatchdog extends AbstractClusterWatchdog {
     public void stop(long timeout, TimeUnit unit) {
         Resourcable.stopQuietly(gossip, timeout, unit);
         Resourcable.stopQuietly(server, timeout, unit);
+        Resourcable.stopQuietly(managers, timeout, unit);
     }
 }

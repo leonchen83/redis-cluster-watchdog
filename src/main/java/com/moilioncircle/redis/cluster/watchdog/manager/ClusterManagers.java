@@ -18,25 +18,28 @@ package com.moilioncircle.redis.cluster.watchdog.manager;
 
 import com.moilioncircle.redis.cluster.watchdog.*;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
+import com.moilioncircle.redis.cluster.watchdog.storage.DefaultStorageEngine;
+import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public class ClusterManagers {
+public class ClusterManagers implements Resourcable {
     //
     public ServerState server;
+    public StorageEngine engine;
     public ExecutorService config;
     public ExecutorService worker;
     public ClusterWatchdog watchdog;
     public ScheduledExecutorService cron;
     //
-    public ClusterSlotManger slots;
+    public ClusterSlotManager slots;
     public ClusterNodeManager nodes;
     public ClusterStateManager states;
     public ClusterConfigManager configs;
@@ -53,14 +56,14 @@ public class ClusterManagers {
     private volatile ReplicationListener replicationListener;
     private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
-    private volatile RestoreCommandListener restoreCommandListener;
 
     public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
         this.watchdog = watchdog;
         this.server = new ServerState();
         this.configuration = configuration;
+        this.engine = new DefaultStorageEngine();
         //
-        this.slots = new ClusterSlotManger(this);
+        this.slots = new ClusterSlotManager(this);
         this.nodes = new ClusterNodeManager(this);
         this.states = new ClusterStateManager(this);
         this.configs = new ClusterConfigManager(this);
@@ -100,11 +103,6 @@ public class ClusterManagers {
         worker.submit(() -> { if (r != null) r.onNodeFailed(failed); });
     }
 
-    public void notifyUnsetReplication() {
-        ReplicationListener r = this.replicationListener;
-        worker.submit(() -> { if (r != null) r.onUnsetReplication(); });
-    }
-
     public void notifyConfigChanged(ClusterConfigInfo info) {
         ClusterConfigListener r = this.clusterConfigListener;
         worker.submit(() -> { if (r != null) r.onConfigChanged(info); });
@@ -125,9 +123,9 @@ public class ClusterManagers {
         worker.submit(() -> { if (r != null) r.onUnsetNodeFailed(failed); });
     }
 
-    public void notifySetReplication(String ip, int host) {
+    public void notifyUnsetReplication(StorageEngine engine) {
         ReplicationListener r = this.replicationListener;
-        worker.submit(() -> { if (r != null) r.onSetReplication(ip, host); });
+        worker.submit(() -> { if (r != null) r.onUnsetReplication(engine); });
     }
 
     public void notifyUnsetNodePFailed(ClusterNodeInfo pfailed) {
@@ -135,14 +133,18 @@ public class ClusterManagers {
         worker.submit(() -> { if (r != null) r.onUnsetNodePFailed(pfailed); });
     }
 
-    public void notifyRestoreCommand(KeyValuePair<?> kv, boolean replace) {
-        RestoreCommandListener r = this.restoreCommandListener;
-        worker.submit(() -> { if (r != null) r.onRestoreCommand(kv, replace); });
+    public void notifySetReplication(String ip, int host, StorageEngine engine) {
+        ReplicationListener r = this.replicationListener;
+        worker.submit(() -> { if (r != null) r.onSetReplication(ip, host, engine); });
     }
 
     /**
      *
      */
+    public void setStorageEngine(StorageEngine engine) {
+        this.engine = engine;
+    }
+
     public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
         ClusterNodeListener r = this.clusterNodeListener; this.clusterNodeListener = clusterNodeListener; return r;
     }
@@ -159,7 +161,34 @@ public class ClusterManagers {
         ClusterConfigListener r = this.clusterConfigListener; this.clusterConfigListener = clusterConfigListener; return r;
     }
 
-    public synchronized RestoreCommandListener setRestoreCommandListener(RestoreCommandListener restoreCommandListener) {
-        RestoreCommandListener r = this.restoreCommandListener; this.restoreCommandListener = restoreCommandListener; return r;
+    @Override
+    public void start() {
+        this.engine.start();
+    }
+
+    @Override
+    public void stop() {
+        stop(0L, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void stop(long timeout, TimeUnit unit) {
+        // if myself is a slave. safe to shutdown replication socket.
+        this.replications.replicationUnsetMaster();
+
+        try {
+            this.config.shutdown();
+            this.config.awaitTermination(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        try {
+            this.worker.shutdown();
+            this.worker.awaitTermination(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        this.engine.stop(timeout, unit);
     }
 }

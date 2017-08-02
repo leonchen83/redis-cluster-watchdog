@@ -28,13 +28,9 @@ public class ClusterWatchdogTest {
             final int j = i;
             new Thread(() -> {
                 ClusterConfiguration c = ClusterConfiguration.defaultSetting();
-                c.setMaster(true).setVersion(Version.PROTOCOL_V1).setClusterAnnouncePort(10000 + j);
+                c.setFailover(true).setVersion(Version.PROTOCOL_V1).setClusterAnnouncePort(10000 + j);
 
                 ClusterWatchdog watchdog = new RedisClusterWatchdog(c);
-                watchdog.setRestoreCommandListener((kv, replace) -> {
-                    System.out.println(kv);
-                    System.out.println(replace);
-                });
                 watchdog.start();
             }).start();
         }

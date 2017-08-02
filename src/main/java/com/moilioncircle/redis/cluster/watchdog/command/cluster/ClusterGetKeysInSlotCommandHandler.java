@@ -20,6 +20,8 @@ import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
+import java.util.Iterator;
+
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 
@@ -35,11 +37,6 @@ public class ClusterGetKeysInSlotCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
-
-        if (!managers.configuration.isMaster()) {
-            replyError(t, "Unsupported COMMAND"); return;
-        }
-
         if (message.length != 4) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
@@ -54,6 +51,19 @@ public class ClusterGetKeysInSlotCommandHandler extends AbstractCommandHandler {
         catch (Exception e) { replyError(t, "Invalid number of keys:" + message[3]); return; }
         if (max < 0) { replyError(t, "Invalid number of keys:" + max); return; }
 
-        t.write("*0\r\n".getBytes(), true);
+        max = Math.min(managers.slots.countKeysInSlot(slot), max);
+        Iterator<byte[]> it = managers.slots.getKeysInSlot(slot, max);
+        if (!it.hasNext())
+            t.write("*0\r\n".getBytes(), true);
+        else
+            t.write(("*" + max + "\r\n").getBytes(), false);
+        while (it.hasNext()) {
+            byte[] key = it.next();
+            t.write(key, false);
+            if (it.hasNext())
+                t.write("\r\n".getBytes(), false);
+            else
+                t.write("\r\n".getBytes(), true);
+        }
     }
 }
