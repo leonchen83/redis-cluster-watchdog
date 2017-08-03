@@ -108,9 +108,9 @@ public class RedisStorageEngine implements StorageEngine {
 
     @Override
     public Object load(byte[] key) {
-        return slots[StorageEngine.keyHashSlot(key)].compute(new Key(key), (k, v) -> {
-            if (v == null || (v.getV1() != 0L && v.getV1() < System.currentTimeMillis())) return Tuples.of(0L, null); else return v;
-        }).getV2();
+        Tuple2<Long, Object> v = slots[StorageEngine.keyHashSlot(key)].get(new Key(key));
+        if (v == null) return null;
+        return v.getV2();
     }
 
     @Override
@@ -130,7 +130,11 @@ public class RedisStorageEngine implements StorageEngine {
                 size.incrementAndGet();
                 return Tuples.of(expire, value);
             } else if (!force) {
-                return v;
+                if (v.getV1() != 0L && v.getV1() < System.currentTimeMillis())
+                    // mark expired
+                    return Tuples.of(expire, value);
+                else
+                    return v;
             } else {
                 return Tuples.of(expire, value);
             }
