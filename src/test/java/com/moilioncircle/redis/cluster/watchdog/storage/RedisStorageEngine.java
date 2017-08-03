@@ -110,7 +110,8 @@ public class RedisStorageEngine implements StorageEngine {
     public Object load(byte[] key) {
         Tuple2<Long, Object> v = slots[StorageEngine.keyHashSlot(key)].get(new Key(key));
         if (v == null) return null;
-        return v.getV2();
+        else if (v.getV1() != 0 && v.getV1() < System.currentTimeMillis()) return null; //expired
+        else return v.getV2();
     }
 
     @Override
