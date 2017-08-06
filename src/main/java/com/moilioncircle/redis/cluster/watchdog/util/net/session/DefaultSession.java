@@ -21,20 +21,6 @@ public class DefaultSession<T> implements Session<T> {
     }
 
     @Override
-    public String getLocalAddress(String value) {
-        if (value != null) return value;
-        InetSocketAddress socketAddress = (InetSocketAddress) transport.getLocalAddress();
-        return socketAddress.getAddress().getHostAddress();
-    }
-
-    @Override
-    public String getRemoteAddress(String value) {
-        if (value != null) return value;
-        InetSocketAddress socketAddress = (InetSocketAddress) transport.getRemoteAddress();
-        return socketAddress.getAddress().getHostAddress();
-    }
-
-    @Override
     public long getId() {
         return transport.getId();
     }
@@ -45,12 +31,24 @@ public class DefaultSession<T> implements Session<T> {
     }
 
     @Override
+    public String getLocalAddress(String value) {
+        if (value != null) return value;
+        return  ((InetSocketAddress) transport.getLocalAddress()).getAddress().getHostAddress();
+    }
+
+    @Override
+    public String getRemoteAddress(String value) {
+        if (value != null) return value;
+        return ((InetSocketAddress) transport.getRemoteAddress()).getAddress().getHostAddress();
+    }
+
+    @Override
     public CompletableFuture<Void> send(T message) {
         if (transport.getStatus() == ConnectionStatus.CONNECTED) {
             return transport.write(message, true);
         } else {
             CompletableFuture<Void> r = new ListenableFuture<>();
-            r.failure(new TransportException("[cluster] connection disconnected: " + toString()));
+            r.failure(new TransportException("connection disconnected: " + toString()));
             return r;
         }
     }

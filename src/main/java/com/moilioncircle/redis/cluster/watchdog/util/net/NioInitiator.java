@@ -102,9 +102,7 @@ public class NioInitiator<T> extends AbstractNioBootstrap<T> {
         private final CompletableFuture<Void> future;
 
         private ConnectFutureListenerImpl(CompletableFuture<Void> future, String host, int port) {
-            this.future = future;
-            this.host = host;
-            this.port = port;
+            this.future = future; this.host = host; this.port = port;
         }
 
         @Override

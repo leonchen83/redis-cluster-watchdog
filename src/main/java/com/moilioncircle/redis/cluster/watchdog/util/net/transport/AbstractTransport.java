@@ -64,7 +64,6 @@ public abstract class AbstractTransport<T> extends SimpleChannelInboundHandler<T
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
         TransportListener<T> listener = this.listener;
         if (listener != null) listener.onDisconnected(this, null);
     }

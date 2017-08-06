@@ -9,13 +9,13 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.ConnectionStatus;
  */
 public interface Session<T> {
 
-    String getLocalAddress(String value);
-
-    String getRemoteAddress(String value);
-
     long getId();
 
     ConnectionStatus getStatus();
+
+    String getLocalAddress(String value);
+
+    String getRemoteAddress(String value);
 
     CompletableFuture<Void> send(T message);
 

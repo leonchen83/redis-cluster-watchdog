@@ -95,7 +95,7 @@ public class CRC64 {
     public static long crc64(byte[] bytes, int start, int length) {
         long sum = 0;
         for (int i = start; i < length; i++) {
-            sum = (sum >>> 8) ^ LOOKUP_TABLE[((int) sum ^ bytes[i]) & 0xff];
+            sum = (sum >>> 8) ^ LOOKUP_TABLE[((int) sum ^ bytes[i]) & 0XFF];
         }
         return sum;
     }

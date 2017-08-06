@@ -64,14 +64,14 @@ public abstract class AbstractClusterMessageHandler implements ClusterMessageHan
         ClusterNode next = null;
         List<Integer> dirties = new ArrayList<>();
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            ClusterNode s = server.cluster.slots[i];
+            ClusterNode n = server.cluster.slots[i];
             if (!bitmapTestBit(slots, i)) continue;
-            if (Objects.equals(s, sender)) continue;
+            if (Objects.equals(n, sender)) continue;
             if (server.cluster.importing[i] != null) continue;
-            if (s == null || s.configEpoch < senderConfigEpoch) {
+            if (n == null || n.configEpoch < senderConfigEpoch) {
                 ClusterSlotManager sm = managers.slots;
-                if (Objects.equals(s, previous)) next = sender;
-                if (Objects.equals(s, myself) && sm.countKeysInSlot(i) > 0) dirties.add(i);
+                if (Objects.equals(n, previous)) next = sender;
+                if (Objects.equals(n, myself) && sm.countKeysInSlot(i) > 0) dirties.add(i);
                 managers.slots.clusterDelSlot(i); managers.slots.clusterAddSlot(sender, i);
             }
         }

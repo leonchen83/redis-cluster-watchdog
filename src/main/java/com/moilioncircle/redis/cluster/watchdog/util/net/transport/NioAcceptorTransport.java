@@ -24,6 +24,9 @@ import io.netty.channel.ChannelHandlerContext;
 
 import java.net.SocketAddress;
 
+import static com.moilioncircle.redis.cluster.watchdog.util.net.ConnectionStatus.CONNECTED;
+import static com.moilioncircle.redis.cluster.watchdog.util.net.ConnectionStatus.DISCONNECTED;
+
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -38,8 +41,8 @@ public class NioAcceptorTransport<T> extends AbstractTransport<T> {
 
     @Override
     public ConnectionStatus getStatus() {
-        if (this.context == null) return ConnectionStatus.DISCONNECTED;
-        return this.context.channel().isActive() ? ConnectionStatus.CONNECTED : ConnectionStatus.DISCONNECTED;
+        if (this.context == null) return DISCONNECTED;
+        return this.context.channel().isActive() ? CONNECTED : DISCONNECTED;
     }
 
     @Override
@@ -61,11 +64,8 @@ public class NioAcceptorTransport<T> extends AbstractTransport<T> {
 
     @Override
     public CompletableFuture<Void> write(T message, boolean flush) {
-        if (!flush) {
-            return new ListenableChannelFuture<>(context.write(message));
-        } else {
-            return new ListenableChannelFuture<>(context.writeAndFlush(message));
-        }
+        if (!flush) { return new ListenableChannelFuture<>(context.write(message)); }
+        else { return new ListenableChannelFuture<>(context.writeAndFlush(message)); }
     }
 
     @Override
