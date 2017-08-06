@@ -39,7 +39,7 @@ public abstract class AbstractCommandHandler implements CommandHandler {
     }
 
     protected void reply(Transport<byte[][]> t, byte[] message) {
-        t.write("+", false);
+        t.write("+".getBytes(), false);
         t.write(message, false); t.write("\r\n".getBytes(), true);
     }
 
