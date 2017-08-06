@@ -32,7 +32,7 @@ public class ConfigCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length == 4 && message[1] != null && message[1].equalsIgnoreCase("set")) {
             if (message[2] == null || !message[2].equalsIgnoreCase("cluster-node-timeout")) {
                 replyError(t, "wrong number of arguments for 'config' command"); return;

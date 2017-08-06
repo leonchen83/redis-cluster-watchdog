@@ -23,5 +23,5 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @since 1.0.0
  */
 public interface CommandHandler {
-    void handle(Transport<Object> t, String[] message, byte[][] rawMessage);
+    void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage);
 }

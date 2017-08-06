@@ -30,7 +30,7 @@ public class DumpCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (rawMessage.length != 2) {
             replyError(t, "wrong number of arguments for 'dump' command"); return;
         }

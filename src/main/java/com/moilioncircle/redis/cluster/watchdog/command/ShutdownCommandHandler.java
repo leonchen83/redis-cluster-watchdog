@@ -32,7 +32,7 @@ public class ShutdownCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length == 1) {
             reply(t, "OK"); managers.watchdog.stop(10, TimeUnit.SECONDS);
         } else if (message.length == 2 && message[1] != null && (message[1].equalsIgnoreCase("nosave") || message[1].equalsIgnoreCase("save"))) {

@@ -33,7 +33,7 @@ public class ClusterCommandHandlerManager {
         this.handler = new DefaultCommandHandler(managers);
     }
 
-    public void handleCommand(Transport<Object> t, byte[][] raw) {
+    public void handleCommand(Transport<byte[][]> t, byte[][] raw) {
         this.handler.handle(t, stream(raw).map(String::new).toArray(String[]::new), raw);
     }
 }

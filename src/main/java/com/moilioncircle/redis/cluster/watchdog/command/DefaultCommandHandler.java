@@ -50,7 +50,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length <= 0 || message[0] == null) {
             replyError(t, "Unsupported COMMAND"); return;
         }

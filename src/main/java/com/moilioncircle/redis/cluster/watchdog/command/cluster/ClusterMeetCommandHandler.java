@@ -39,7 +39,7 @@ public class ClusterMeetCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 4 && message.length != 5) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }

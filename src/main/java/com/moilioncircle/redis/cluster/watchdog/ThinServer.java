@@ -41,7 +41,7 @@ public class ThinServer implements Resourcable {
 
     private ClusterManagers managers;
     private ClusterConfiguration configuration;
-    private volatile NioBootstrapImpl<Object> acceptor;
+    private volatile NioBootstrapImpl<byte[][]> acceptor;
 
     public ThinServer(ClusterManagers managers) {
         this.managers = managers;
@@ -69,7 +69,7 @@ public class ThinServer implements Resourcable {
 
     @Override
     public void stop(long timeout, TimeUnit unit) {
-        NioBootstrapImpl<Object> acceptor = this.acceptor;
+        NioBootstrapImpl<byte[][]> acceptor = this.acceptor;
         try {
             if (acceptor != null) acceptor.shutdown().get(timeout, unit);
         } catch (InterruptedException e) {
@@ -81,14 +81,14 @@ public class ThinServer implements Resourcable {
         }
     }
 
-    private class RedisTransportListener implements TransportListener<Object> {
+    private class RedisTransportListener implements TransportListener<byte[][]> {
         @Override
-        public void onConnected(Transport<Object> t) {
+        public void onConnected(Transport<byte[][]> t) {
             if (configuration.isVerbose()) logger.info("[acceptor] > " + t);
         }
 
         @Override
-        public void onMessage(Transport<Object> t, Object message) {
+        public void onMessage(Transport<byte[][]> t, byte[][] message) {
             managers.cron.execute(() -> {
                 ClusterConfigInfo previous;
                 previous = valueOf(managers.server.cluster);
@@ -99,7 +99,7 @@ public class ThinServer implements Resourcable {
         }
 
         @Override
-        public void onDisconnected(Transport<Object> t, Throwable cause) {
+        public void onDisconnected(Transport<byte[][]> t, Throwable cause) {
             if (configuration.isVerbose()) logger.info("[acceptor] < " + t);
         }
     }

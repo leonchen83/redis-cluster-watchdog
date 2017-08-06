@@ -32,7 +32,7 @@ public class RestoreCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (rawMessage.length != 4 && rawMessage.length != 5) {
             replyError(t, "wrong number of arguments for 'restore' command"); return;
         }

@@ -31,7 +31,7 @@ public class ClusterFlushSlotsCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }

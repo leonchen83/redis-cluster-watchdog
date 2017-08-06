@@ -63,7 +63,7 @@ public class NioAcceptorTransport<T> extends AbstractTransport<T> {
     }
 
     @Override
-    public CompletableFuture<Void> write(T message, boolean flush) {
+    public <V> CompletableFuture<Void> write(V message, boolean flush) {
         if (!flush) { return new ListenableChannelFuture<>(context.write(message)); }
         else { return new ListenableChannelFuture<>(context.writeAndFlush(message)); }
     }

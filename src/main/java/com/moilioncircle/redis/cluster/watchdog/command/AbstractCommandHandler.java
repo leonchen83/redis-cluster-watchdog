@@ -34,29 +34,29 @@ public abstract class AbstractCommandHandler implements CommandHandler {
         this.server = managers.server;
     }
 
-    protected void reply(Transport<Object> t, String message) {
+    protected void reply(Transport<byte[][]> t, String message) {
         reply(t, message.getBytes());
     }
 
-    protected void reply(Transport<Object> t, byte[] message) {
+    protected void reply(Transport<byte[][]> t, byte[] message) {
         t.write("+", false);
         t.write(message, false); t.write("\r\n".getBytes(), true);
     }
 
-    protected void replyNumber(Transport<Object> t, long number) {
+    protected void replyNumber(Transport<byte[][]> t, long number) {
         t.write((":" + number + "\r\n").getBytes(), true);
     }
 
-    protected void replyBulk(Transport<Object> t, String message) {
+    protected void replyBulk(Transport<byte[][]> t, String message) {
         replyBulk(t, message.getBytes());
     }
 
-    protected void replyBulk(Transport<Object> t, byte[] message) {
+    protected void replyBulk(Transport<byte[][]> t, byte[] message) {
         t.write(("$" + message.length + "\r\n").getBytes(), false);
         t.write(message, false); t.write("\r\n".getBytes(), true);
     }
 
-    protected void replyError(Transport<Object> t, String message) {
+    protected void replyError(Transport<byte[][]> t, String message) {
         t.write(("-ERR " + message + "\r\n").getBytes(), true);
     }
 }

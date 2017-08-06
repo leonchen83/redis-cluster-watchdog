@@ -32,7 +32,7 @@ public class SelectCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
             replyError(t, "wrong number of arguments for 'select' command"); return;
         }

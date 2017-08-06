@@ -30,7 +30,7 @@ public class InfoCommandHandler extends AbstractCommandHandler {
     }
 
     @Override
-    public void handle(Transport<Object> t, String[] message, byte[][] rawMessage) {
+    public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length == 1 || message.length == 2) {
             replyBulk(t, "cluster_enabled:1\r\n");
         } else {
