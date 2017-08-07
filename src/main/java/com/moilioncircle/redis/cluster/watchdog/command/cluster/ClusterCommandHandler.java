@@ -70,10 +70,12 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
         if (handler == null) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
-        ClusterConfigInfo previous;
-        previous = valueOf(managers.server.cluster);
-        handler.handle(t, message, rawMessage);
-        ClusterConfigInfo next = valueOf(managers.server.cluster);
-        if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+        managers.cron.execute(() -> {
+            ClusterConfigInfo previous;
+            previous = valueOf(managers.server.cluster);
+            handler.handle(t, message, rawMessage);
+            ClusterConfigInfo next = valueOf(managers.server.cluster);
+            if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
+        });
     }
 }

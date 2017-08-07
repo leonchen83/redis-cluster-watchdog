@@ -67,13 +67,6 @@ public class ThinGossip implements Resourcable {
     @Override
     public void stop(long timeout, TimeUnit unit) {
         try {
-            managers.cron.shutdown();
-            managers.cron.awaitTermination(timeout, unit);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        try {
             NioBootstrapImpl<RCmbMessage> acceptor = this.acceptor;
             if (acceptor != null) acceptor.shutdown().get(timeout, unit);
         } catch (InterruptedException e) {
