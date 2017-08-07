@@ -29,8 +29,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
-
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -89,13 +87,7 @@ public class ThinServer implements Resourcable {
 
         @Override
         public void onMessage(Transport<byte[][]> t, byte[][] message) {
-            managers.cron.execute(() -> {
-                ClusterConfigInfo previous;
-                previous = valueOf(managers.server.cluster);
-                managers.commands.handleCommand(t, (byte[][]) message);
-                ClusterConfigInfo next = valueOf(managers.server.cluster);
-                if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
-            });
+            managers.cron.execute(() -> managers.commands.handleCommand(t, message) );
         }
 
         @Override

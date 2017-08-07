@@ -16,6 +16,7 @@
 
 package com.moilioncircle.redis.cluster.watchdog.command.cluster;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo;
 import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.command.CommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
@@ -23,6 +24,8 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
 
 /**
  * @author Leon Chen
@@ -67,6 +70,10 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
         if (handler == null) {
             replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
         }
+        ClusterConfigInfo previous;
+        previous = valueOf(managers.server.cluster);
         handler.handle(t, message, rawMessage);
+        ClusterConfigInfo next = valueOf(managers.server.cluster);
+        if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
     }
 }
