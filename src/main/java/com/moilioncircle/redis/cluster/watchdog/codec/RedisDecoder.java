@@ -6,9 +6,6 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
-import static java.lang.Integer.parseInt;
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /**
  * @author Leon Chen
  * @since 1.0.0
@@ -25,67 +22,75 @@ public class RedisDecoder extends ByteToMessageDecoder {
     }
 
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) {
-        int c = in.readByte(), index, len;
+        int c = in.readByte(), index, v;
         byte[] rs;
         switch (c) {
             case '$':
                 //RESP Bulk Strings
-                for (len = 0, index = in.readerIndex(); ; ) {
-                    while (in.readByte() != '\r') len++;
-                    if (in.readByte() != '\n') len++;
-                    else break;
-                }
-                len = parseInt((String) in.getCharSequence(index, len, UTF_8));
-                if (len == -1) return null;
-                rs = new byte[len];
-                in.readBytes(rs);
+                v = (int) parseLong(in);
+                if (v == -1) return null;
+                rs = new byte[v]; in.readBytes(rs);
                 if (in.readByte() != '\r') ctx.close();
                 if (in.readByte() != '\n') ctx.close();
                 return rs;
             case ':':
                 // RESP Integers
-                for (len = 0, index = in.readerIndex(); ; ) {
-                    while (in.readByte() != '\r') len++;
-                    if (in.readByte() != '\n') len++;
+                for (v = 0, index = in.readerIndex(); ; ) {
+                    while (in.readByte() != '\r') v++;
+                    if (in.readByte() != '\n') v++;
                     else break;
                 }
-                rs = new byte[len];
-                return in.getBytes(index, rs);
+                rs = new byte[v];
+                in.getBytes(index, rs);
+                return rs;
             case '*':
                 // RESP Arrays
-                for (len = 0, index = in.readerIndex(); ; ) {
-                    while (in.readByte() != '\r') len++;
-                    if (in.readByte() != '\n') len++;
-                    else break;
-                }
-                len = parseInt((String) in.getCharSequence(index, len, UTF_8));
-                if (len == -1) return null;
-                byte[][] ary = new byte[len][];
-                for (int i = 0; i < len; i++) ary[i] = (byte[]) decode(ctx, in);
+                v = (int) parseLong(in);
+                if (v == -1) return null;
+                byte[][] ary = new byte[v][];
+                for (int i = 0; i < v; i++) ary[i] = (byte[]) decode(ctx, in);
                 return ary;
             case '+':
                 // RESP Simple Strings
-                for (len = 0, index = in.readerIndex(); ; ) {
-                    while (in.readByte() != '\r') len++;
-                    if (in.readByte() != '\n') len++;
+                for (v = 0, index = in.readerIndex(); ; ) {
+                    while (in.readByte() != '\r') v++;
+                    if (in.readByte() != '\n') v++;
                     else break;
                 }
-                rs = new byte[len];
+                rs = new byte[v];
                 in.getBytes(index, rs);
                 return rs;
             case '-':
                 // RESP Errors
-                for (len = 0, index = in.readerIndex(); ; ) {
-                    while (in.readByte() != '\r') len++;
-                    if (in.readByte() != '\n') len++;
+                for (v = 0, index = in.readerIndex(); ; ) {
+                    while (in.readByte() != '\r') v++;
+                    if (in.readByte() != '\n') v++;
                     else break;
                 }
-                rs = new byte[len];
+                rs = new byte[v];
                 in.getBytes(index, rs);
                 return rs;
             default:
                 ctx.close();
                 return null;
         }
+    }
+
+    public static long parseLong(ByteBuf in) {
+        long v = 0;
+        int sign = 1;
+        int read = in.readByte();
+        if (read == '-') {
+            read = in.readByte();
+            sign = -1;
+        }
+        do {
+            if (read == '\r' && in.readByte() == '\n') break;
+            int value = read - '0';
+            if (value >= 0 && value < 10) v = v * 10 + value;
+            else throw new NumberFormatException("Invalid character in integer");
+            read = in.readByte();
+        } while (true);
+        return v * sign;
     }
 }
