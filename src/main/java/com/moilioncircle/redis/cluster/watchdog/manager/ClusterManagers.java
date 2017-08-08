@@ -37,7 +37,6 @@ public class ClusterManagers implements Resourcable {
     public StorageEngine engine;
     public ExecutorService config;
     public ExecutorService worker;
-    public ExecutorService command;
     public ClusterWatchdog watchdog;
     public ScheduledExecutorService cron;
     //
@@ -77,7 +76,6 @@ public class ClusterManagers implements Resourcable {
         this.commands = new ClusterCommandHandlerManager(this);
         this.handlers = new ClusterMessageHandlerManager(this);
         //
-        this.command = Executors.newCachedThreadPool();
         this.config = Executors.newSingleThreadExecutor();
         this.worker = Executors.newSingleThreadExecutor();
         this.cron = Executors.newSingleThreadScheduledExecutor();
