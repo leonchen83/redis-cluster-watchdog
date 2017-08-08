@@ -52,13 +52,6 @@ public class RedisClusterWatchdog extends AbstractClusterWatchdog {
     @Override
     public void stop(long timeout, TimeUnit unit) {
         try {
-            managers.command.shutdown();
-            managers.command.awaitTermination(timeout, unit);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        try {
             managers.cron.shutdown();
             managers.cron.awaitTermination(timeout, unit);
         } catch (InterruptedException e) {

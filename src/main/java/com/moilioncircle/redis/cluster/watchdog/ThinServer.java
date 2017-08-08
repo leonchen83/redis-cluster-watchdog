@@ -87,7 +87,7 @@ public class ThinServer implements Resourcable {
 
         @Override
         public void onMessage(Transport<byte[][]> t, byte[][] message) {
-            managers.command.execute(() -> managers.commands.handleCommand(t, message) );
+            managers.commands.handleCommand(t, message);
         }
 
         @Override
