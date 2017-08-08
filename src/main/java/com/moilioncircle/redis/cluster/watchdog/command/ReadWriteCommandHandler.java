@@ -32,7 +32,7 @@ public class ReadWriteCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 1) {
-            replyError(t, "wrong number of arguments for 'readwrite' command");
+            replyError(t, "ERR wrong number of arguments for 'readwrite' command");
             return;
         }
         managers.engine.readonly(false);

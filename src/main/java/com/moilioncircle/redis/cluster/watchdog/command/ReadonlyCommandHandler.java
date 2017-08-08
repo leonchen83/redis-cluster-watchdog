@@ -32,7 +32,7 @@ public class ReadonlyCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 1) {
-            replyError(t, "wrong number of arguments for 'readonly' command");
+            replyError(t, "ERR wrong number of arguments for 'readonly' command");
             return;
         }
         managers.engine.readonly(true);

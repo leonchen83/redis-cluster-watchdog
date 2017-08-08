@@ -38,7 +38,7 @@ public class ShutdownCommandHandler extends AbstractCommandHandler {
         } else if (message.length == 2 && message[1] != null && (message[1].equalsIgnoreCase("nosave") || message[1].equalsIgnoreCase("save"))) {
             reply(t, "OK"); managers.watchdog.stop(10, TimeUnit.SECONDS);
         } else {
-            replyError(t, "wrong number of arguments for 'shutdown' command");
+            replyError(t, "ERR wrong number of arguments for 'shutdown' command");
         }
     }
 }

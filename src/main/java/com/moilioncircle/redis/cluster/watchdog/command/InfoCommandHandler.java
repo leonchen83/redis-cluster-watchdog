@@ -34,7 +34,7 @@ public class InfoCommandHandler extends AbstractCommandHandler {
         if (message.length == 1 || message.length == 2) {
             replyBulk(t, "cluster_enabled:1\r\n");
         } else {
-            replyError(t, "wrong number of arguments for 'info' command");
+            replyError(t, "ERR wrong number of arguments for 'info' command");
         }
     }
 }

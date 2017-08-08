@@ -36,7 +36,7 @@ public class PingCommandHandler extends AbstractCommandHandler {
         } else if (message.length == 2 && message[1] != null) {
             reply(t, message[1]);
         } else {
-            replyError(t, "wrong number of arguments for 'ping' command");
+            replyError(t, "ERR wrong number of arguments for 'ping' command");
         }
     }
 }

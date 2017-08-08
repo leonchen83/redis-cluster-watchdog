@@ -35,15 +35,15 @@ public class ClusterAddSlotsCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
-        if (message.length < 3) { replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return; }
+        if (message.length < 3) { replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return; }
         byte[] slots = new byte[CLUSTER_SLOTS];
         for (int i = 2; i < message.length; i++) {
             try {
                 int slot = parseInt(message[i]);
-                if (slot < 0 || slot > 16384) { replyError(t, "Invalid slot:" + slot); return; }
-                if (server.cluster.slots[slot] != null) { replyError(t, "Slot " + slot + " is already busy"); return; }
-                if (slots[slot]++ == 1) { replyError(t, "Slot " + slot + " specified multiple times"); return; }
-            } catch (Exception e) { replyError(t, "Invalid slot:" + message[i]); return; }
+                if (slot < 0 || slot > 16384) { replyError(t, "ERR Invalid slot:" + slot); return; }
+                if (server.cluster.slots[slot] != null) { replyError(t, "ERR Slot " + slot + " is already busy"); return; }
+                if (slots[slot]++ == 1) { replyError(t, "ERR Slot " + slot + " specified multiple times"); return; }
+            } catch (Exception e) { replyError(t, "ERR Invalid slot:" + message[i]); return; }
         }
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (slots[i] == 0) continue;

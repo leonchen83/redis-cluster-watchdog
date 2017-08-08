@@ -16,6 +16,7 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.cluster.watchdog.command.CommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
 
 /**
@@ -27,6 +28,8 @@ public interface ClusterWatchdog extends Resourcable {
     void setStorageEngine(StorageEngine engine);
 
     ClusterConfiguration getClusterConfiguration();
+
+    CommandHandler addCommandHandler(String name, CommandHandler handler);
 
     ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener);
 

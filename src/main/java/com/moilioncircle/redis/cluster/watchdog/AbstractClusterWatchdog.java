@@ -16,6 +16,7 @@
 
 package com.moilioncircle.redis.cluster.watchdog;
 
+import com.moilioncircle.redis.cluster.watchdog.command.CommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
 
@@ -41,6 +42,11 @@ public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
     @Override
     public ClusterConfiguration getClusterConfiguration() {
         return this.configuration;
+    }
+
+    @Override
+    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
+        return managers.addCommandHandler(name, handler);
     }
 
     @Override

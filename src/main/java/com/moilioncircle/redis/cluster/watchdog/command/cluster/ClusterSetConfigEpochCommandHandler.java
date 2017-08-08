@@ -39,19 +39,19 @@ public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler 
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         long epoch;
         try { epoch = parseLong(message[2]); }
-        catch (Exception e) { replyError(t, "Invalid config epoch specified: " + message[2]); return; }
+        catch (Exception e) { replyError(t, "ERR Invalid config epoch specified: " + message[2]); return; }
 
         if (epoch < 0) {
-            replyError(t, "Invalid config epoch specified: " + epoch);
+            replyError(t, "ERR Invalid config epoch specified: " + epoch);
         } else if (server.myself.configEpoch != 0) {
-            replyError(t, "Node config epoch is already non-zero");
+            replyError(t, "ERR Node config epoch is already non-zero");
         } else if (server.cluster.nodes.size() > 1) {
-            replyError(t, "The user can assign a config epoch only when the node does not know any other node.");
+            replyError(t, "ERR The user can assign a config epoch only when the node does not know any other node.");
         } else {
             server.myself.configEpoch = epoch;
             logger.info("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");

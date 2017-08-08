@@ -17,6 +17,7 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
 import com.moilioncircle.redis.cluster.watchdog.*;
+import com.moilioncircle.redis.cluster.watchdog.command.CommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import com.moilioncircle.redis.cluster.watchdog.storage.DefaultStorageEngine;
 import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
@@ -145,6 +146,10 @@ public class ClusterManagers implements Resourcable {
      */
     public void setStorageEngine(StorageEngine engine) {
         this.engine = engine;
+    }
+
+    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
+        return this.commands.addCommandHandler(name, handler);
     }
 
     public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {

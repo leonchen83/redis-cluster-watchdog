@@ -38,18 +38,18 @@ public class ClusterGetKeysInSlotCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 4) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         int slot;
         try { slot = parseInt(message[2]); }
-        catch (Exception e) { replyError(t, "Invalid slot:" + message[2]); return; }
-        if (slot < 0 || slot > 16384) { replyError(t, "Invalid slot:" + slot); return; }
+        catch (Exception e) { replyError(t, "ERR Invalid slot:" + message[2]); return; }
+        if (slot < 0 || slot > 16384) { replyError(t, "ERR Invalid slot:" + slot); return; }
 
         long max;
         try { max = parseLong(message[3]); }
-        catch (Exception e) { replyError(t, "Invalid number of keys:" + message[3]); return; }
-        if (max < 0) { replyError(t, "Invalid number of keys:" + max); return; }
+        catch (Exception e) { replyError(t, "ERR Invalid number of keys:" + message[3]); return; }
+        if (max < 0) { replyError(t, "ERR Invalid number of keys:" + max); return; }
 
         max = Math.min(managers.slots.countKeysInSlot(slot), max);
         Iterator<byte[]> it = managers.slots.getKeysInSlot(slot);

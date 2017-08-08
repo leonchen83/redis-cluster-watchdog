@@ -43,46 +43,46 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length < 4) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         if (nodeIsSlave(server.myself)) {
-            replyError(t, "Please use SETSLOT only with masters."); return;
+            replyError(t, "ERR Please use SETSLOT only with masters."); return;
         }
 
         int slot;
         try { slot = parseInt(message[2]); }
-        catch (Exception e) { replyError(t, "Invalid slot:" + message[2]); return; }
-        if (slot < 0 || slot > 16384) { replyError(t, "Invalid slot:" + slot); return; }
+        catch (Exception e) { replyError(t, "ERR Invalid slot:" + message[2]); return; }
+        if (slot < 0 || slot > 16384) { replyError(t, "ERR Invalid slot:" + slot); return; }
 
         if (message[3] == null) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         if (message[3].equalsIgnoreCase("migrating") && message.length == 5) {
             if (!Objects.equals(server.cluster.slots[slot], server.myself)) {
-                replyError(t, "I'm not the owner of hash slot " + slot); return;
+                replyError(t, "ERR I'm not the owner of hash slot " + slot); return;
             }
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
-            if (n == null) { replyError(t, "I don't know fail node " + message[4]); return; }
+            if (n == null) { replyError(t, "ERR I don't know fail node " + message[4]); return; }
             server.cluster.migrating[slot] = n;
         } else if (message[3].equalsIgnoreCase("importing") && message.length == 5) {
             if (Objects.equals(server.cluster.slots[slot], server.myself)) {
-                replyError(t, "I'm already the owner of hash slot " + slot); return;
+                replyError(t, "ERR I'm already the owner of hash slot " + slot); return;
             }
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
-            if (n == null) { replyError(t, "I don't know fail node " + message[4]); return; }
+            if (n == null) { replyError(t, "ERR I don't know fail node " + message[4]); return; }
             server.cluster.importing[slot] = n;
         } else if (message[3].equalsIgnoreCase("stable") && message.length == 4) {
             server.cluster.importing[slot] = null; server.cluster.migrating[slot] = null;
         } else if (message[3].equalsIgnoreCase("node") && message.length == 5) {
             /* CLUSTER SETSLOT <SLOT> NODE <NODE ID> */
             ClusterNode n = managers.nodes.clusterLookupNode(message[4]);
-            if (n == null) { replyError(t, "Unknown node " + message[4]); return; }
+            if (n == null) { replyError(t, "ERR Unknown node " + message[4]); return; }
             if (Objects.equals(server.cluster.slots[slot], server.myself)
                     && !Objects.equals(n, server.myself)
                     && managers.slots.countKeysInSlot(slot) != 0) {
-                replyError(t, "Can't assign hashslot " + slot + " to a different node while I still hold keys for this hash slot.");
+                replyError(t, "ERR Can't assign hashslot " + slot + " to a different node while I still hold keys for this hash slot.");
                 return;
             }
             if (managers.slots.countKeysInSlot(slot) == 0 && server.cluster.migrating[slot] != null)
@@ -95,7 +95,7 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
             }
             managers.slots.clusterDelSlot(slot); managers.slots.clusterAddSlot(n, slot);
         } else {
-            replyError(t, "Invalid CLUSTER SETSLOT action or number of arguments"); return;
+            replyError(t, "ERR Invalid CLUSTER SETSLOT action or number of arguments"); return;
         }
         managers.states.clusterUpdateState(); reply(t, "OK");
     }

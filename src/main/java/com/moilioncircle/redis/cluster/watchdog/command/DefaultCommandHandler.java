@@ -20,8 +20,8 @@ import com.moilioncircle.redis.cluster.watchdog.command.cluster.ClusterCommandHa
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Leon Chen
@@ -29,34 +29,37 @@ import java.util.Map;
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
 
-    private Map<String, CommandHandler> handlers = new HashMap<>();
+    private Map<String, CommandHandler> handlers = new ConcurrentHashMap<>();
     public CommandHandler get(String name) { return handlers.get(name.toLowerCase()); }
-    public void register(String name, CommandHandler handler) { handlers.put(name.toLowerCase(), handler); }
+
+    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
+        return handlers.put(name.toLowerCase(), handler);
+    }
 
     public DefaultCommandHandler(ClusterManagers managers) {
         super(managers);
-        register("ping", new PingCommandHandler(managers));
-        register("info", new InfoCommandHandler(managers));
-        register("dump", new DumpCommandHandler(managers));
-        register("dbsize", new DBSizeCommandHandler(managers));
-        register("config", new ConfigCommandHandler(managers));
-        register("select", new SelectCommandHandler(managers));
-        register("cluster", new ClusterCommandHandler(managers));
-        register("restore", new RestoreCommandHandler(managers));
-        register("shutdown", new ShutdownCommandHandler(managers));
-        register("readonly", new ReadonlyCommandHandler(managers));
-        register("readwrite", new ReadWriteCommandHandler(managers));
-        register("restore-asking", new RestoreCommandHandler(managers));
+        addCommandHandler("ping", new PingCommandHandler(managers));
+        addCommandHandler("info", new InfoCommandHandler(managers));
+        addCommandHandler("dump", new DumpCommandHandler(managers));
+        addCommandHandler("dbsize", new DBSizeCommandHandler(managers));
+        addCommandHandler("config", new ConfigCommandHandler(managers));
+        addCommandHandler("select", new SelectCommandHandler(managers));
+        addCommandHandler("cluster", new ClusterCommandHandler(managers));
+        addCommandHandler("restore", new RestoreCommandHandler(managers));
+        addCommandHandler("shutdown", new ShutdownCommandHandler(managers));
+        addCommandHandler("readonly", new ReadonlyCommandHandler(managers));
+        addCommandHandler("readwrite", new ReadWriteCommandHandler(managers));
+        addCommandHandler("restore-asking", new RestoreCommandHandler(managers));
     }
 
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length <= 0 || message[0] == null) {
-            replyError(t, "Unsupported COMMAND"); return;
+            replyError(t, "ERR Unsupported COMMAND"); return;
         }
         CommandHandler handler = get(message[0]);
         if (handler == null) {
-            replyError(t, "Unsupported COMMAND"); return;
+            replyError(t, "ERR Unsupported COMMAND"); return;
         }
         handler.handle(t, message, rawMessage);
     }

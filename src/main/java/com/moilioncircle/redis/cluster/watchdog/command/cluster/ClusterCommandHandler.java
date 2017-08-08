@@ -35,40 +35,43 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
 
     private Map<String, CommandHandler> clusterHandlers = new HashMap<>();
     public CommandHandler get(String name) { return clusterHandlers.get(name.toLowerCase()); }
-    public void register(String name, CommandHandler handler) { clusterHandlers.put(name.toLowerCase(), handler); }
+
+    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
+        return clusterHandlers.put(name.toLowerCase(), handler);
+    }
 
     public ClusterCommandHandler(ClusterManagers managers) {
         super(managers);
-        register("meet", new ClusterMeetCommandHandler(managers));
-        register("myid", new ClusterMyIDCommandHandler(managers));
-        register("info", new ClusterInfoCommandHandler(managers));
-        register("nodes", new ClusterNodesCommandHandler(managers));
-        register("slots", new ClusterSlotsCommandHandler(managers));
-        register("reset", new ClusterResetCommandHandler(managers));
-        register("forget", new ClusterForgetCommandHandler(managers));
-        register("slaves", new ClusterSlavesCommandHandler(managers));
-        register("keyslot", new ClusterKeySlotCommandHandler(managers));
-        register("setslot", new ClusterSetSlotCommandHandler(managers));
-        register("addslots", new ClusterAddSlotsCommandHandler(managers));
-        register("delslots", new ClusterDelSlotsCommandHandler(managers));
-        register("bumpepoch", new ClusterBumpEpochCommandHandler(managers));
-        register("replicate", new ClusterReplicateCommandHandler(managers));
-        register("saveconfig", new ClusterSaveConfigCommandHandler(managers));
-        register("flushslots", new ClusterFlushSlotsCommandHandler(managers));
-        register("getkeysinslot", new ClusterGetKeysInSlotCommandHandler(managers));
-        register("countkeysinslot", new ClusterCountKeysInSlotCommandHandler(managers));
-        register("set-config-epoch", new ClusterSetConfigEpochCommandHandler(managers));
-        register("count-failure-reports", new ClusterCountFailureReportsCommandHandler(managers));
+        addCommandHandler("meet", new ClusterMeetCommandHandler(managers));
+        addCommandHandler("myid", new ClusterMyIDCommandHandler(managers));
+        addCommandHandler("info", new ClusterInfoCommandHandler(managers));
+        addCommandHandler("nodes", new ClusterNodesCommandHandler(managers));
+        addCommandHandler("slots", new ClusterSlotsCommandHandler(managers));
+        addCommandHandler("reset", new ClusterResetCommandHandler(managers));
+        addCommandHandler("forget", new ClusterForgetCommandHandler(managers));
+        addCommandHandler("slaves", new ClusterSlavesCommandHandler(managers));
+        addCommandHandler("keyslot", new ClusterKeySlotCommandHandler(managers));
+        addCommandHandler("setslot", new ClusterSetSlotCommandHandler(managers));
+        addCommandHandler("addslots", new ClusterAddSlotsCommandHandler(managers));
+        addCommandHandler("delslots", new ClusterDelSlotsCommandHandler(managers));
+        addCommandHandler("bumpepoch", new ClusterBumpEpochCommandHandler(managers));
+        addCommandHandler("replicate", new ClusterReplicateCommandHandler(managers));
+        addCommandHandler("saveconfig", new ClusterSaveConfigCommandHandler(managers));
+        addCommandHandler("flushslots", new ClusterFlushSlotsCommandHandler(managers));
+        addCommandHandler("getkeysinslot", new ClusterGetKeysInSlotCommandHandler(managers));
+        addCommandHandler("countkeysinslot", new ClusterCountKeysInSlotCommandHandler(managers));
+        addCommandHandler("set-config-epoch", new ClusterSetConfigEpochCommandHandler(managers));
+        addCommandHandler("count-failure-reports", new ClusterCountFailureReportsCommandHandler(managers));
     }
 
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length < 2 || message[1] == null) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         CommandHandler handler = get(message[1]);
         if (handler == null) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
         managers.cron.execute(() -> {
             ClusterConfigInfo previous;

@@ -33,7 +33,7 @@ public class ClusterFlushSlotsCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
         managers.slots.clusterDelNodeSlots(server.myself);

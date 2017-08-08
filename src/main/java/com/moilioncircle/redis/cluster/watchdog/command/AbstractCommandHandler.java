@@ -16,15 +16,16 @@
 
 package com.moilioncircle.redis.cluster.watchdog.command;
 
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
-import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
+import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public abstract class AbstractCommandHandler implements CommandHandler {
+public abstract class AbstractCommandHandler extends CommandHandler.Adaptor {
 
     protected final ServerState server;
     protected final ClusterManagers managers;
@@ -34,29 +35,23 @@ public abstract class AbstractCommandHandler implements CommandHandler {
         this.server = managers.server;
     }
 
-    protected void reply(Transport<byte[][]> t, String message) {
-        reply(t, message.getBytes());
+    @Override
+    public StorageEngine getStorageEngine() {
+        return managers.engine;
     }
 
-    protected void reply(Transport<byte[][]> t, byte[] message) {
-        t.write("+".getBytes(), false);
-        t.write(message, false); t.write("\r\n".getBytes(), true);
+    @Override
+    public void setStorageEngine(StorageEngine storageEngine) {
+        throw new UnsupportedOperationException();
     }
 
-    protected void replyNumber(Transport<byte[][]> t, long number) {
-        t.write((":" + number + "\r\n").getBytes(), true);
+    @Override
+    public ClusterConfiguration getConfiguration() {
+        return managers.configuration;
     }
 
-    protected void replyBulk(Transport<byte[][]> t, String message) {
-        replyBulk(t, message.getBytes());
-    }
-
-    protected void replyBulk(Transport<byte[][]> t, byte[] message) {
-        t.write(("$" + message.length + "\r\n").getBytes(), false);
-        t.write(message, false); t.write("\r\n".getBytes(), true);
-    }
-
-    protected void replyError(Transport<byte[][]> t, String message) {
-        t.write(("-ERR " + message + "\r\n").getBytes(), true);
+    @Override
+    public void setConfiguration(ClusterConfiguration configuration) {
+        throw new UnsupportedOperationException();
     }
 }

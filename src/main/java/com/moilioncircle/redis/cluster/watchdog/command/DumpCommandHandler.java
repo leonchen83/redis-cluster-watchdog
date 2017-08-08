@@ -32,11 +32,11 @@ public class DumpCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (rawMessage.length != 2) {
-            replyError(t, "wrong number of arguments for 'dump' command"); return;
+            replyError(t, "ERR wrong number of arguments for 'dump' command"); return;
         }
 
         byte[] key = rawMessage[1];
-        if (key == null) { replyError(t, "Invalid key: null"); return; }
+        if (key == null) { replyError(t, "ERR Invalid key: null"); return; }
         replyBulk(t, managers.engine.dump(key));
     }
 }
