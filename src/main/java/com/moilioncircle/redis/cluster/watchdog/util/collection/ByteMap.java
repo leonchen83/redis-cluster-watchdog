@@ -1,5 +1,6 @@
 package com.moilioncircle.redis.cluster.watchdog.util.collection;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.*;
 
 import static java.util.Arrays.fill;
@@ -8,6 +9,7 @@ import static java.util.Arrays.fill;
  * @author Leon Chen
  * @since 1.0.0
  */
+@NotThreadSafe
 @SuppressWarnings("unchecked")
 public class ByteMap<V> implements Map<Byte, V> {
     //

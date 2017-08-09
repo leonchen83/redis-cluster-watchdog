@@ -18,6 +18,7 @@ package com.moilioncircle.redis.cluster.watchdog.storage;
 
 import com.moilioncircle.redis.cluster.watchdog.Resourcable;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.Iterator;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
@@ -27,7 +28,7 @@ import static com.moilioncircle.redis.cluster.watchdog.util.CRC16.crc16;
  * @author Leon Chen
  * @since 1.0.0
  */
-//@ThreadSafe
+@ThreadSafe
 public interface StorageEngine extends Resourcable {
 
     long size();
