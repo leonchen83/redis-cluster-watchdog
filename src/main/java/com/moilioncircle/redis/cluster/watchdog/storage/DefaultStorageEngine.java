@@ -78,6 +78,11 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
+    public long ttl(byte[] key) {
+        return 0L;
+    }
+
+    @Override
     public void delete(byte[] key) {
     }
 

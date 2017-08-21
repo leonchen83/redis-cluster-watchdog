@@ -48,6 +48,8 @@ public interface StorageEngine extends Resourcable {
     /**
      *
      */
+    long ttl(byte[] key);
+
     void delete(byte[] key);
 
     Object load(byte[] key);

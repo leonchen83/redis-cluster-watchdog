@@ -100,6 +100,15 @@ public class RedisStorageEngine implements StorageEngine {
     }
 
     @Override
+    public long ttl(byte[] key) {
+        Tuple2<Long, Object> v = slots[StorageEngine.keyHashSlot(key)].get(new Key(key));
+        if (v == null) return -2L;
+        long now = System.currentTimeMillis();
+        if (v.getV1() != 0 && v.getV1() < now) return -1L;
+        else if (v.getV1() == 0) return 0L; else return v.getV1() - now;
+    }
+
+    @Override
     public void delete(byte[] key) {
         if (slots[StorageEngine.keyHashSlot(key)].remove(new Key(key)) != null) {
             size.decrementAndGet();
