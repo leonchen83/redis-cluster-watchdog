@@ -1,12 +1,18 @@
 package com.moilioncircle.redis.cluster.watchdog.util.type;
 
+import com.moilioncircle.redis.cluster.watchdog.util.Iterators;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 
 /**
  * @author Leon Chen
  * @since 1.0.0
  */
-public class Tuple5<T1, T2, T3, T4, T5> {
+public class Tuple5<T1, T2, T3, T4, T5> implements Iterable<Object> {
     private final T1 v1;
     private final T2 v2;
     private final T3 v3;
@@ -78,7 +84,33 @@ public class Tuple5<T1, T2, T3, T4, T5> {
     }
 
     @Override
+    public Iterator<Object> iterator() {
+        return Iterators.iterator(getV1(), getV2(), getV3(), getV4(), getV5());
+    }
+
+    @Override
     public String toString() {
         return "[" + v1 + ", " + v2 + ", " + v3 + ", " + v4 + ", " + v5 + "]";
+    }
+
+    public static <V> Tuple5<V, V, V, V, V> from(V... ary) {
+        if (ary == null || ary.length != 5) throw new IllegalArgumentException();
+        return new Tuple5<>(ary[0], ary[1], ary[2], ary[3], ary[4]);
+    }
+
+    public static <V> Tuple5<V, V, V, V, V> from(Iterator<V> iterator) {
+        List<V> list = new ArrayList<>();
+        while (iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        return from(list.toArray((V[]) new Object[list.size()]));
+    }
+
+    public static <V> Tuple5<V, V, V, V, V> from(Iterable<V> iterable) {
+        return from(iterable.iterator());
+    }
+
+    public static <V> Tuple5<V, V, V, V, V> from(Collection<V> collection) {
+        return from((Iterable<V>) collection);
     }
 }
