@@ -281,7 +281,7 @@ public class ThinGossip implements Resourcable {
         }
     }
 
-    private class InitiatorTransportListener implements TransportListener<RCmbMessage> {
+    private class InitiatorTransportListener extends TransportListener.Adaptor<RCmbMessage> {
 
         private final ClusterLink link;
         private InitiatorTransportListener(ClusterLink link) {
@@ -312,7 +312,7 @@ public class ThinGossip implements Resourcable {
         }
     }
 
-    private class AcceptorTransportListener implements TransportListener<RCmbMessage> {
+    private class AcceptorTransportListener extends TransportListener.Adaptor<RCmbMessage> {
         @Override
         public void onConnected(Transport<RCmbMessage> t) {
             if (configuration.isVerbose()) logger.info("[acceptor] > " + t);

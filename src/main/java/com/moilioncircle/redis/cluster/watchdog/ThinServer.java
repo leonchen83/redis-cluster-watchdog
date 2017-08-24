@@ -79,7 +79,7 @@ public class ThinServer implements Resourcable {
         }
     }
 
-    private class RedisTransportListener implements TransportListener<byte[][]> {
+    private class RedisTransportListener extends TransportListener.Adaptor<byte[][]> {
         @Override
         public void onConnected(Transport<byte[][]> t) {
             if (configuration.isVerbose()) logger.info("[acceptor] > " + t);
