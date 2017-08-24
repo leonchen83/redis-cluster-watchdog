@@ -16,6 +16,9 @@
 
 package com.moilioncircle.redis.cluster.watchdog.util.concurrent.future;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,6 +29,8 @@ import java.util.concurrent.FutureTask;
  * @since 1.0.0
  */
 public class ListenableRunnableFuture<T> extends FutureTask<T> implements CompletableFuture<T> {
+
+    protected static final Log logger = LogFactory.getLog(ListenableRunnableFuture.class);
 
     protected final List<FutureListener<T>> listeners = new CopyOnWriteArrayList<>();
 
@@ -40,14 +45,14 @@ public class ListenableRunnableFuture<T> extends FutureTask<T> implements Comple
     @Override
     protected void done() {
         if (listeners.isEmpty()) return;
-        for (FutureListener<T> listener : listeners) listener.onComplete(this);
+        for (FutureListener<T> listener : listeners) notifyListener(listener);
     }
 
     @Override
     public boolean addListener(FutureListener<T> listener) {
         boolean rs = listeners.add(listener);
         if (this.isDone() && !listeners.isEmpty()) {
-            for (FutureListener<T> r : listeners) r.onComplete(this);
+            for (FutureListener<T> r : listeners) notifyListener(r);
         }
         return rs;
     }
@@ -61,7 +66,7 @@ public class ListenableRunnableFuture<T> extends FutureTask<T> implements Comple
     public boolean addListeners(List<FutureListener<T>> listeners) {
         boolean rs = this.listeners.addAll(listeners);
         if (this.isDone() && !this.listeners.isEmpty()) {
-            for (FutureListener<T> r : this.listeners) r.onComplete(this);
+            for (FutureListener<T> r : this.listeners) notifyListener(r);
         }
         return rs;
     }
@@ -69,6 +74,14 @@ public class ListenableRunnableFuture<T> extends FutureTask<T> implements Comple
     @Override
     public boolean removeListeners(List<FutureListener<T>> listeners) {
         return this.listeners.removeAll(listeners);
+    }
+
+    protected void notifyListener(FutureListener<T> listener) {
+        try {
+            listener.onComplete(this);
+        } catch (Throwable e) {
+            logger.warn("An exception was thrown by " + this.getClass().getName() + ".onComplete()", e);
+        }
     }
 
 }
