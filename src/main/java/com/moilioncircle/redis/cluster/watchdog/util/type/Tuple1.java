@@ -18,6 +18,7 @@ package com.moilioncircle.redis.cluster.watchdog.util.type;
 
 import com.moilioncircle.redis.cluster.watchdog.util.Iterators;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -92,5 +93,16 @@ public class Tuple1<T1> implements Iterable<T1> {
 
     public static <V> Tuple1<V> from(Collection<V> collection) {
         return from((Iterable<V>) collection);
+    }
+
+    public Object[] toArray() {
+        return new Object[]{getV1()};
+    }
+
+    public <T> T[] toArray(Class<T> clazz) {
+        T[] ary = (T[]) Array.newInstance(clazz, 5);
+        if (!clazz.isInstance(getV1())) throw new UnsupportedOperationException();
+        ary[0] = (T) getV1();
+        return ary;
     }
 }

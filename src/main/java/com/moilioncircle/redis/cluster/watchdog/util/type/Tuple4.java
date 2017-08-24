@@ -2,6 +2,7 @@ package com.moilioncircle.redis.cluster.watchdog.util.type;
 
 import com.moilioncircle.redis.cluster.watchdog.util.Iterators;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -104,5 +105,22 @@ public class Tuple4<T1, T2, T3, T4> implements Iterable<Object> {
 
     public static <V> Tuple4<V, V, V, V> from(Collection<V> collection) {
         return from((Iterable<V>) collection);
+    }
+
+    public Object[] toArray() {
+        return new Object[]{getV1(), getV2(), getV3(), getV4()};
+    }
+
+    public <T> T[] toArray(Class<T> clazz) {
+        T[] ary = (T[]) Array.newInstance(clazz, 4);
+        if (!clazz.isInstance(getV1())) throw new UnsupportedOperationException();
+        ary[0] = (T) getV1();
+        if (!clazz.isInstance(getV2())) throw new UnsupportedOperationException();
+        ary[1] = (T) getV2();
+        if (!clazz.isInstance(getV3())) throw new UnsupportedOperationException();
+        ary[2] = (T) getV3();
+        if (!clazz.isInstance(getV4())) throw new UnsupportedOperationException();
+        ary[3] = (T) getV4();
+        return ary;
     }
 }
