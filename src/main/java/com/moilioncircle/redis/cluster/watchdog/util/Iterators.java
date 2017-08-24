@@ -29,6 +29,7 @@ public class Iterators {
         return iterator(t);
     }
 
+    @SafeVarargs
     public static <T> Iterator<T> iterator(T... t) {
         return t == null ? null : new Iter<>(t);
     }
@@ -37,6 +38,7 @@ public class Iterators {
         private final T[] t;
         private int idx = 0;
 
+        @SafeVarargs
         private Iter(final T... t) {
             this.t = t;
         }

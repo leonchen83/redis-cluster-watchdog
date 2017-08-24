@@ -12,6 +12,7 @@ import java.util.function.Function;
  * @author Leon Chen
  * @since 1.0.0
  */
+@SuppressWarnings("unchecked")
 public class Tuple4<T1, T2, T3, T4> implements Iterable<Object> {
     private final T1 v1;
     private final T2 v2;

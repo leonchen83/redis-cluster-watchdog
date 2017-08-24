@@ -28,6 +28,7 @@ import java.util.function.Function;
  * @author Leon Chen
  * @since 1.0.0
  */
+@SuppressWarnings("unchecked")
 public class Tuple1<T1> implements Iterable<T1> {
     private final T1 v1;
 
