@@ -19,7 +19,6 @@ package com.moilioncircle.redis.cluster.watchdog.util.concurrent.future;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -78,12 +77,10 @@ public class ListenableRunnableFuture<T> extends FutureTask<T> implements Comple
         if (this.listeners.isEmpty()) return;
         if (this.notifying.compareAndSet(false, true)) {
             while (!this.listeners.isEmpty()) {
-                List<FutureListener<T>> notified = new ArrayList<>();
                 for (FutureListener<T> r : this.listeners) {
                     notifyListener(r);
-                    notified.add(r);
+                    this.listeners.remove(r);
                 }
-                this.listeners.removeAll(notified);
             }
             this.notifying.compareAndSet(true, false);
         } else {
