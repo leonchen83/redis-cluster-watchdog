@@ -107,9 +107,7 @@ public class ListenableFuture<T> extends AbstractCompletableFuture<T> {
         if (!this.status.compareAndSet(NEW, COMPLETING)) return false;
         this.object = value; this.status.set(NORMAL); latch.countDown();
         if (listeners.isEmpty()) return true;
-        for (FutureListener<T> listener : listeners) {
-            notifyListener(listener);
-        }
+        notifyListeners();
         return true;
     }
 
@@ -121,9 +119,7 @@ public class ListenableFuture<T> extends AbstractCompletableFuture<T> {
         if (!this.status.compareAndSet(NEW, COMPLETING)) return false;
         this.object = cause; this.status.set(EXCEPTIONAL); latch.countDown();
         if (listeners.isEmpty()) return true;
-        for (FutureListener<T> listener : listeners) {
-            notifyListener(listener);
-        }
+        notifyListeners();
         return true;
     }
 }
