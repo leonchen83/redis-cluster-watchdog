@@ -134,4 +134,8 @@ public class Tuple5<T1, T2, T3, T4, T5> implements Iterable<Object> {
         ary[4] = (T) getV5();
         return ary;
     }
+
+    public <T> T toObject(Function<Tuple5<T1, T2, T3, T4, T5>, T> func) {
+        return func.apply(this);
+    }
 }

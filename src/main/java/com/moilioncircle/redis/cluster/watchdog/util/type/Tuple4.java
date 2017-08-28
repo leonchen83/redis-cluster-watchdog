@@ -123,4 +123,8 @@ public class Tuple4<T1, T2, T3, T4> implements Iterable<Object> {
         ary[3] = (T) getV4();
         return ary;
     }
+
+    public <T> T toObject(Function<Tuple4<T1, T2, T3, T4>, T> func) {
+        return func.apply(this);
+    }
 }

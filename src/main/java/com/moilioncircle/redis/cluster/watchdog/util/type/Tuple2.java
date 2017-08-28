@@ -101,4 +101,8 @@ public class Tuple2<T1, T2> implements Iterable<Object> {
         ary[1] = (T) getV2();
         return ary;
     }
+
+    public <T> T toObject(Function<Tuple2<T1, T2>, T> func) {
+        return func.apply(this);
+    }
 }

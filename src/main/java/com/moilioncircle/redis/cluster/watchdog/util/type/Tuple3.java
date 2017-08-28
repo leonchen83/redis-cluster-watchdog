@@ -112,4 +112,8 @@ public class Tuple3<T1, T2, T3> implements Iterable<Object> {
         ary[2] = (T) getV3();
         return ary;
     }
+
+    public <T> T toObject(Function<Tuple3<T1, T2, T3>, T> func) {
+        return func.apply(this);
+    }
 }
