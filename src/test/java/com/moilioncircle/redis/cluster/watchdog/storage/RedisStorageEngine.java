@@ -2,7 +2,11 @@ package com.moilioncircle.redis.cluster.watchdog.storage;
 
 import com.moilioncircle.redis.cluster.watchdog.util.Tuples;
 import com.moilioncircle.redis.cluster.watchdog.util.type.Tuple2;
-import com.moilioncircle.redis.replicator.*;
+import com.moilioncircle.redis.replicator.AbstractReplicator;
+import com.moilioncircle.redis.replicator.Configuration;
+import com.moilioncircle.redis.replicator.DefaultExceptionListener;
+import com.moilioncircle.redis.replicator.Replicator;
+import com.moilioncircle.redis.replicator.UncheckedIOException;
 import com.moilioncircle.redis.replicator.cmd.Command;
 import com.moilioncircle.redis.replicator.cmd.CommandListener;
 import com.moilioncircle.redis.replicator.cmd.CommandName;
@@ -13,7 +17,16 @@ import com.moilioncircle.redis.replicator.rdb.BaseRdbParser;
 import com.moilioncircle.redis.replicator.rdb.DefaultRdbVisitor;
 import com.moilioncircle.redis.replicator.rdb.RdbListener;
 import com.moilioncircle.redis.replicator.rdb.RdbVisitor;
-import com.moilioncircle.redis.replicator.rdb.datatype.*;
+import com.moilioncircle.redis.replicator.rdb.datatype.DB;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyStringValueHash;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyStringValueList;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyStringValueModule;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyStringValueSet;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyStringValueString;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyStringValueZSet;
+import com.moilioncircle.redis.replicator.rdb.datatype.KeyValuePair;
+import com.moilioncircle.redis.replicator.rdb.datatype.Module;
+import com.moilioncircle.redis.replicator.rdb.datatype.ZSetEntry;
 import com.moilioncircle.redis.replicator.rdb.module.ModuleParser;
 import com.moilioncircle.redis.replicator.util.ByteArray;
 import com.moilioncircle.redis.replicator.util.ByteArrayMap;
@@ -22,13 +35,38 @@ import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
-import static com.moilioncircle.redis.replicator.Constants.*;
+import static com.moilioncircle.redis.replicator.Constants.MODULE_SET;
+import static com.moilioncircle.redis.replicator.Constants.RDB_LOAD_NONE;
+import static com.moilioncircle.redis.replicator.Constants.RDB_MODULE_OPCODE_EOF;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_HASH;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_HASH_ZIPLIST;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_HASH_ZIPMAP;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_LIST;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_LIST_QUICKLIST;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_LIST_ZIPLIST;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_MODULE;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_MODULE_2;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_SET;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_SET_INTSET;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_STRING;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_ZSET;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_ZSET_2;
+import static com.moilioncircle.redis.replicator.Constants.RDB_TYPE_ZSET_ZIPLIST;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -105,7 +143,8 @@ public class RedisStorageEngine implements StorageEngine {
         if (v == null) return -2L;
         long now = System.currentTimeMillis();
         if (v.getV1() != 0 && v.getV1() < now) return -1L;
-        else if (v.getV1() == 0) return 0L; else return v.getV1() - now;
+        else if (v.getV1() == 0) return 0L;
+        else return v.getV1() - now;
     }
 
     @Override
@@ -201,13 +240,16 @@ public class RedisStorageEngine implements StorageEngine {
 
     private class SlotIter implements Iterator<byte[]> {
         private Iterator<Key> curr;
+
         private SlotIter(int slot) {
             this.curr = slots[slot].keySet().iterator();
         }
+
         @Override
         public boolean hasNext() {
             return curr.hasNext();
         }
+
         @Override
         public byte[] next() {
             return curr.next().key;
