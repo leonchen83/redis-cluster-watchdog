@@ -23,7 +23,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_BROADCAST_ALL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_BROADCAST_LOCAL_SLAVES;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager.bitmapTestBit;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;

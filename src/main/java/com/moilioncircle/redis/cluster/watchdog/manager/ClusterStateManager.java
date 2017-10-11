@@ -7,10 +7,15 @@ import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_MAX_REJOIN_DELAY;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_MIN_REJOIN_DELAY;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_WRITABLE_DELAY;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
-import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodePFailed;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 

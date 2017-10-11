@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.Objects;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
 import static java.lang.Integer.parseInt;
 
@@ -53,7 +54,7 @@ public class ClusterSetSlotCommandHandler extends AbstractCommandHandler {
         int slot;
         try { slot = parseInt(message[2]); }
         catch (Exception e) { replyError(t, "ERR Invalid slot:" + message[2]); return; }
-        if (slot < 0 || slot > 16384) { replyError(t, "ERR Invalid slot:" + slot); return; }
+        if (slot < 0 || slot > CLUSTER_SLOTS) { replyError(t, "ERR Invalid slot:" + slot); return; }
 
         if (message[3] == null) {
             replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;

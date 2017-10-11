@@ -22,6 +22,7 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
 import java.util.Iterator;
 
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 
@@ -44,7 +45,7 @@ public class ClusterGetKeysInSlotCommandHandler extends AbstractCommandHandler {
         int slot;
         try { slot = parseInt(message[2]); }
         catch (Exception e) { replyError(t, "ERR Invalid slot:" + message[2]); return; }
-        if (slot < 0 || slot > 16384) { replyError(t, "ERR Invalid slot:" + slot); return; }
+        if (slot < 0 || slot > CLUSTER_SLOTS) { replyError(t, "ERR Invalid slot:" + slot); return; }
 
         long max;
         try { max = parseLong(message[3]); }

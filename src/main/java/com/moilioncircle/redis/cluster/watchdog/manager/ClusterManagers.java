@@ -16,7 +16,16 @@
 
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
-import com.moilioncircle.redis.cluster.watchdog.*;
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo;
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfigListener;
+import com.moilioncircle.redis.cluster.watchdog.ClusterConfiguration;
+import com.moilioncircle.redis.cluster.watchdog.ClusterNodeInfo;
+import com.moilioncircle.redis.cluster.watchdog.ClusterNodeListener;
+import com.moilioncircle.redis.cluster.watchdog.ClusterState;
+import com.moilioncircle.redis.cluster.watchdog.ClusterStateListener;
+import com.moilioncircle.redis.cluster.watchdog.ClusterWatchdog;
+import com.moilioncircle.redis.cluster.watchdog.ReplicationListener;
+import com.moilioncircle.redis.cluster.watchdog.Resourcable;
 import com.moilioncircle.redis.cluster.watchdog.command.CommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.state.ServerState;
 import com.moilioncircle.redis.cluster.watchdog.storage.DefaultStorageEngine;

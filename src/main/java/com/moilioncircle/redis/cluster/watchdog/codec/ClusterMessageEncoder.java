@@ -9,7 +9,14 @@ import io.netty.handler.codec.MessageToByteEncoder;
 
 import java.util.Arrays;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_MEET;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PING;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PONG;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PUBLISH;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_UPDATE;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_NULL_IP;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_NULL_NAME;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V0;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 

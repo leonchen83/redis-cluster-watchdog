@@ -1,6 +1,14 @@
 package com.moilioncircle.redis.cluster.watchdog.state;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_HANDSHAKE;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MASTER;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MEET;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MIGRATE_TO;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MYSELF;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_NOADDR;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_PFAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_SLAVE;
 
 /**
  * @author Leon Chen

@@ -40,7 +40,7 @@ public class ClusterAddSlotsCommandHandler extends AbstractCommandHandler {
         for (int i = 2; i < message.length; i++) {
             try {
                 int slot = parseInt(message[i]);
-                if (slot < 0 || slot > 16384) { replyError(t, "ERR Invalid slot:" + slot); return; }
+                if (slot < 0 || slot > CLUSTER_SLOTS) { replyError(t, "ERR Invalid slot:" + slot); return; }
                 if (server.cluster.slots[slot] != null) { replyError(t, "ERR Slot " + slot + " is already busy"); return; }
                 if (slots[slot]++ == 1) { replyError(t, "ERR Slot " + slot + " specified multiple times"); return; }
             } catch (Exception e) { replyError(t, "ERR Invalid slot:" + message[i]); return; }

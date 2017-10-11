@@ -1,7 +1,13 @@
 package com.moilioncircle.redis.cluster.watchdog.util.collection;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.util.*;
+import java.util.AbstractCollection;
+import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import static java.util.Arrays.fill;
 
@@ -166,8 +172,7 @@ public class ByteMap<V> implements Map<Byte, V> {
 
         @Override
         public boolean contains(final Object key) {
-            if (key == null || !(key instanceof Byte)) return false;
-            return containsKey(key);
+            return key != null && key instanceof Byte && containsKey(key);
         }
     }
 

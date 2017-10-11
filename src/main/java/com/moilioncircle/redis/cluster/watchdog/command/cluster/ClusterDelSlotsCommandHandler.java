@@ -43,7 +43,7 @@ public class ClusterDelSlotsCommandHandler extends AbstractCommandHandler {
         for (int i = 2; i < message.length; i++) {
             try {
                 int slot = parseInt(message[i]);
-                if (slot < 0 || slot > 16384) { replyError(t, "-ERR Invalid slot:" + slot); return; }
+                if (slot < 0 || slot > CLUSTER_SLOTS) { replyError(t, "-ERR Invalid slot:" + slot); return; }
                 if (server.cluster.slots[slot] == null) {
                     replyError(t, "ERR Slot " + slot + " is already unassigned"); return;
                 }

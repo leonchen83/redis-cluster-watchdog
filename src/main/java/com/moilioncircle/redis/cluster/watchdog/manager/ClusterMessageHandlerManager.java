@@ -1,11 +1,28 @@
 package com.moilioncircle.redis.cluster.watchdog.manager;
 
-import com.moilioncircle.redis.cluster.watchdog.message.handler.*;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageFailHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageFailoverAuthAckHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageFailoverAuthRequestHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageMFStartHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageMeetHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessagePingHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessagePongHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessagePublishHandler;
+import com.moilioncircle.redis.cluster.watchdog.message.handler.ClusterMessageUpdateHandler;
 import com.moilioncircle.redis.cluster.watchdog.util.collection.ByteMap;
 
 import java.util.Map;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_MEET;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_MFSTART;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PING;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PONG;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PUBLISH;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_UPDATE;
 
 /**
  * @author Leon Chen

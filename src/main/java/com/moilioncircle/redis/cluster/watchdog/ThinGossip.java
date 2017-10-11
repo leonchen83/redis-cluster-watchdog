@@ -25,10 +25,25 @@ import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf;
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_MEET;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PING;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MASTER;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MEET;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MYSELF;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_PFAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLAVE_MIGRATION_DELAY;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_FAIL;
 import static com.moilioncircle.redis.cluster.watchdog.ClusterState.CLUSTER_OK;
-import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeHasAddr;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeInHandshake;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeInMeet;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeInMigrate;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMaster;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMyself;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodePFailed;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeWithoutAddr;
 import static java.lang.Math.max;
 import static java.util.concurrent.ThreadLocalRandom.current;
 

@@ -10,16 +10,41 @@ import com.moilioncircle.redis.cluster.watchdog.util.collection.ByteMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_MEET;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_MFSTART;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PING;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PONG;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PUBLISH;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_UPDATE;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NAME_LEN;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_HANDSHAKE;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MASTER;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_MYSELF;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_NOADDR;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_PFAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_NODE_SLAVE;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_PORT_INCR;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
 import static com.moilioncircle.redis.cluster.watchdog.manager.ClusterSlotManager.bitmapTestBit;
-import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMyself;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodePFailed;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.util.stream.Collectors.joining;
@@ -62,12 +87,16 @@ public class ClusterConfigManager {
                 if (args.isEmpty()) continue;
                 if (args.get(0).equals("vars")) {
                     for (int i = 1; i < args.size(); i += 2) {
-                        if (args.get(i).equals("currentEpoch")) {
-                            server.cluster.currentEpoch = parseInt(args.get(i + 1));
-                        } else if (args.get(i).equals("lastVoteEpoch")) {
-                            server.cluster.lastVoteEpoch = parseInt(args.get(i + 1));
-                        } else {
-                            logger.warn("Skipping unknown cluster config variable '" + args.get(i) + "'");
+                        switch (args.get(i)) {
+                            case "currentEpoch":
+                                server.cluster.currentEpoch = parseInt(args.get(i + 1));
+                                break;
+                            case "lastVoteEpoch":
+                                server.cluster.lastVoteEpoch = parseInt(args.get(i + 1));
+                                break;
+                            default:
+                                logger.warn("Skipping unknown cluster config variable '" + args.get(i) + "'");
+                                break;
                         }
                     }
                 } else if (args.size() < 8) {

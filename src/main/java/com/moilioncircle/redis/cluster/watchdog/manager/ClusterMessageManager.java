@@ -32,10 +32,22 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
-import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.*;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_COUNT;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAIL;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PING;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_PONG;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERMSG_TYPE_UPDATE;
+import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_BROADCAST_LOCAL_SLAVES;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V0;
 import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
-import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.*;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeFailed;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeInHandshake;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMyself;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSlave;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodePFailed;
+import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeWithoutAddr;
 import static java.util.concurrent.ThreadLocalRandom.current;
 
 /**
