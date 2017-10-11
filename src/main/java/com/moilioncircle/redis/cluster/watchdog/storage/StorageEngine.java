@@ -33,13 +33,13 @@ public interface StorageEngine extends Resourcable {
 
     long size();
 
-    void clear();
+    long clear();
 
     void persist();
 
     long size(int slot);
 
-    void clear(int slot);
+    long clear(int slot);
 
     Iterator<byte[]> keys();
 
@@ -50,7 +50,7 @@ public interface StorageEngine extends Resourcable {
      */
     long ttl(byte[] key);
 
-    void delete(byte[] key);
+    boolean delete(byte[] key);
 
     Object load(byte[] key);
 
@@ -58,14 +58,14 @@ public interface StorageEngine extends Resourcable {
 
     Class<?> type(byte[] key);
 
-    void save(byte[] key, Object value, long expire, boolean force);
+    boolean save(byte[] key, Object value, long expire, boolean force);
 
     /**
      *
      */
     byte[] dump(byte[] key);
 
-    void restore(byte[] key, byte[] serialized, long expire, boolean force);
+    boolean restore(byte[] key, byte[] serialized, long expire, boolean force);
 
     /**
      *

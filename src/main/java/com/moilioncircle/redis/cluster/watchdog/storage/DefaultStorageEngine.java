@@ -42,7 +42,8 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void clear() {
+    public long clear() {
+        return 0L;
     }
 
     @Override
@@ -60,7 +61,8 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void clear(int slot) {
+    public long clear(int slot) {
+        return 0L;
     }
 
     @Override
@@ -83,7 +85,8 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void delete(byte[] key) {
+    public boolean delete(byte[] key) {
+        return false;
     }
 
     @Override
@@ -102,7 +105,8 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void save(byte[] key, Object value, long expire, boolean force) {
+    public boolean save(byte[] key, Object value, long expire, boolean force) {
+        return false;
     }
 
     @Override
@@ -111,7 +115,8 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void restore(byte[] key, byte[] serialized, long expire, boolean force) {
+    public boolean restore(byte[] key, byte[] serialized, long expire, boolean force) {
+        return false;
     }
 
     @Override

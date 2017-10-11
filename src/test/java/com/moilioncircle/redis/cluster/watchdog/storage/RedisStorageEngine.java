@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_SLOTS;
@@ -104,11 +105,13 @@ public class RedisStorageEngine implements StorageEngine {
     }
 
     @Override
-    public synchronized void clear() {
+    public synchronized long clear() {
+        long rs = 0L;
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
-            clear(i);
+            rs += clear(i);
         }
         assert 0 == size.get();
+        return rs;
     }
 
     @Override
@@ -121,10 +124,11 @@ public class RedisStorageEngine implements StorageEngine {
     }
 
     @Override
-    public synchronized void clear(int slot) {
+    public synchronized long clear(int slot) {
         int size = slots[slot].size();
         slots[slot].clear();
         this.size.addAndGet(-size);
+        return size;
     }
 
     @Override
@@ -148,10 +152,12 @@ public class RedisStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void delete(byte[] key) {
+    public boolean delete(byte[] key) {
         if (slots[StorageEngine.keyHashSlot(key)].remove(new Key(key)) != null) {
             size.decrementAndGet();
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -173,8 +179,8 @@ public class RedisStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void save(byte[] key, Object value, long expire, boolean force) {
-        slots[StorageEngine.keyHashSlot(key)].compute(new Key(key), (k, v) -> {
+    public boolean save(byte[] key, Object value, long expire, boolean force) {
+        Tuple2<Long, Object> r = slots[StorageEngine.keyHashSlot(key)].compute(new Key(key), (k, v) -> {
             if (v == null) {
                 size.incrementAndGet();
                 return Tuples.of(expire, value);
@@ -188,6 +194,7 @@ public class RedisStorageEngine implements StorageEngine {
                 return Tuples.of(expire, value);
             }
         });
+        return r.getV2() == value;
     }
 
     @Override
@@ -196,15 +203,17 @@ public class RedisStorageEngine implements StorageEngine {
     }
 
     @Override
-    public void restore(byte[] key, byte[] serialized, long expire, boolean force) {
+    public boolean restore(byte[] key, byte[] serialized, long expire, boolean force) {
         Replicator replicator = new RestoreReplicator(new ByteArrayInputStream(serialized), Configuration.defaultSetting());
+        AtomicBoolean rs = new AtomicBoolean(false);
         replicator.addRdbListener(new RdbListener.Adaptor() {
             @Override
             public void handle(Replicator replicator, KeyValuePair<?> kv) {
-                save(key, kv.getValue(), expire, force);
+                rs.set(save(key, kv.getValue(), expire, force));
             }
         });
         try { replicator.open(); } catch (IOException e) { }
+        return rs.get();
     }
 
     @Override
