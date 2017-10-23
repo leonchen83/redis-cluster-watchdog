@@ -50,13 +50,13 @@ public interface StorageEngine extends Resourcable {
      */
     long ttl(byte[] key);
 
-    boolean delete(byte[] key);
-
     Object load(byte[] key);
 
     boolean exist(byte[] key);
 
     Class<?> type(byte[] key);
+
+    boolean delete(byte[] key);
 
     boolean save(byte[] key, Object value, long expire, boolean force);
 
@@ -77,14 +77,12 @@ public interface StorageEngine extends Resourcable {
     /**
      *
      */
-    static int keyHashSlot(byte[] key) {
+    static int calcSlot(byte[] key) {
         if (key == null) return 0;
         int st = -1, ed = -1;
         for (int i = 0, len = key.length; i < len; i++) {
             if (key[i] == '{' && st == -1) st = i;
-            if (key[i] == '}' && st >= 0) {
-                ed = i; break;
-            }
+            if (key[i] == '}' && st >= 0) { ed = i; break; }
         }
         if (st >= 0 && ed >= 0 && ed > st + 1)
             return crc16(key, st + 1, ed) & (CLUSTER_SLOTS - 1);

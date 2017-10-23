@@ -143,7 +143,7 @@ public class RedisStorageEngine implements StorageEngine {
 
     @Override
     public long ttl(byte[] key) {
-        Tuple2<Long, Object> v = slots[StorageEngine.keyHashSlot(key)].get(new Key(key));
+        Tuple2<Long, Object> v = slots[StorageEngine.calcSlot(key)].get(new Key(key));
         if (v == null) return -2L;
         long now = System.currentTimeMillis();
         if (v.getV1() != 0 && v.getV1() < now) return -1L;
@@ -153,7 +153,7 @@ public class RedisStorageEngine implements StorageEngine {
 
     @Override
     public boolean delete(byte[] key) {
-        if (slots[StorageEngine.keyHashSlot(key)].remove(new Key(key)) != null) {
+        if (slots[StorageEngine.calcSlot(key)].remove(new Key(key)) != null) {
             size.decrementAndGet();
             return true;
         }
@@ -162,7 +162,7 @@ public class RedisStorageEngine implements StorageEngine {
 
     @Override
     public Object load(byte[] key) {
-        Tuple2<Long, Object> v = slots[StorageEngine.keyHashSlot(key)].get(new Key(key));
+        Tuple2<Long, Object> v = slots[StorageEngine.calcSlot(key)].get(new Key(key));
         if (v == null) return null;
         else if (v.getV1() != 0 && v.getV1() < System.currentTimeMillis()) return null; //expired
         else return v.getV2();
@@ -170,7 +170,7 @@ public class RedisStorageEngine implements StorageEngine {
 
     @Override
     public boolean exist(byte[] key) {
-        return slots[StorageEngine.keyHashSlot(key)].containsKey(new Key(key));
+        return slots[StorageEngine.calcSlot(key)].containsKey(new Key(key));
     }
 
     @Override
@@ -180,7 +180,7 @@ public class RedisStorageEngine implements StorageEngine {
 
     @Override
     public boolean save(byte[] key, Object value, long expire, boolean force) {
-        Tuple2<Long, Object> r = slots[StorageEngine.keyHashSlot(key)].compute(new Key(key), (k, v) -> {
+        Tuple2<Long, Object> r = slots[StorageEngine.calcSlot(key)].compute(new Key(key), (k, v) -> {
             if (v == null) {
                 size.incrementAndGet();
                 return Tuples.of(expire, value);

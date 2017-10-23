@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 leon chen
+ * Copyright 2016-2017 Leon Chen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,16 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @since 1.0.0
  */
 public enum Version {
-    PROTOCOL_V0(0), PROTOCOL_V1(1);
+
+    /**
+     * redis-3.0 ~ redis-3.2.
+     */
+    PROTOCOL_V0(0),
+
+    /**
+     *  redis-4.0 or greater.
+     */
+    PROTOCOL_V1(1);
 
     private int version;
     public int getVersion() { return version; }

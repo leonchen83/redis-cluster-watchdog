@@ -20,7 +20,7 @@ import com.moilioncircle.redis.cluster.watchdog.command.AbstractCommandHandler;
 import com.moilioncircle.redis.cluster.watchdog.manager.ClusterManagers;
 import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
 
-import static com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine.keyHashSlot;
+import static com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine.calcSlot;
 
 /**
  * @author Leon Chen
@@ -38,6 +38,6 @@ public class ClusterKeySlotCommandHandler extends AbstractCommandHandler {
             replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
         }
 
-        replyNumber(t, keyHashSlot(rawMessage[2]));
+        replyNumber(t, calcSlot(rawMessage[2]));
     }
 }
