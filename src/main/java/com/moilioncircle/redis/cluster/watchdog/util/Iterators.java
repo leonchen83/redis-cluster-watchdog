@@ -30,28 +30,21 @@ public class Iterators {
     }
 
     @SafeVarargs
-    public static <T> Iterator<T> iterator(T... t) {
-        return t == null ? null : new Iter<>(t);
-    }
+    public static <T> Iterator<T> iterator(final T... t) {
+        class Iter implements Iterator<T> {
+            private int idx = 0;
 
-    private static class Iter<T> implements Iterator<T> {
-        private final T[] t;
-        private int idx = 0;
+            @Override
+            public boolean hasNext() {
+                return idx < t.length;
+            }
 
-        @SafeVarargs
-        private Iter(final T... t) {
-            this.t = t;
+            @Override
+            public T next() {
+                if (!hasNext()) throw new NoSuchElementException();
+                return t[idx++];
+            }
         }
-
-        @Override
-        public boolean hasNext() {
-            return idx < t.length;
-        }
-
-        @Override
-        public T next() {
-            if (!hasNext()) throw new NoSuchElementException();
-            return t[idx++];
-        }
+        return t == null ? null : new Iter();
     }
 }
