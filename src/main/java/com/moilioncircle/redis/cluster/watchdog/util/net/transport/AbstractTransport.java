@@ -42,6 +42,7 @@ public abstract class AbstractTransport<T> extends SimpleChannelInboundHandler<T
         this.id = acc.incrementAndGet();
     }
 
+    @Override
     public boolean acceptInboundMessage(Object msg) throws Exception {
         return true;
     }
