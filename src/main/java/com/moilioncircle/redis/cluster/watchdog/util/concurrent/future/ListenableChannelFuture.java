@@ -63,6 +63,6 @@ public class ListenableChannelFuture<T> extends AbstractCompletableFuture<T> imp
 
     @Override
     public void operationComplete(Future<T> future) throws Exception {
-        notifyListeners();
+        listener.onComplete(this);
     }
 }

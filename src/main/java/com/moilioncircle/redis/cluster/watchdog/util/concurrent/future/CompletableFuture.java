@@ -16,7 +16,6 @@
 
 package com.moilioncircle.redis.cluster.watchdog.util.concurrent.future;
 
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -26,6 +25,8 @@ import java.util.function.Function;
  * @since 1.0.0
  */
 public interface CompletableFuture<T> extends Future<T> {
+
+    FutureListener<T> setListener(FutureListener<T> listener);
 
     default boolean isSuccess() {
         if (!isDone()) return false;
@@ -47,19 +48,11 @@ public interface CompletableFuture<T> extends Future<T> {
 
     default <U> CompletableFuture<U> map(Function<T, U> function) {
         CompletableFuture<U> r = new ListenableFuture<>();
-        this.addListener(f -> {
+        this.setListener(f -> {
             try { r.success(function.apply(f.get())); }
             catch (ExecutionException e) { r.failure(e); }
             catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         });
         return r;
     }
-
-    boolean addListener(FutureListener<T> listener);
-
-    boolean removeListener(FutureListener<T> listener);
-
-    boolean addListeners(List<FutureListener<T>> listeners);
-
-    boolean removeListeners(List<FutureListener<T>> listeners);
 }
