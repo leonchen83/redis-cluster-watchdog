@@ -48,7 +48,9 @@ public interface CompletableFuture<T> extends Future<T> {
 
     default <U> CompletableFuture<U> map(Function<T, U> function) {
         CompletableFuture<U> r = new ListenableFuture<>();
+        FutureListener<T> old = this.setListener(null);
         this.setListener(f -> {
+            if (old != null) old.onComplete(this);
             try { r.success(function.apply(f.get())); }
             catch (ExecutionException e) { r.failure(e); }
             catch (InterruptedException e) { Thread.currentThread().interrupt(); }
