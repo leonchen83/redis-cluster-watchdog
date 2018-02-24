@@ -392,6 +392,9 @@ public class ClusterConfigManager {
                                 case 'f':
                                     s.append('\f');
                                     break;
+                                case 'a':
+                                    s.append((byte)7);
+                                    break;
                                 case 'x':
                                     if (i + 2 >= ary.length) s.append("\\x");
                                     else {
