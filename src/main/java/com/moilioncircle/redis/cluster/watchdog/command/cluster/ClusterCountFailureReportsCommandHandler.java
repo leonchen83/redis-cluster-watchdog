@@ -26,19 +26,21 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @since 1.0.0
  */
 public class ClusterCountFailureReportsCommandHandler extends AbstractCommandHandler {
-
+    
     public ClusterCountFailureReportsCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
-
+        
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
-        if (node == null) { replyError(t, "ERR Unknown node " + message[2]); }
-        else replyNumber(t, managers.nodes.clusterNodeFailureReportsCount(node));
+        if (node == null) {
+            replyError(t, "ERR Unknown node " + message[2]);
+        } else replyNumber(t, managers.nodes.clusterNodeFailureReportsCount(node));
     }
 }

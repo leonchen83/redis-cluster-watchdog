@@ -45,13 +45,9 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTERM
  * @since 1.0.0
  */
 public class ClusterMessageHandlerManager {
-
+    
     private Map<Byte, ClusterMessageHandler> handlers = new ByteMap<>();
-
-    public ClusterMessageHandler get(int type) { return handlers.get((byte) type); }
-
-    public void register(byte type, ClusterMessageHandler handler) { handlers.put(type, handler); }
-
+    
     public ClusterMessageHandlerManager(ClusterManagers managers) {
         register((byte) CLUSTERMSG_TYPE_PING, new ClusterMessagePingHandler(managers));
         register((byte) CLUSTERMSG_TYPE_PONG, new ClusterMessagePongHandler(managers));
@@ -62,5 +58,13 @@ public class ClusterMessageHandlerManager {
         register((byte) CLUSTERMSG_TYPE_MFSTART, new ClusterMessageMFStartHandler(managers));
         register((byte) CLUSTERMSG_TYPE_FAILOVER_AUTH_ACK, new ClusterMessageFailoverAuthAckHandler(managers));
         register((byte) CLUSTERMSG_TYPE_FAILOVER_AUTH_REQUEST, new ClusterMessageFailoverAuthRequestHandler(managers));
+    }
+    
+    public ClusterMessageHandler get(int type) {
+        return handlers.get((byte) type);
+    }
+    
+    public void register(byte type, ClusterMessageHandler handler) {
+        handlers.put(type, handler);
     }
 }

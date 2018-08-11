@@ -24,21 +24,21 @@ import java.util.NoSuchElementException;
  * @since 1.0.0
  */
 public class Iterators {
-
+    
     public static <T> Iterator<T> iterator(T t) {
         return iterator(t);
     }
-
+    
     @SafeVarargs
     public static <T> Iterator<T> iterator(final T... t) {
         class Iter implements Iterator<T> {
             private int idx = 0;
-
+            
             @Override
             public boolean hasNext() {
                 return idx < t.length;
             }
-
+            
             @Override
             public T next() {
                 if (!hasNext()) throw new NoSuchElementException();

@@ -64,8 +64,11 @@ public class NioInitiatorTransport<T> extends AbstractTransport<T> {
 
     @Override
     public <V> CompletableFuture<Void> write(V message, boolean flush) {
-        if (!flush) { return new ListenableChannelFuture<>(channel.write(message)); }
-        else { return new ListenableChannelFuture<>(channel.writeAndFlush(message)); }
+        if (!flush) {
+            return new ListenableChannelFuture<>(channel.write(message));
+        } else {
+            return new ListenableChannelFuture<>(channel.writeAndFlush(message));
+        }
     }
 
     public void setChannel(Channel channel) {

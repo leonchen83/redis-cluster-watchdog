@@ -41,7 +41,7 @@ import static com.moilioncircle.redis.cluster.watchdog.Version.PROTOCOL_V1;
  * @since 1.0.0
  */
 public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
-
+    
     @Override
     protected void encode(ChannelHandlerContext ctx, RCmbMessage msg, ByteBuf out) throws Exception {
         if (!(msg instanceof ClusterMessage)) return;
@@ -50,7 +50,7 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
         else if (hdr.version == PROTOCOL_V1) encodeMessageV1(hdr, out);
         else throw new UnsupportedOperationException("version: " + hdr.version);
     }
-
+    
     protected void encodeMessageV0(ClusterMessage hdr, ByteBuf out) {
         out.writeBytes(hdr.signature.getBytes());
         switch (hdr.type) {
@@ -120,7 +120,7 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
                 break;
         }
     }
-
+    
     protected void encodeMessageV1(ClusterMessage hdr, ByteBuf out) {
         out.writeBytes(hdr.signature.getBytes());
         switch (hdr.type) {
@@ -191,7 +191,7 @@ public class ClusterMessageEncoder extends MessageToByteEncoder<RCmbMessage> {
                 break;
         }
     }
-
+    
     public byte[] extract(String str, byte[] bytes) {
         if (str == null) return bytes;
         byte[] extracted = str.getBytes();

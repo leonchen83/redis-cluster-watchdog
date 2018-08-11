@@ -23,6 +23,8 @@ package com.moilioncircle.redis.cluster.watchdog.state;
 public class ClusterNodeFailReport {
     public ClusterNode node;
     public long createTime = System.currentTimeMillis();
-
-    public ClusterNodeFailReport(ClusterNode node) { this.node = node; }
+    
+    public ClusterNodeFailReport(ClusterNode node) {
+        this.node = node;
+    }
 }

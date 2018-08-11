@@ -26,29 +26,32 @@ import org.apache.commons.logging.LogFactory;
  * @since 1.0.0
  */
 public class ReplicationManager {
-
+    
     private static final Log logger = LogFactory.getLog(ReplicationManager.class);
-
+    
     private ServerState server;
     private ClusterManagers managers;
-
+    
     public ReplicationManager(ClusterManagers managers) {
         this.managers = managers;
         this.server = managers.server;
     }
-
+    
     public long replicationGetSlaveOffset() {
         return managers.notifyReplicationGetSlaveOffset();
     }
-
+    
     public void replicationSetMaster(ClusterNode node) {
         logger.info("replication set [" + node.ip + ":" + node.port + "]");
-        this.server.masterHost = node.ip; this.server.masterPort = node.port;
+        this.server.masterHost = node.ip;
+        this.server.masterPort = node.port;
         managers.notifySetReplication(node.ip, node.port, this.managers.engine);
     }
-
+    
     public void replicationUnsetMaster() {
         logger.info("replication unset [" + server.masterHost + ":" + server.masterPort + "]");
-        managers.notifyUnsetReplication(managers.engine); server.masterHost = null; server.masterPort = 0;
+        managers.notifyUnsetReplication(managers.engine);
+        server.masterHost = null;
+        server.masterPort = 0;
     }
 }

@@ -39,17 +39,21 @@ public class ClusterForgetCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
 
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
 
         if (node == null) {
-            replyError(t, "ERR Unknown node " + message[2]); return;
+            replyError(t, "ERR Unknown node " + message[2]);
+            return;
         } else if (Objects.equals(node, server.myself)) {
-            replyError(t, "ERR I tried hard but I can't forget myself..."); return;
+            replyError(t, "ERR I tried hard but I can't forget myself...");
+            return;
         } else if (nodeIsSlave(server.myself) && Objects.equals(server.myself.master, node)) {
-            replyError(t, "ERR Can't forget my master!"); return;
+            replyError(t, "ERR Can't forget my master!");
+            return;
         }
         managers.blacklists.clusterBlacklistAddNode(node);
         managers.nodes.clusterDelNode(node);

@@ -39,7 +39,8 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
         t.write(clusterReplyMultiBulkSlots().getBytes(), true);
     }
@@ -56,7 +57,8 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
                 if (bit && start == -1) start = i;
                 if (start != -1 && (!bit || i == CLUSTER_SLOTS - 1)) {
                     StringBuilder builder = new StringBuilder();
-                    int elements = 3; if (bit) i++;
+                    int elements = 3;
+                    if (bit) i++;
                     if (start == i - 1) {
                         builder.append(":").append(start).append("\r\n");
                         builder.append(":").append(start).append("\r\n");
@@ -64,7 +66,8 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
                         builder.append(":").append(start).append("\r\n");
                         builder.append(":").append(i - 1).append("\r\n");
                     }
-                    start = -1; builder.append("*3\r\n");
+                    start = -1;
+                    builder.append("*3\r\n");
                     builder.append("$").append(node.ip.length()).append("\r\n").append(node.ip).append("\r\n");
                     builder.append(":").append(node.port).append("\r\n");
                     builder.append("$").append(node.name.length()).append("\r\n").append(node.name).append("\r\n");
@@ -77,7 +80,8 @@ public class ClusterSlotsCommandHandler extends AbstractCommandHandler {
                         elements++;
                     }
                     builder.insert(0, "*" + elements + "\r\n");
-                    r.append(builder.toString()); masters++;
+                    r.append(builder.toString());
+                    masters++;
                 }
             }
         }

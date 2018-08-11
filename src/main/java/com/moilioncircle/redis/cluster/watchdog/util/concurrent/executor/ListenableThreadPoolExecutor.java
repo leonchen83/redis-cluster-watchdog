@@ -36,14 +36,6 @@ public class ListenableThreadPoolExecutor extends ThreadPoolExecutor {
 
     private final List<ExecutorListener> listeners = new CopyOnWriteArrayList<>();
 
-    public void addExecutorListener(ExecutorListener listener) {
-        this.listeners.add(listener);
-    }
-
-    public void removeExecutorListener(ExecutorListener listener) {
-        this.listeners.remove(listener);
-    }
-
     public ListenableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
     }
@@ -58,6 +50,14 @@ public class ListenableThreadPoolExecutor extends ThreadPoolExecutor {
 
     public ListenableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
+    }
+
+    public void addExecutorListener(ExecutorListener listener) {
+        this.listeners.add(listener);
+    }
+
+    public void removeExecutorListener(ExecutorListener listener) {
+        this.listeners.remove(listener);
     }
 
     @Override

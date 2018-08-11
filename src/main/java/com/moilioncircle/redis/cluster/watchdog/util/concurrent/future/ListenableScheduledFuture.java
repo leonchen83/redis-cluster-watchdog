@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ListenableScheduledFuture<T> extends ListenableRunnableFuture<T> implements RunnableScheduledFuture<T> {
 
+    protected static final AtomicLong sequencer = new AtomicLong();
     protected final long sequenceNumber;
     protected final RunnableScheduledFuture<T> future;
-    protected static final AtomicLong sequencer = new AtomicLong();
 
     public ListenableScheduledFuture(Runnable runnable, RunnableScheduledFuture<T> future) {
         super(runnable, null);

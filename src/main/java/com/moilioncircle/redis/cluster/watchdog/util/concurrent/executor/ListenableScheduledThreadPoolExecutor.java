@@ -34,76 +34,76 @@ import java.util.concurrent.TimeUnit;
  */
 public class ListenableScheduledThreadPoolExecutor extends ScheduledThreadPoolExecutor {
     private final List<ExecutorListener> listeners = new CopyOnWriteArrayList<>();
-
-    public void addExecutorListener(ExecutorListener listener) {
-        this.listeners.add(listener);
-    }
-
-    public void removeExecutorListener(ExecutorListener listener) {
-        this.listeners.remove(listener);
-    }
-
+    
     public ListenableScheduledThreadPoolExecutor(int corePoolSize) {
         super(corePoolSize);
     }
-
+    
     public ListenableScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory) {
         super(corePoolSize, threadFactory);
     }
-
+    
     public ListenableScheduledThreadPoolExecutor(int corePoolSize, RejectedExecutionHandler handler) {
         super(corePoolSize, handler);
     }
-
+    
     public ListenableScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
         super(corePoolSize, threadFactory, handler);
     }
-
+    
+    public void addExecutorListener(ExecutorListener listener) {
+        this.listeners.add(listener);
+    }
+    
+    public void removeExecutorListener(ExecutorListener listener) {
+        this.listeners.remove(listener);
+    }
+    
     @Override
     protected <V> RunnableScheduledFuture<V> decorateTask(Callable<V> callable, RunnableScheduledFuture<V> task) {
         return new ListenableScheduledFuture<>(callable, task);
     }
-
+    
     @Override
     protected <V> RunnableScheduledFuture<V> decorateTask(Runnable runnable, RunnableScheduledFuture<V> task) {
         return new ListenableScheduledFuture<>(runnable, task);
     }
-
+    
     @Override
     public ListenableScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
         return (ListenableScheduledFuture<?>) super.schedule(command, delay, unit);
     }
-
+    
     @Override
     public <V> ListenableScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
         return (ListenableScheduledFuture<V>) super.schedule(callable, delay, unit);
     }
-
+    
     @Override
     public ListenableScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
         return (ListenableScheduledFuture<?>) super.scheduleAtFixedRate(command, initialDelay, period, unit);
     }
-
+    
     @Override
     public ListenableScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
         return (ListenableScheduledFuture<?>) super.scheduleWithFixedDelay(command, initialDelay, delay, unit);
     }
-
+    
     @Override
     public ListenableRunnableFuture<?> submit(Runnable task) {
         return (ListenableRunnableFuture<?>) super.submit(task);
     }
-
+    
     @Override
     public <T> ListenableRunnableFuture<T> submit(Runnable task, T result) {
         return (ListenableRunnableFuture<T>) super.submit(task, result);
     }
-
+    
     @Override
     public <T> ListenableRunnableFuture<T> submit(Callable<T> task) {
         return (ListenableRunnableFuture<T>) super.submit(task);
     }
-
+    
     @Override
     protected void beforeExecute(Thread t, Runnable r) {
         super.beforeExecute(t, r);
@@ -111,7 +111,7 @@ public class ListenableScheduledThreadPoolExecutor extends ScheduledThreadPoolEx
             listener.beforeExecute(this, (ListenableRunnableFuture<?>) r);
         }
     }
-
+    
     @Override
     protected void afterExecute(Runnable r, Throwable t) {
         super.afterExecute(r, t);
@@ -119,7 +119,7 @@ public class ListenableScheduledThreadPoolExecutor extends ScheduledThreadPoolEx
             listener.afterExecute(this, (ListenableRunnableFuture<?>) r, t);
         }
     }
-
+    
     @Override
     protected void terminated() {
         super.terminated();

@@ -30,11 +30,12 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @since 1.0.0
  */
 public class ClusterConfigInfo {
-    private long currentEpoch; private long lastVoteEpoch;
+    private long currentEpoch;
+    private long lastVoteEpoch;
     private String[] migrating = new String[CLUSTER_SLOTS];
     private String[] importing = new String[CLUSTER_SLOTS];
     private Map<String, ClusterNodeInfo> nodes = new LinkedHashMap<>();
-
+    
     public static ClusterConfigInfo valueOf(ClusterState state) {
         ClusterConfigInfo info = new ClusterConfigInfo();
         info.nodes = new LinkedHashMap<>();
@@ -42,7 +43,7 @@ public class ClusterConfigInfo {
         info.lastVoteEpoch = state.lastVoteEpoch;
         info.migrating = new String[CLUSTER_SLOTS];
         info.importing = new String[CLUSTER_SLOTS];
-
+        
         for (ClusterNode node : state.nodes.values()) {
             info.nodes.put(node.name, ClusterNodeInfo.valueOf(node, state.myself));
         }
@@ -52,21 +53,21 @@ public class ClusterConfigInfo {
         }
         return info;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
+        
         ClusterConfigInfo that = (ClusterConfigInfo) o;
-
+        
         if (currentEpoch != that.currentEpoch) return false;
         if (lastVoteEpoch != that.lastVoteEpoch) return false;
         if (!nodes.equals(that.nodes)) return false;
         if (!Arrays.equals(migrating, that.migrating)) return false;
         return Arrays.equals(importing, that.importing);
     }
-
+    
     @Override
     public int hashCode() {
         int result = (int) (currentEpoch ^ (currentEpoch >>> 32));
@@ -76,53 +77,53 @@ public class ClusterConfigInfo {
         result = 31 * result + Arrays.hashCode(importing);
         return result;
     }
-
+    
     /**
      *
      */
     public long getCurrentEpoch() {
         return currentEpoch;
     }
-
+    
+    public void setCurrentEpoch(long currentEpoch) {
+        this.currentEpoch = currentEpoch;
+    }
+    
     public long getLastVoteEpoch() {
         return lastVoteEpoch;
     }
-
+    
+    public void setLastVoteEpoch(long lastVoteEpoch) {
+        this.lastVoteEpoch = lastVoteEpoch;
+    }
+    
     public String[] getMigrating() {
         return migrating;
     }
-
-    public String[] getImporting() {
-        return importing;
-    }
-
-    public Map<String, ClusterNodeInfo> getNodes() {
-        return nodes;
-    }
-
+    
     /**
      *
      */
     public void setMigrating(String[] migrating) {
         this.migrating = migrating;
     }
-
+    
+    public String[] getImporting() {
+        return importing;
+    }
+    
     public void setImporting(String[] importing) {
         this.importing = importing;
     }
-
-    public void setCurrentEpoch(long currentEpoch) {
-        this.currentEpoch = currentEpoch;
+    
+    public Map<String, ClusterNodeInfo> getNodes() {
+        return nodes;
     }
-
-    public void setLastVoteEpoch(long lastVoteEpoch) {
-        this.lastVoteEpoch = lastVoteEpoch;
-    }
-
+    
     public void setNodes(Map<String, ClusterNodeInfo> nodes) {
         this.nodes = nodes;
     }
-
+    
     @Override
     public String toString() {
         return "Config:[" + "currentEpoch=" + currentEpoch + ", lastVoteEpoch=" + lastVoteEpoch + ", nodes=" + nodes + ']';

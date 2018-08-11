@@ -29,105 +29,105 @@ public class DefaultStorageEngine implements StorageEngine {
         public boolean hasNext() {
             return false;
         }
-
+        
         @Override
         public byte[] next() {
             return new byte[0];
         }
     };
-
+    
     @Override
     public long size() {
         return 0L;
     }
-
+    
     @Override
     public long clear() {
         return 0L;
     }
-
+    
     @Override
     public void persist() {
     }
-
+    
     @Override
     public boolean readonly() {
         return false;
     }
-
+    
     @Override
     public long size(int slot) {
         return 0L;
     }
-
+    
     @Override
     public long clear(int slot) {
         return 0L;
     }
-
+    
     @Override
     public void readonly(boolean r) {
     }
-
+    
     @Override
     public Iterator<byte[]> keys() {
         return EMPTY;
     }
-
+    
     @Override
     public Iterator<byte[]> keys(int slot) {
         return EMPTY;
     }
-
+    
     @Override
     public long ttl(byte[] key) {
         return 0L;
     }
-
+    
     @Override
     public boolean delete(byte[] key) {
         return false;
     }
-
+    
     @Override
     public Object load(byte[] key) {
         return null;
     }
-
+    
     @Override
     public boolean exist(byte[] key) {
         return false;
     }
-
+    
     @Override
     public Class<?> type(byte[] key) {
         return null;
     }
-
+    
     @Override
     public boolean save(byte[] key, Object value, long expire, boolean force) {
         return false;
     }
-
+    
     @Override
     public byte[] dump(byte[] key) {
         return null;
     }
-
+    
     @Override
     public boolean restore(byte[] key, byte[] serialized, long expire, boolean force) {
         return false;
     }
-
+    
     @Override
     public void start() {
     }
-
+    
     @Override
     public void stop() {
         stop(0, TimeUnit.MILLISECONDS);
     }
-
+    
     @Override
     public void stop(long timeout, TimeUnit unit) {
     }

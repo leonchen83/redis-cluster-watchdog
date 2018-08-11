@@ -31,26 +31,38 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSl
  * @since 1.0.0
  */
 public class ClusterReplicateCommandHandler extends AbstractCommandHandler {
-
+    
     public ClusterReplicateCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
-
+        
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
-        if (node == null) { replyError(t, "ERR Unknown node " + message[2]); return; }
-        if (Objects.equals(node, server.myself)) { replyError(t, "ERR Can't replicate myself"); return; }
-        if (nodeIsSlave(node)) { replyError(t, "ERR I can only replicate a master, not a slave."); return; }
-        if (nodeIsMaster(server.myself) && (server.myself.assignedSlots != 0)) {
-            replyError(t, "ERR To set a master the node must be empty and without assigned slots."); return;
+        if (node == null) {
+            replyError(t, "ERR Unknown node " + message[2]);
+            return;
         }
-
+        if (Objects.equals(node, server.myself)) {
+            replyError(t, "ERR Can't replicate myself");
+            return;
+        }
+        if (nodeIsSlave(node)) {
+            replyError(t, "ERR I can only replicate a master, not a slave.");
+            return;
+        }
+        if (nodeIsMaster(server.myself) && (server.myself.assignedSlots != 0)) {
+            replyError(t, "ERR To set a master the node must be empty and without assigned slots.");
+            return;
+        }
+        
         managers.nodes.clusterSetMyMasterTo(node);
-        managers.states.clusterUpdateState(); reply(t, "OK");
+        managers.states.clusterUpdateState();
+        reply(t, "OK");
     }
 }

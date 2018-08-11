@@ -28,13 +28,13 @@ import org.apache.commons.logging.LogFactory;
  * @since 1.0.0
  */
 public class ClusterMessagePublishHandler extends AbstractClusterMessageHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterMessagePublishHandler.class);
-
+    
     public ClusterMessagePublishHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Publish packet received: node:" + (link.node == null ? "(nil)" : link.node.name));

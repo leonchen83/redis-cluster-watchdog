@@ -87,11 +87,11 @@ public class CRC64 {
             0X66E7A46C27F3AA2CL, 0X1C3FD4A417C62355L, 0X935745FC4798B8DEL, 0XE98F353477AD31A7L,
             0XA6DF411FBFB21CA3L, 0XDC0731D78F8795DAL, 0X536FA08FDFD90E51L, 0X29B7D047EFEC8728L,
     };
-
+    
     public static long crc64(byte[] bytes) {
         return crc64(bytes, 0, bytes.length);
     }
-
+    
     public static long crc64(byte[] bytes, int start, int length) {
         long sum = 0;
         for (int i = start; i < length; i++) {

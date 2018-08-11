@@ -34,23 +34,25 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMy
  * @since 1.0.0
  */
 public class ClusterMessageFailHandler extends AbstractClusterMessageHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterMessageFailHandler.class);
-
+    
     public ClusterMessageFailHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Fail packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
-
+        
         if (sender == null) return true;
         ClusterNode failing = managers.nodes.clusterLookupNode(hdr.data.fail.name);
         if (failing != null && !nodeIsMyself(failing.flags) && !nodeFailed(failing.flags)) {
             logger.info("FAIL message received from " + hdr.name + " fail " + hdr.data.fail.name);
-            failing.flags |= CLUSTER_NODE_FAIL; failing.failTime = System.currentTimeMillis(); //fail time
-            failing.flags &= ~CLUSTER_NODE_PFAIL; managers.notifyNodeFailed(valueOf(failing, server.myself));
+            failing.flags |= CLUSTER_NODE_FAIL;
+            failing.failTime = System.currentTimeMillis(); //fail time
+            failing.flags &= ~CLUSTER_NODE_PFAIL;
+            managers.notifyNodeFailed(valueOf(failing, server.myself));
         }
         return true;
     }

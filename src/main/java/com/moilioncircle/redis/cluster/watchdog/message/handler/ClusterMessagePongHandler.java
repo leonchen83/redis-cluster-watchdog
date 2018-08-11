@@ -48,43 +48,47 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodePFai
  * @since 1.0.0
  */
 public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterMessagePongHandler.class);
-
+    
     public ClusterMessagePongHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Pong packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
-
+        
         if (link.node != null) {
             if (nodeInHandshake(link.node)) {
                 if (sender != null) {
                     nodeUpdateAddressIfNeeded(sender, link, hdr);
-                    managers.nodes.clusterDelNode(link.node); return false;
+                    managers.nodes.clusterDelNode(link.node);
+                    return false;
                 }
                 managers.nodes.clusterRenameNode(link.node, hdr.name);
                 link.node.flags &= ~CLUSTER_NODE_HANDSHAKE;
                 link.node.flags |= hdr.flags & (CLUSTER_NODE_MASTER | CLUSTER_NODE_SLAVE);
             } else if (!link.node.name.equals(hdr.name)) {
                 link.node.flags |= CLUSTER_NODE_NOADDR;
-                link.node.ip = null; link.node.port = 0; link.node.busPort = 0;
-                managers.connections.freeClusterLink(link); return false;
+                link.node.ip = null;
+                link.node.port = 0;
+                link.node.busPort = 0;
+                managers.connections.freeClusterLink(link);
+                return false;
             }
-
+            
             link.node.pongTime = System.currentTimeMillis();
             link.node.pingTime = 0;
-
+            
             if (nodePFailed(link.node)) {
                 link.node.flags &= ~CLUSTER_NODE_PFAIL;
                 managers.notifyUnsetNodePFailed(valueOf(link.node, server.myself));
             } else if (nodeFailed(link.node)) clearNodeFailureIfNeeded(link.node);
         }
-
+        
         if (sender == null) return true;
-
+        
         if (hdr.master == null) managers.nodes.clusterSetNodeAsMaster(sender);
         else {
             ClusterNode master = managers.nodes.clusterLookupNode(hdr.master);
@@ -95,37 +99,42 @@ public class ClusterMessagePongHandler extends AbstractClusterMessageHandler {
             }
             if (master != null && (sender.master == null || !Objects.equals(sender.master, master))) {
                 if (sender.master != null) managers.nodes.clusterNodeRemoveSlave(sender.master, sender);
-                managers.nodes.clusterNodeAddSlave(master, sender); sender.master = master;
+                managers.nodes.clusterNodeAddSlave(master, sender);
+                sender.master = master;
             }
         }
-
+        
         ClusterNode senderMaster = nodeIsMaster(sender) ? sender : sender.master;
         if (senderMaster != null && !Arrays.equals(senderMaster.slots, hdr.slots)) {
             if (nodeIsMaster(sender)) clusterUpdateSlotsConfigWith(sender, hdr.configEpoch, hdr.slots);
-
+            
             for (int i = 0; i < CLUSTER_SLOTS; i++) {
                 if (!bitmapTestBit(hdr.slots, i)) continue;
                 if (server.cluster.slots[i] == null) continue;
                 if (Objects.equals(server.cluster.slots[i], sender)) continue;
                 if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue;
-                managers.messages.clusterSendUpdate(sender.link, server.cluster.slots[i]); break;
+                managers.messages.clusterSendUpdate(sender.link, server.cluster.slots[i]);
+                break;
             }
         }
-
+        
         if (nodeIsMaster(server.myself) && nodeIsMaster(sender) && hdr.configEpoch == server.myself.configEpoch)
             clusterHandleConfigEpochCollision(sender);
-        clusterProcessGossipSection(hdr, link); return true;
+        clusterProcessGossipSection(hdr, link);
+        return true;
     }
-
+    
     public void clearNodeFailureIfNeeded(ClusterNode node) {
         long now = System.currentTimeMillis();
         long timeout = managers.configuration.getClusterNodeTimeout() * CLUSTER_FAIL_UNDO_TIME_MULTI;
-
+        
         if (nodeIsSlave(node) || node.assignedSlots == 0) {
-            node.flags &= ~CLUSTER_NODE_FAIL; managers.notifyUnsetNodeFailed(valueOf(node, server.myself));
+            node.flags &= ~CLUSTER_NODE_FAIL;
+            managers.notifyUnsetNodeFailed(valueOf(node, server.myself));
         }
         if (nodeIsMaster(node) && node.assignedSlots > 0 && now - node.failTime > timeout) {
-            node.flags &= ~CLUSTER_NODE_FAIL; managers.notifyUnsetNodeFailed(valueOf(node, server.myself));
+            node.flags &= ~CLUSTER_NODE_FAIL;
+            managers.notifyUnsetNodeFailed(valueOf(node, server.myself));
         }
     }
 }

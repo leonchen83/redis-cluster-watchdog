@@ -31,12 +31,12 @@ import static junit.framework.TestCase.assertEquals;
  * @since 1.0.0
  */
 public class ReplicationTest {
-
+    
     @Test
     public void test() {
         ClusterConfiguration configuration = ClusterConfiguration.defaultSetting();
         configuration.setFailover(true).setVersion(Version.PROTOCOL_V0).setClusterAnnouncePort(20000);
-
+        
         ClusterWatchdog watchdog = new RedisClusterWatchdog(configuration);
         watchdog.setStorageEngine(new RedisStorageEngine());
         watchdog.addCommandHandler("set", new CommandHandler.Adaptor() {
@@ -56,7 +56,7 @@ public class ReplicationTest {
         watchdog.setClusterConfigListener(System.out::println);
         watchdog.setReplicationListener(new SimpleReplicationListener());
         watchdog.start();
-
+        
         Jedis jedis = new Jedis("127.0.0.1", 20000);
         assertEquals("OK", jedis.set("key", "value"));
         assertEquals(1L, jedis.dbSize().longValue());

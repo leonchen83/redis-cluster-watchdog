@@ -25,35 +25,55 @@ import java.util.function.Function;
  * @since 1.0.0
  */
 public interface CompletableFuture<T> extends Future<T> {
-
+    
     FutureListener<T> setListener(FutureListener<T> listener);
-
+    
     default boolean isSuccess() {
         if (!isDone()) return false;
-        try { get(); return true; }
-        catch (ExecutionException e) { return false; }
-        catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
+        try {
+            get();
+            return true;
+        } catch (ExecutionException e) {
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
-
+    
     default Throwable cause() {
         if (!isDone()) return null;
-        try { get(); return null; }
-        catch (ExecutionException e) { return e.getCause(); }
-        catch (InterruptedException e) { Thread.currentThread().interrupt(); return null; }
+        try {
+            get();
+            return null;
+        } catch (ExecutionException e) {
+            return e.getCause();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
     }
-
-    default boolean success(T value) { throw new UnsupportedOperationException(); }
-
-    default boolean failure(Throwable cause) { throw new UnsupportedOperationException(); }
-
+    
+    default boolean success(T value) {
+        throw new UnsupportedOperationException();
+    }
+    
+    default boolean failure(Throwable cause) {
+        throw new UnsupportedOperationException();
+    }
+    
     default <U> CompletableFuture<U> map(Function<T, U> function) {
         CompletableFuture<U> r = new ListenableFuture<>();
         FutureListener<T> old = this.setListener(null);
         this.setListener(f -> {
             if (old != null) old.onComplete(this);
-            try { r.success(function.apply(f.get())); }
-            catch (ExecutionException e) { r.failure(e); }
-            catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            try {
+                r.success(function.apply(f.get()));
+            } catch (ExecutionException e) {
+                r.failure(e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         });
         return r;
     }

@@ -23,10 +23,10 @@ import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
  * @since 1.0.0
  */
 public interface ReplicationListener {
-
+    
     long onGetSlaveOffset();
-
+    
     void onUnsetReplication(StorageEngine engine);
-
+    
     void onSetReplication(String ip, int port, StorageEngine engine);
 }

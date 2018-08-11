@@ -47,16 +47,21 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2 && message.length != 3) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
 
         boolean hard = false;
         if (message.length == 3) {
             if (message[2] != null && message[2].equalsIgnoreCase("hard")) hard = true;
             else if (message[2] != null && message[2].equalsIgnoreCase("soft")) hard = false;
-            else { replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return; }
+            else {
+                replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+                return;
+            }
         }
-        clusterReset(hard); reply(t, "OK");
+        clusterReset(hard);
+        reply(t, "OK");
     }
 
     public void clusterReset(boolean hard) {
@@ -74,8 +79,10 @@ public class ClusterResetCommandHandler extends AbstractCommandHandler {
             managers.notifyNodeDeleted(valueOf(e, server.myself));
         });
 
-        if (!hard) return; server.myself.configEpoch = 0;
-        server.cluster.currentEpoch = 0; server.cluster.lastVoteEpoch = 0;
+        if (!hard) return;
+        server.myself.configEpoch = 0;
+        server.cluster.currentEpoch = 0;
+        server.cluster.lastVoteEpoch = 0;
         managers.notifyNodeDeleted(valueOf(server.myself, server.myself));
         managers.nodes.clusterRenameNode(server.myself, getRandomHexChars());
         logger.info("Node hard reset, now I'm " + server.myself.name);

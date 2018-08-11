@@ -28,13 +28,13 @@ import org.apache.commons.logging.LogFactory;
  * @since 1.0.0
  */
 public class ClusterMessageMFStartHandler extends AbstractClusterMessageHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterMessageMFStartHandler.class);
-
+    
     public ClusterMessageMFStartHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("MFStart packet received: node:" + (link.node == null ? "(nil)" : link.node.name));

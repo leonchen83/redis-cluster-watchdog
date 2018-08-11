@@ -25,45 +25,45 @@ import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
  * @since 1.0.0
  */
 public abstract class AbstractClusterWatchdog implements ClusterWatchdog {
-
+    
     protected final ClusterManagers managers;
     protected final ClusterConfiguration configuration;
-
+    
     protected AbstractClusterWatchdog(ClusterConfiguration configuration) {
         this.configuration = configuration.validate();
         this.managers = new ClusterManagers(configuration, this);
     }
-
+    
     @Override
     public void setStorageEngine(StorageEngine engine) {
         managers.setStorageEngine(engine);
     }
-
+    
     @Override
     public ClusterConfiguration getClusterConfiguration() {
         return this.configuration;
     }
-
+    
     @Override
     public CommandHandler addCommandHandler(String name, CommandHandler handler) {
         return managers.addCommandHandler(name, handler);
     }
-
+    
     @Override
     public ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
         return managers.setClusterNodeListener(clusterNodeListener);
     }
-
+    
     @Override
     public ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
         return managers.setReplicationListener(replicationListener);
     }
-
+    
     @Override
     public ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener) {
         return managers.setClusterStateListener(clusterStateListener);
     }
-
+    
     @Override
     public ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener) {
         return managers.setClusterConfigListener(clusterConfigListener);

@@ -21,7 +21,7 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @since 1.0.0
  */
 public interface ClusterStateListener {
-
+    
     void onStateChanged(ClusterState state);
-
+    
 }

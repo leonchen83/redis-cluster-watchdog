@@ -50,7 +50,7 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
         ClusterMessage msg = decode(in);
         if (msg != null) out.add(msg);
     }
-
+    
     protected ClusterMessage decode(ByteBuf in) {
         in.markReaderIndex();
         try {
@@ -58,7 +58,8 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
             hdr.signature = (String) in.readCharSequence(4, UTF_8);
             hdr.length = in.readInt();
             if (in.readableBytes() < hdr.length - 8) {
-                in.resetReaderIndex(); return null;
+                in.resetReaderIndex();
+                return null;
             }
             hdr.version = Version.valueOf(in.readUnsignedShort());
             if (hdr.version == PROTOCOL_V0) decodeMessageV0(hdr, in);
@@ -66,10 +67,11 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
             else throw new UnsupportedOperationException("version: " + hdr.version);
             return hdr;
         } catch (Exception e) {
-            in.resetReaderIndex(); return null;
+            in.resetReaderIndex();
+            return null;
         }
     }
-
+    
     protected void decodeMessageV0(ClusterMessage hdr, ByteBuf in) {
         in.skipBytes(2);
         hdr.type = in.readUnsignedShort();
@@ -122,7 +124,7 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
                 break;
         }
     }
-
+    
     protected void decodeMessageV1(ClusterMessage hdr, ByteBuf in) {
         hdr.port = in.readUnsignedShort();
         hdr.type = in.readUnsignedShort();
@@ -173,7 +175,7 @@ public class ClusterMessageDecoder extends ByteToMessageDecoder {
                 break;
         }
     }
-
+    
     public String truncate(ByteBuf in, byte[] bytes) {
         byte[] ary = new byte[bytes.length];
         in.readBytes(ary);

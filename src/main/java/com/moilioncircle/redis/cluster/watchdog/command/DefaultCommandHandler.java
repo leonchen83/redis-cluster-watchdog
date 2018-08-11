@@ -28,14 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 1.0.0
  */
 public class DefaultCommandHandler extends AbstractCommandHandler {
-
+    
     private Map<String, CommandHandler> handlers = new ConcurrentHashMap<>();
-    public CommandHandler get(String name) { return handlers.get(name.toLowerCase()); }
-
-    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
-        return handlers.put(name.toLowerCase(), handler);
-    }
-
+    
     public DefaultCommandHandler(ClusterManagers managers) {
         super(managers);
         addCommandHandler("ping", new PingCommandHandler(managers));
@@ -51,17 +46,27 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         addCommandHandler("readwrite", new ReadWriteCommandHandler(managers));
         addCommandHandler("restore-asking", new RestoreCommandHandler(managers));
     }
-
+    
+    public CommandHandler get(String name) {
+        return handlers.get(name.toLowerCase());
+    }
+    
+    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
+        return handlers.put(name.toLowerCase(), handler);
+    }
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length <= 0 || message[0] == null) {
-            replyError(t, "ERR Unsupported COMMAND"); return;
+            replyError(t, "ERR Unsupported COMMAND");
+            return;
         }
         CommandHandler handler = get(message[0]);
         if (handler == null) {
-            replyError(t, "ERR Unsupported COMMAND"); return;
+            replyError(t, "ERR Unsupported COMMAND");
+            return;
         }
         handler.handle(t, message, rawMessage);
     }
-
+    
 }

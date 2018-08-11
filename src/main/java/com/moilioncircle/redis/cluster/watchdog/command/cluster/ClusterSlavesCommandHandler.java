@@ -40,16 +40,19 @@ public class ClusterSlavesCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
 
         ClusterNode node = managers.nodes.clusterLookupNode(message[2]);
         if (node == null) {
-            replyError(t, "ERR Unknown node " + message[2]); return;
+            replyError(t, "ERR Unknown node " + message[2]);
+            return;
         }
 
         if (nodeIsSlave(node)) {
-            replyError(t, "ERR The specified node is not a master"); return;
+            replyError(t, "ERR The specified node is not a master");
+            return;
         }
 
         StringBuilder builder = new StringBuilder();

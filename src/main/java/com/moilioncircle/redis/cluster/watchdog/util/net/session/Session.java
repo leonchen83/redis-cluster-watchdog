@@ -24,16 +24,16 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.ConnectionStatus;
  * @since 1.0.0
  */
 public interface Session<T> {
-
+    
     long getId();
-
+    
     ConnectionStatus getStatus();
-
+    
     String getLocalAddress(String value);
-
+    
     String getRemoteAddress(String value);
-
+    
     CompletableFuture<Void> send(T message);
-
+    
     CompletableFuture<Void> disconnect(Throwable cause);
 }

@@ -29,23 +29,28 @@ import static java.lang.Long.parseLong;
  * @since 1.0.0
  */
 public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterSetConfigEpochCommandHandler.class);
-
+    
     public ClusterSetConfigEpochCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
-
+        
         long epoch;
-        try { epoch = parseLong(message[2]); }
-        catch (Exception e) { replyError(t, "ERR Invalid config epoch specified: " + message[2]); return; }
-
+        try {
+            epoch = parseLong(message[2]);
+        } catch (Exception e) {
+            replyError(t, "ERR Invalid config epoch specified: " + message[2]);
+            return;
+        }
+        
         if (epoch < 0) {
             replyError(t, "ERR Invalid config epoch specified: " + epoch);
         } else if (server.myself.configEpoch != 0) {
@@ -56,7 +61,8 @@ public class ClusterSetConfigEpochCommandHandler extends AbstractCommandHandler 
             server.myself.configEpoch = epoch;
             logger.info("configEpoch set to " + server.myself.configEpoch + " via CLUSTER SET-CONFIG-EPOCH");
             if (server.cluster.currentEpoch < epoch) server.cluster.currentEpoch = epoch;
-            managers.states.clusterUpdateState(); reply(t, "OK");
+            managers.states.clusterUpdateState();
+            reply(t, "OK");
         }
     }
 }

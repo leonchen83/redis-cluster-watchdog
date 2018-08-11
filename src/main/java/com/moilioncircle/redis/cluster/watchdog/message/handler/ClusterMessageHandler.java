@@ -24,7 +24,7 @@ import com.moilioncircle.redis.cluster.watchdog.state.ClusterLink;
  * @since 1.0.0
  */
 public interface ClusterMessageHandler {
-
+    
     boolean handle(ClusterLink link, ClusterMessage hdr);
-
+    
 }

@@ -25,18 +25,20 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @since 1.0.0
  */
 public class ClusterFlushSlotsCommandHandler extends AbstractCommandHandler {
-
+    
     public ClusterFlushSlotsCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
-
+        
         managers.slots.clusterDelNodeSlots(server.myself);
-        managers.states.clusterUpdateState(); reply(t, "OK");
+        managers.states.clusterUpdateState();
+        reply(t, "OK");
     }
 }

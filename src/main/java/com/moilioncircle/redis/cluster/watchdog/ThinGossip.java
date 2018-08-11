@@ -69,32 +69,33 @@ import static java.util.concurrent.ThreadLocalRandom.current;
  */
 public class ThinGossip implements Resourcable {
     private static final Log logger = LogFactory.getLog(ThinGossip.class);
-
+    
     public ClusterManagers managers;
     private ClusterConfiguration configuration;
     private volatile NioBootstrapImpl<RCmbMessage> acceptor;
     private volatile NioBootstrapImpl<RCmbMessage> initiator;
-
+    
     public ThinGossip(ClusterManagers managers) {
         this.managers = managers;
         this.configuration = managers.configuration;
     }
-
+    
     @Override
     public void start() {
         this.clusterInit();
         managers.cron.scheduleAtFixedRate(() -> {
             ClusterConfigInfo previous = valueOf(managers.server.cluster);
-            clusterCron(); ClusterConfigInfo next = valueOf(managers.server.cluster);
+            clusterCron();
+            ClusterConfigInfo next = valueOf(managers.server.cluster);
             if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
         }, 0, 100, TimeUnit.MILLISECONDS);
     }
-
+    
     @Override
     public void stop() {
         stop(0, TimeUnit.MILLISECONDS);
     }
-
+    
     @Override
     public void stop(long timeout, TimeUnit unit) {
         try {
@@ -107,7 +108,7 @@ public class ThinGossip implements Resourcable {
         } catch (TimeoutException e) {
             logger.error("stop timeout error", e);
         }
-
+        
         try {
             NioBootstrapImpl<RCmbMessage> initiator = this.initiator;
             if (initiator != null) initiator.shutdown().get(timeout, unit);
@@ -119,13 +120,13 @@ public class ThinGossip implements Resourcable {
             logger.error("stop timeout error", e);
         }
     }
-
+    
     public void clusterInit() {
         managers.server.cluster = new ClusterState();
         int port = configuration.getClusterAnnouncePort();
         String address = configuration.getClusterAnnounceIp();
         int busPort = configuration.getClusterAnnounceBusPort();
-
+        
         if (!managers.configs.clusterLoadConfig()) {
             int flags = CLUSTER_NODE_MYSELF | CLUSTER_NODE_MASTER;
             managers.server.myself = managers.nodes.createClusterNode(null, flags);
@@ -138,36 +139,38 @@ public class ThinGossip implements Resourcable {
             ClusterConfigInfo next = ClusterConfigInfo.valueOf(managers.server.cluster);
             managers.config.submit(() -> this.managers.configs.clusterSaveConfig(next));
         }
-
+        
         acceptor = new NioBootstrapImpl<>();
         acceptor.setEncoder(ClusterMessageEncoder::new);
-        acceptor.setDecoder(ClusterMessageDecoder::new); acceptor.setup();
+        acceptor.setDecoder(ClusterMessageDecoder::new);
+        acceptor.setup();
         acceptor.setTransportListener(new AcceptorTransportListener());
-
+        
         try {
             acceptor.connect(address, busPort).get();
         } catch (InterruptedException | ExecutionException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             else throw new UnsupportedOperationException(e.getCause());
         }
-
+        
         managers.server.myself.port = port;
         managers.server.myself.busPort = busPort;
     }
-
+    
     public void clusterCron() {
         try {
             managers.server.iteration++;
             long now = System.currentTimeMillis();
             ClusterNode myself = managers.server.myself;
             long nodeTimeout = configuration.getClusterNodeTimeout();
-
+            
             String nextAddress = configuration.getClusterAnnounceIp();
             if (!Objects.equals(managers.server.previousAddress, nextAddress)) {
                 managers.server.previousAddress = nextAddress;
-                if (nextAddress != null) myself.ip = nextAddress; else myself.ip = null;
+                if (nextAddress != null) myself.ip = nextAddress;
+                else myself.ip = null;
             }
-
+            
             managers.server.cluster.pFailNodes = 0;
             long handshakeTimeout = max(nodeTimeout, 1000);
             for (ClusterNode node : new ArrayList<>(managers.server.cluster.nodes.values())) {
@@ -175,17 +178,19 @@ public class ThinGossip implements Resourcable {
                 if (nodeWithoutAddr(node.flags)) continue;
                 if (nodePFailed(node.flags)) managers.server.cluster.pFailNodes++;
                 if (nodeInHandshake(node) && now - node.createTime > handshakeTimeout) {
-                    managers.nodes.clusterDelNode(node); continue;
+                    managers.nodes.clusterDelNode(node);
+                    continue;
                 }
                 if (node.link != null) continue;
-
+                
                 if (initiator == null) {
                     initiator = new NioBootstrapImpl<>(false, configuration.getNetworkConfiguration());
                     //
                     initiator.setEncoder(ClusterMessageEncoder::new);
-                    initiator.setDecoder(ClusterMessageDecoder::new); initiator.setup();
+                    initiator.setDecoder(ClusterMessageDecoder::new);
+                    initiator.setup();
                 }
-
+                
                 final ClusterLink link = managers.connections.createClusterLink(node);
                 TransportListener<RCmbMessage> r = new InitiatorTransportListener(link);
                 try {
@@ -194,26 +199,32 @@ public class ThinGossip implements Resourcable {
                     link.fd = new DefaultSession<>(initiator.getTransport());
                 } catch (InterruptedException | ExecutionException e) {
                     if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-                    if (node.pingTime == 0) node.pingTime = System.currentTimeMillis(); continue;
+                    if (node.pingTime == 0) node.pingTime = System.currentTimeMillis();
+                    continue;
                 }
-                node.link = link; link.createTime = System.currentTimeMillis();
-                long previousPingTime = node.pingTime; boolean meet = nodeInMeet(node.flags);
+                node.link = link;
+                link.createTime = System.currentTimeMillis();
+                long previousPingTime = node.pingTime;
+                boolean meet = nodeInMeet(node.flags);
                 managers.messages.clusterSendPing(link, meet ? CLUSTERMSG_TYPE_MEET : CLUSTERMSG_TYPE_PING);
-                if (previousPingTime != 0) node.pingTime = previousPingTime; node.flags &= ~CLUSTER_NODE_MEET;
+                if (previousPingTime != 0) node.pingTime = previousPingTime;
+                node.flags &= ~CLUSTER_NODE_MEET;
             }
-
-            long minPongTime = 0; ClusterNode minPongNode = null;
+            
+            long minPongTime = 0;
+            ClusterNode minPongNode = null;
             List<ClusterNode> list = new ArrayList<>(managers.server.cluster.nodes.values());
-
+            
             if (managers.server.iteration % 10 == 0) {
                 for (int i = 0; i < 5; i++) {
                     ClusterNode t = list.get(current().nextInt(list.size()));
-
+                    
                     if (nodeIsMyself(t.flags)) continue;
                     if (nodeInHandshake(t.flags)) continue;
                     if (t.link == null || t.pingTime != 0) continue;
                     if (minPongNode == null || minPongTime > t.pongTime) {
-                        minPongNode = t; minPongTime = t.pongTime;
+                        minPongNode = t;
+                        minPongTime = t.pongTime;
                     }
                 }
                 if (minPongNode != null) {
@@ -221,12 +232,12 @@ public class ThinGossip implements Resourcable {
                     managers.messages.clusterSendPing(minPongNode.link, CLUSTERMSG_TYPE_PING);
                 }
             }
-
+            
             boolean update = false;
             int maxSlaves = 0, mySlaves = 0, isolated = 0;
             for (ClusterNode node : managers.server.cluster.nodes.values()) {
                 now = System.currentTimeMillis();
-
+                
                 if (nodeIsMyself(node.flags)) continue;
                 if (nodeWithoutAddr(node.flags)) continue;
                 if (nodeInHandshake(node.flags)) continue;
@@ -236,45 +247,49 @@ public class ThinGossip implements Resourcable {
                     if (slaves > maxSlaves) maxSlaves = slaves;
                     if (Objects.equals(myself.master, node)) mySlaves = slaves;
                 }
-
+                
                 if (node.link != null
                         && now - node.link.createTime > nodeTimeout
                         && node.pingTime != 0 && node.pongTime < node.pingTime
                         && now - node.pingTime > nodeTimeout / 2) {
-
+                    
                     managers.connections.freeClusterLink(node.link);
                 }
-
+                
                 if (node.link != null && node.pingTime == 0 && (now - node.pongTime) > nodeTimeout / 2) {
-                    managers.messages.clusterSendPing(node.link, CLUSTERMSG_TYPE_PING); continue;
+                    managers.messages.clusterSendPing(node.link, CLUSTERMSG_TYPE_PING);
+                    continue;
                 }
-
+                
                 if (node.pingTime == 0) continue;
-
+                
                 if (now - node.pingTime > nodeTimeout && !nodePFailed(node.flags) && !nodeFailed(node.flags)) {
                     logger.debug("*** NODE " + node.name + " possibly failing");
-                    node.flags |= CLUSTER_NODE_PFAIL; update = true;
+                    node.flags |= CLUSTER_NODE_PFAIL;
+                    update = true;
                     managers.notifyNodePFailed(ClusterNodeInfo.valueOf(node, myself));
                 }
             }
-
+            
             if (nodeIsSlave(myself)
                     && managers.server.masterHost == null
                     && myself.master != null
                     && nodeHasAddr(myself.master)) {
-
+                
                 managers.replications.replicationSetMaster(myself.master);
             }
-
+            
             if (nodeIsSlave(myself)) {
                 managers.failovers.clusterHandleSlaveFailover();
                 boolean migration = isolated != 0 && maxSlaves >= 2 && mySlaves == maxSlaves;
                 if (migration) clusterHandleSlaveMigration(maxSlaves);
             }
             if (update || managers.server.cluster.state == CLUSTER_FAIL) managers.states.clusterUpdateState();
-        } catch (Throwable e) { logger.error("unexpected error ", e); }
+        } catch (Throwable e) {
+            logger.error("unexpected error ", e);
+        }
     }
-
+    
     public void clusterHandleSlaveMigration(int max) {
         ClusterNode myself = managers.server.myself;
         if (managers.server.myself.master == null) return;
@@ -282,7 +297,7 @@ public class ThinGossip implements Resourcable {
         Predicate<ClusterNode> t = e -> !nodeFailed(e) && !nodePFailed(e);
         int slaves = (int) myself.master.slaves.stream().filter(t).count();
         if (slaves <= this.configuration.getClusterMigrationBarrier()) return;
-
+        
         ClusterNode target = null;
         long now = System.currentTimeMillis();
         ClusterNode candidate = managers.server.myself;
@@ -292,39 +307,39 @@ public class ThinGossip implements Resourcable {
             if (nodeIsSlave(node)) isolated = false;
             if (!nodeInMigrate(node.flags)) isolated = false;
             if ((slaves = managers.nodes.clusterCountNonFailingSlaves(node)) > 0) isolated = false;
-
+            
             if (!isolated) node.isolatedTime = 0;
             else {
                 if (node.isolatedTime == 0) node.isolatedTime = now;
                 if (target == null && node.assignedSlots > 0) target = node;
             }
-
+            
             if (slaves != max) continue;
             BinaryOperator<ClusterNode> op;
             op = (a, b) -> a.name.compareTo(b.name) >= 0 ? b : a;
             candidate = node.slaves.stream().reduce(myself, op);
         }
-
+        
         if (target != null && Objects.equals(candidate, myself)
                 && (now - target.isolatedTime) > CLUSTER_SLAVE_MIGRATION_DELAY) {
             logger.info("Migrating to orphaned master " + target.name);
             managers.nodes.clusterSetMyMasterTo(target);
         }
     }
-
+    
     private class InitiatorTransportListener extends TransportListener.Adaptor<RCmbMessage> {
-
+        
         private final ClusterLink link;
-
+        
         private InitiatorTransportListener(ClusterLink link) {
             this.link = link;
         }
-
+        
         @Override
         public void onConnected(Transport<RCmbMessage> t) {
             if (configuration.isVerbose()) logger.info("[initiator] > " + t);
         }
-
+        
         @Override
         public void onMessage(Transport<RCmbMessage> t, RCmbMessage message) {
             managers.cron.execute(() -> {
@@ -336,22 +351,23 @@ public class ThinGossip implements Resourcable {
                 if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
             });
         }
-
+        
         @Override
         public void onDisconnected(Transport<RCmbMessage> t, Throwable cause) {
             managers.connections.freeClusterLink(link);
             if (configuration.isVerbose()) logger.info("[initiator] < " + t);
         }
     }
-
+    
     private class AcceptorTransportListener extends TransportListener.Adaptor<RCmbMessage> {
         @Override
         public void onConnected(Transport<RCmbMessage> t) {
             if (configuration.isVerbose()) logger.info("[acceptor] > " + t);
             ClusterLink link = managers.connections.createClusterLink(null);
-            link.fd = new DefaultSession<>(t); managers.server.cfd.put(t, link);
+            link.fd = new DefaultSession<>(t);
+            managers.server.cfd.put(t, link);
         }
-
+        
         @Override
         public void onMessage(Transport<RCmbMessage> t, RCmbMessage message) {
             managers.cron.execute(() -> {
@@ -364,7 +380,7 @@ public class ThinGossip implements Resourcable {
                 if (!previous.equals(next)) managers.config.submit(() -> managers.configs.clusterSaveConfig(next));
             });
         }
-
+        
         @Override
         public void onDisconnected(Transport<RCmbMessage> t, Throwable cause) {
             managers.connections.freeClusterLink(managers.server.cfd.remove(t));

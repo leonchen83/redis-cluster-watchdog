@@ -61,12 +61,12 @@ public class ClusterManagers implements Resourcable {
     public ClusterConnectionManager connections;
     public ClusterCommandHandlerManager commands;
     public ClusterMessageHandlerManager handlers;
-
+    
     private volatile ClusterNodeListener clusterNodeListener;
     private volatile ReplicationListener replicationListener;
     private volatile ClusterStateListener clusterStateListener;
     private volatile ClusterConfigListener clusterConfigListener;
-
+    
     public ClusterManagers(ClusterConfiguration configuration, ClusterWatchdog watchdog) {
         this.watchdog = watchdog;
         this.server = new ServerState();
@@ -89,114 +89,143 @@ public class ClusterManagers implements Resourcable {
         this.worker = Executors.newSingleThreadExecutor();
         this.cron = Executors.newSingleThreadScheduledExecutor();
     }
-
+    
     /**
      *
      */
     public long notifyReplicationGetSlaveOffset() {
         ReplicationListener r = this.replicationListener;
-        if (r == null) return 0L; return r.onGetSlaveOffset();
+        if (r == null) return 0L;
+        return r.onGetSlaveOffset();
     }
-
+    
     public void notifyNodeAdded(ClusterNodeInfo node) {
         ClusterNodeListener r = this.clusterNodeListener;
-        worker.submit(() -> { if (r != null) r.onNodeAdded(node); });
+        worker.submit(() -> {
+            if (r != null) r.onNodeAdded(node);
+        });
     }
-
+    
     public void notifyNodeDeleted(ClusterNodeInfo node) {
         ClusterNodeListener r = this.clusterNodeListener;
-        worker.submit(() -> { if (r != null) r.onNodeDeleted(node); });
+        worker.submit(() -> {
+            if (r != null) r.onNodeDeleted(node);
+        });
     }
-
+    
     public void notifyNodeFailed(ClusterNodeInfo failed) {
         ClusterNodeListener r = this.clusterNodeListener;
-        worker.submit(() -> { if (r != null) r.onNodeFailed(failed); });
+        worker.submit(() -> {
+            if (r != null) r.onNodeFailed(failed);
+        });
     }
-
+    
     public void notifyConfigChanged(ClusterConfigInfo info) {
         ClusterConfigListener r = this.clusterConfigListener;
-        worker.submit(() -> { if (r != null) r.onConfigChanged(info); });
+        worker.submit(() -> {
+            if (r != null) r.onConfigChanged(info);
+        });
     }
-
+    
     public void notifyStateChanged(ClusterState state) {
         ClusterStateListener r = this.clusterStateListener;
-        worker.submit(() -> { if (r != null) r.onStateChanged(state); });
+        worker.submit(() -> {
+            if (r != null) r.onStateChanged(state);
+        });
     }
-
+    
     public void notifyNodePFailed(ClusterNodeInfo pfailed) {
         ClusterNodeListener r = this.clusterNodeListener;
-        worker.submit(() -> { if (r != null) r.onNodePFailed(pfailed); });
+        worker.submit(() -> {
+            if (r != null) r.onNodePFailed(pfailed);
+        });
     }
-
+    
     public void notifyUnsetNodeFailed(ClusterNodeInfo failed) {
         ClusterNodeListener r = this.clusterNodeListener;
-        worker.submit(() -> { if (r != null) r.onUnsetNodeFailed(failed); });
+        worker.submit(() -> {
+            if (r != null) r.onUnsetNodeFailed(failed);
+        });
     }
-
+    
     public void notifyUnsetReplication(StorageEngine engine) {
         ReplicationListener r = this.replicationListener;
-        worker.submit(() -> { if (r != null) r.onUnsetReplication(engine); });
+        worker.submit(() -> {
+            if (r != null) r.onUnsetReplication(engine);
+        });
     }
-
+    
     public void notifyUnsetNodePFailed(ClusterNodeInfo pfailed) {
         ClusterNodeListener r = this.clusterNodeListener;
-        worker.submit(() -> { if (r != null) r.onUnsetNodePFailed(pfailed); });
+        worker.submit(() -> {
+            if (r != null) r.onUnsetNodePFailed(pfailed);
+        });
     }
-
+    
     public void notifySetReplication(String ip, int host, StorageEngine engine) {
         ReplicationListener r = this.replicationListener;
-        worker.submit(() -> { if (r != null) r.onSetReplication(ip, host, engine); });
+        worker.submit(() -> {
+            if (r != null) r.onSetReplication(ip, host, engine);
+        });
     }
-
+    
     /**
      *
      */
     public void setStorageEngine(StorageEngine engine) {
         this.engine = engine;
     }
-
+    
     public CommandHandler addCommandHandler(String name, CommandHandler handler) {
         return this.commands.addCommandHandler(name, handler);
     }
-
+    
     public synchronized ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener) {
-        ClusterNodeListener r = this.clusterNodeListener; this.clusterNodeListener = clusterNodeListener; return r;
+        ClusterNodeListener r = this.clusterNodeListener;
+        this.clusterNodeListener = clusterNodeListener;
+        return r;
     }
-
+    
     public synchronized ReplicationListener setReplicationListener(ReplicationListener replicationListener) {
-        ReplicationListener r = this.replicationListener; this.replicationListener = replicationListener; return r;
+        ReplicationListener r = this.replicationListener;
+        this.replicationListener = replicationListener;
+        return r;
     }
-
+    
     public synchronized ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener) {
-        ClusterStateListener r = this.clusterStateListener; this.clusterStateListener = clusterStateListener; return r;
+        ClusterStateListener r = this.clusterStateListener;
+        this.clusterStateListener = clusterStateListener;
+        return r;
     }
-
+    
     public synchronized ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener) {
-        ClusterConfigListener r = this.clusterConfigListener; this.clusterConfigListener = clusterConfigListener; return r;
+        ClusterConfigListener r = this.clusterConfigListener;
+        this.clusterConfigListener = clusterConfigListener;
+        return r;
     }
-
+    
     @Override
     public void start() {
         this.engine.start();
     }
-
+    
     @Override
     public void stop() {
         stop(0L, TimeUnit.MILLISECONDS);
     }
-
+    
     @Override
     public void stop(long timeout, TimeUnit unit) {
         // if myself is a slave. safe to shutdown replication socket.
         this.replications.replicationUnsetMaster();
-
+        
         try {
             this.config.shutdown();
             this.config.awaitTermination(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-
+        
         try {
             this.worker.shutdown();
             this.worker.awaitTermination(timeout, unit);

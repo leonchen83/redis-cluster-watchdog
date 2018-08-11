@@ -27,20 +27,24 @@ import static java.lang.Integer.parseInt;
  * @since 1.0.0
  */
 public class ClusterCountKeysInSlotCommandHandler extends AbstractCommandHandler {
-
+    
     public ClusterCountKeysInSlotCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 3) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
-
+        
         try {
             int slot = parseInt(message[2]);
-            if (slot <= 0 || slot > 65535) { replyError(t, "-ERR Invalid slot:" + slot); return; }
+            if (slot <= 0 || slot > 65535) {
+                replyError(t, "-ERR Invalid slot:" + slot);
+                return;
+            }
             replyNumber(t, managers.slots.countKeysInSlot(slot));
         } catch (Exception e) {
             replyError(t, "ERR Invalid slot:" + message[2]);

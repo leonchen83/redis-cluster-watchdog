@@ -34,23 +34,24 @@ import java.util.concurrent.TimeoutException;
  * @since 1.0.0
  */
 public class ThinServer implements Resourcable {
-
+    
     private static final Log logger = LogFactory.getLog(ThinServer.class);
-
+    
     private ClusterManagers managers;
     private ClusterConfiguration configuration;
     private volatile NioBootstrapImpl<byte[][]> acceptor;
-
+    
     public ThinServer(ClusterManagers managers) {
         this.managers = managers;
         this.configuration = managers.configuration;
     }
-
+    
     @Override
     public void start() {
         acceptor = new NioBootstrapImpl<>();
         acceptor.setEncoder(RedisEncoder::new);
-        acceptor.setDecoder(RedisDecoder::new); acceptor.setup();
+        acceptor.setDecoder(RedisDecoder::new);
+        acceptor.setup();
         acceptor.setTransportListener(new RedisTransportListener());
         try {
             acceptor.connect(null, configuration.getClusterAnnouncePort()).get();
@@ -59,12 +60,12 @@ public class ThinServer implements Resourcable {
             else throw new UnsupportedOperationException(e.getCause());
         }
     }
-
+    
     @Override
     public void stop() {
         stop(0, TimeUnit.MILLISECONDS);
     }
-
+    
     @Override
     public void stop(long timeout, TimeUnit unit) {
         NioBootstrapImpl<byte[][]> acceptor = this.acceptor;
@@ -78,18 +79,18 @@ public class ThinServer implements Resourcable {
             logger.error("stop timeout error", e);
         }
     }
-
+    
     private class RedisTransportListener extends TransportListener.Adaptor<byte[][]> {
         @Override
         public void onConnected(Transport<byte[][]> t) {
             if (configuration.isVerbose()) logger.info("[acceptor] > " + t);
         }
-
+        
         @Override
         public void onMessage(Transport<byte[][]> t, byte[][] message) {
             managers.commands.handleCommand(t, message);
         }
-
+        
         @Override
         public void onDisconnected(Transport<byte[][]> t, Throwable cause) {
             if (configuration.isVerbose()) logger.info("[acceptor] < " + t);

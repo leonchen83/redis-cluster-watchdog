@@ -30,17 +30,17 @@ import static java.util.Arrays.stream;
  * @since 1.0.0
  */
 public class ClusterCommandHandlerManager {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterCommandHandlerManager.class);
-
+    
     private ClusterManagers managers;
     private DefaultCommandHandler handler;
-
+    
     public ClusterCommandHandlerManager(ClusterManagers managers) {
         this.managers = managers;
         this.handler = new DefaultCommandHandler(managers);
     }
-
+    
     public CommandHandler addCommandHandler(String name, CommandHandler handler) {
         if (managers.engine instanceof DefaultStorageEngine) {
             logger.warn("Using default storage engine. [ ClusterWatchdog.setStorageEngine(engine); ] first");
@@ -49,9 +49,9 @@ public class ClusterCommandHandlerManager {
         handler.setConfiguration(managers.configuration);
         return this.handler.addCommandHandler(name, handler);
     }
-
+    
     public void handleCommand(Transport<byte[][]> t, byte[][] raw) {
         this.handler.handle(t, stream(raw).map(String::new).toArray(String[]::new), raw);
     }
-
+    
 }

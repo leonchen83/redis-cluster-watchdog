@@ -27,16 +27,36 @@ import java.util.List;
  * @since 1.0.0
  */
 public class RedisDecoder extends ByteToMessageDecoder {
-
+    
+    public static long parseLong(ByteBuf in) {
+        long v = 0;
+        int sign = 1;
+        int read = in.readByte();
+        if (read == '-') {
+            read = in.readByte();
+            sign = -1;
+        }
+        do {
+            if (read == '\r' && in.readByte() == '\n') break;
+            int value = read - '0';
+            if (value >= 0 && value < 10) v = v * 10 + value;
+            else throw new NumberFormatException("Invalid character in integer");
+            read = in.readByte();
+        } while (true);
+        return v * sign;
+    }
+    
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         in.markReaderIndex();
         try {
             Object request = decode(ctx, in);
             if (request instanceof byte[][]) out.add(request);
             else if (request instanceof byte[]) out.add(new byte[][]{(byte[]) request});
-        } catch (Exception e) { in.resetReaderIndex(); }
+        } catch (Exception e) {
+            in.resetReaderIndex();
+        }
     }
-
+    
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) {
         int c = in.readByte(), index, v;
         byte[] rs;
@@ -45,7 +65,8 @@ public class RedisDecoder extends ByteToMessageDecoder {
                 //RESP Bulk Strings
                 v = (int) parseLong(in);
                 if (v == -1) return null;
-                rs = new byte[v]; in.readBytes(rs);
+                rs = new byte[v];
+                in.readBytes(rs);
                 if (in.readByte() != '\r') ctx.close();
                 if (in.readByte() != '\n') ctx.close();
                 return rs;
@@ -90,23 +111,5 @@ public class RedisDecoder extends ByteToMessageDecoder {
                 ctx.close();
                 return null;
         }
-    }
-
-    public static long parseLong(ByteBuf in) {
-        long v = 0;
-        int sign = 1;
-        int read = in.readByte();
-        if (read == '-') {
-            read = in.readByte();
-            sign = -1;
-        }
-        do {
-            if (read == '\r' && in.readByte() == '\n') break;
-            int value = read - '0';
-            if (value >= 0 && value < 10) v = v * 10 + value;
-            else throw new NumberFormatException("Invalid character in integer");
-            read = in.readByte();
-        } while (true);
-        return v * sign;
     }
 }

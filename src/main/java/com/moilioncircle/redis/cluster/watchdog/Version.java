@@ -21,24 +21,30 @@ package com.moilioncircle.redis.cluster.watchdog;
  * @since 1.0.0
  */
 public enum Version {
-
+    
     /**
      * redis-3.0 ~ redis-3.2.
      */
     PROTOCOL_V0(0),
-
+    
     /**
-     *  redis-4.0 or greater.
+     * redis-4.0 or greater.
      */
     PROTOCOL_V1(1);
-
+    
     private int version;
-    public int getVersion() { return version; }
-    Version(int version) { this.version = version; }
-
+    
+    Version(int version) {
+        this.version = version;
+    }
+    
     public static Version valueOf(int version) {
         if (version == 0) return PROTOCOL_V0;
         else if (version == 1) return PROTOCOL_V1;
         else throw new UnsupportedOperationException("version: " + version);
+    }
+    
+    public int getVersion() {
+        return version;
     }
 }

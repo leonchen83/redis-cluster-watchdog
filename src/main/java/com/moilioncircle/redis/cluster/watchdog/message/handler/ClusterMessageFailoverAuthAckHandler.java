@@ -30,20 +30,21 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsMa
  * @since 1.0.0
  */
 public class ClusterMessageFailoverAuthAckHandler extends AbstractClusterMessageHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterMessageFailoverAuthAckHandler.class);
-
+    
     public ClusterMessageFailoverAuthAckHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Failover auth ack packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
-
+        
         if (sender == null) return true;
         if (nodeIsMaster(sender) && sender.assignedSlots > 0 && hdr.currentEpoch >= server.cluster.failoverAuthEpoch) {
-            server.cluster.failoverAuthCount++; managers.failovers.clusterHandleSlaveFailover();
+            server.cluster.failoverAuthCount++;
+            managers.failovers.clusterHandleSlaveFailover();
         }
         return true;
     }

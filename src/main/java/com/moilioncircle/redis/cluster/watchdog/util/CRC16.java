@@ -55,11 +55,11 @@ public class CRC16 {
             0XEF1F, 0XFF3E, 0XCF5D, 0XDF7C, 0XAF9B, 0XBFBA, 0X8FD9, 0X9FF8,
             0X6E17, 0X7E36, 0X4E55, 0X5E74, 0X2E93, 0X3EB2, 0X0ED1, 0X1EF0
     };
-
+    
     public static int crc16(byte[] bytes) {
         return crc16(bytes, 0, bytes.length);
     }
-
+    
     public static int crc16(byte[] bytes, int start, int length) {
         int crc = 0x0000;
         for (int i = start; i < length; i++)

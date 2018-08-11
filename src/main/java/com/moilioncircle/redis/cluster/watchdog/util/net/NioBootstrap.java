@@ -28,18 +28,18 @@ import java.util.function.Supplier;
  * @since 1.0.0
  */
 public interface NioBootstrap<T> extends TransportListener<T> {
-
+    
     void setup();
-
+    
     Transport<T> getTransport();
-
+    
     CompletableFuture<?> shutdown();
-
+    
     void setEncoder(Supplier<ChannelHandler> encoder);
-
+    
     void setDecoder(Supplier<ChannelHandler> decoder);
-
+    
     CompletableFuture<Void> connect(String host, int port);
-
+    
     TransportListener<T> setTransportListener(TransportListener<T> listener);
 }

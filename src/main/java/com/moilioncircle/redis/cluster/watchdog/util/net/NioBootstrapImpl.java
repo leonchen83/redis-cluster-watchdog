@@ -28,72 +28,72 @@ import java.util.function.Supplier;
  * @since 1.0.0
  */
 public class NioBootstrapImpl<T> implements NioBootstrap<T> {
-
+    
     private NioBootstrap<T> wrapper;
-
+    
     public NioBootstrapImpl() {
         this(true);
     }
-
+    
     public NioBootstrapImpl(boolean server) {
         this(server, NetworkConfiguration.defaultSetting());
     }
-
+    
     public NioBootstrapImpl(boolean server, NetworkConfiguration configuration) {
         if (server) wrapper = new NioAcceptor<>(configuration);
         else wrapper = new NioInitiator<>(configuration);
     }
-
+    
     @Override
     public void onConnected(Transport<T> transport) {
         wrapper.onConnected(transport);
     }
-
+    
     @Override
     public void onMessage(Transport<T> transport, T message) {
         wrapper.onMessage(transport, message);
     }
-
+    
     @Override
     public void onException(Transport<T> transport, Throwable cause) {
         wrapper.onException(transport, cause);
     }
-
+    
     @Override
     public void onDisconnected(Transport<T> transport, Throwable cause) {
         wrapper.onDisconnected(transport, cause);
     }
-
+    
     @Override
     public void setup() {
         wrapper.setup();
     }
-
+    
     @Override
     public Transport<T> getTransport() {
         return wrapper.getTransport();
     }
-
+    
     @Override
     public CompletableFuture<?> shutdown() {
         return wrapper.shutdown();
     }
-
+    
     @Override
     public void setEncoder(Supplier<ChannelHandler> encoder) {
         wrapper.setEncoder(encoder);
     }
-
+    
     @Override
     public void setDecoder(Supplier<ChannelHandler> decoder) {
         wrapper.setDecoder(decoder);
     }
-
+    
     @Override
     public CompletableFuture<Void> connect(String host, int port) {
         return wrapper.connect(host, port);
     }
-
+    
     @Override
     public TransportListener<T> setTransportListener(TransportListener<T> listener) {
         return wrapper.setTransportListener(listener);

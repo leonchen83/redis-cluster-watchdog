@@ -27,18 +27,20 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf
  * @since 1.0.0
  */
 public class ClusterSaveConfigCommandHandler extends AbstractCommandHandler {
-
+    
     public ClusterSaveConfigCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
         if (!managers.configs.clusterSaveConfig(valueOf(server.cluster), true)) {
-            replyError(t, "ERR saving the cluster node config"); return;
+            replyError(t, "ERR saving the cluster node config");
+            return;
         }
         reply(t, "OK");
     }

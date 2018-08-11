@@ -24,11 +24,11 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @since 1.0.0
  */
 public class InfoCommandHandler extends AbstractCommandHandler {
-
+    
     public InfoCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length == 1 || message.length == 2) {

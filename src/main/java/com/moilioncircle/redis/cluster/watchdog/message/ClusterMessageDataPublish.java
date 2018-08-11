@@ -22,5 +22,6 @@ package com.moilioncircle.redis.cluster.watchdog.message;
  */
 public class ClusterMessageDataPublish {
     public byte[] bulkData = new byte[8];
-    public int channelLength; public int messageLength;
+    public int channelLength;
+    public int messageLength;
 }

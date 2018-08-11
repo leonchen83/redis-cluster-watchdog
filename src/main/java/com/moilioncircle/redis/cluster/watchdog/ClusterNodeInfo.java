@@ -28,20 +28,46 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConstants.CLUSTER_
  * @since 1.0.0
  */
 public class ClusterNodeInfo {
-
-    private long pingTime; private long pongTime;
-    private String master; private long configEpoch;
+    
+    private long pingTime;
+    private long pongTime;
+    private String master;
+    private long configEpoch;
     private byte[] slots = new byte[CLUSTER_SLOTS_BYTES];
-    private String ip; private int port; private int busPort;
-    private int flags; private String name; private String link;
-
+    private String ip;
+    private int port;
+    private int busPort;
+    private int flags;
+    private String name;
+    private String link;
+    
+    public static ClusterNodeInfo valueOf(ClusterNode myself) {
+        return valueOf(myself, myself);
+    }
+    
+    public static ClusterNodeInfo valueOf(ClusterNode node, ClusterNode myself) {
+        ClusterNodeInfo n = new ClusterNodeInfo();
+        n.configEpoch = node.configEpoch;
+        n.name = node.name;
+        n.flags = node.flags;
+        n.pingTime = node.pingTime;
+        n.pongTime = node.pongTime;
+        n.master = node.master == null ? null : node.master.name;
+        n.ip = node.ip;
+        n.port = node.port;
+        n.busPort = node.busPort;
+        System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
+        n.link = node.link != null || Objects.equals(node, myself) ? "connected" : "disconnected";
+        return n;
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
+        
         ClusterNodeInfo nodeInfo = (ClusterNodeInfo) o;
-
+        
         if (port != nodeInfo.port) return false;
         if (busPort != nodeInfo.busPort) return false;
         if (flags != nodeInfo.flags) return false;
@@ -52,7 +78,7 @@ public class ClusterNodeInfo {
         if (link != null ? !link.equals(nodeInfo.link) : nodeInfo.link != null) return false;
         return Arrays.equals(slots, nodeInfo.slots);
     }
-
+    
     @Override
     public int hashCode() {
         int result = name.hashCode();
@@ -66,117 +92,101 @@ public class ClusterNodeInfo {
         result = 31 * result + Arrays.hashCode(slots);
         return result;
     }
-
-    public static ClusterNodeInfo valueOf(ClusterNode myself) {
-        return valueOf(myself, myself);
-    }
-
-    public static ClusterNodeInfo valueOf(ClusterNode node, ClusterNode myself) {
-        ClusterNodeInfo n = new ClusterNodeInfo();
-        n.configEpoch = node.configEpoch;
-        n.name = node.name; n.flags = node.flags;
-        n.pingTime = node.pingTime; n.pongTime = node.pongTime;
-        n.master = node.master == null ? null : node.master.name;
-        n.ip = node.ip; n.port = node.port; n.busPort = node.busPort;
-        System.arraycopy(node.slots, 0, n.slots, 0, node.slots.length);
-        n.link = node.link != null || Objects.equals(node, myself) ? "connected" : "disconnected";
-        return n;
-    }
-
+    
     /**
      *
      */
     public int getPort() {
         return port;
     }
-
+    
+    public void setPort(int port) {
+        this.port = port;
+    }
+    
     public String getIp() {
         return ip;
     }
-
-    public int getFlags() {
-        return flags;
-    }
-
-    public int getBusPort() {
-        return busPort;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getLink() {
-        return link;
-    }
-
-    public byte[] getSlots() {
-        return slots;
-    }
-
-    public long getPingTime() {
-        return pingTime;
-    }
-
-    public long getPongTime() {
-        return pongTime;
-    }
-
-    public String getMaster() {
-        return master;
-    }
-
-    public long getConfigEpoch() {
-        return configEpoch;
-    }
-
+    
     /**
      *
      */
     public void setIp(String ip) {
         this.ip = ip;
     }
-
-    public void setPort(int port) {
-        this.port = port;
+    
+    public int getFlags() {
+        return flags;
     }
-
+    
     public void setFlags(int flags) {
         this.flags = flags;
     }
-
-    public void setName(String name) {
-        this.name = name;
+    
+    public int getBusPort() {
+        return busPort;
     }
-
-    public void setLink(String link) {
-        this.link = link;
-    }
-
-    public void setSlots(byte[] slots) {
-        this.slots = slots;
-    }
-
+    
     public void setBusPort(int busPort) {
         this.busPort = busPort;
     }
-
-    public void setMaster(String master) {
-        this.master = master;
+    
+    public String getName() {
+        return name;
     }
-
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public String getLink() {
+        return link;
+    }
+    
+    public void setLink(String link) {
+        this.link = link;
+    }
+    
+    public byte[] getSlots() {
+        return slots;
+    }
+    
+    public void setSlots(byte[] slots) {
+        this.slots = slots;
+    }
+    
+    public long getPingTime() {
+        return pingTime;
+    }
+    
     public void setPingTime(long pingTime) {
         this.pingTime = pingTime;
     }
-
+    
+    public long getPongTime() {
+        return pongTime;
+    }
+    
     public void setPongTime(long pongTime) {
         this.pongTime = pongTime;
     }
-
+    
+    public String getMaster() {
+        return master;
+    }
+    
+    public void setMaster(String master) {
+        this.master = master;
+    }
+    
+    public long getConfigEpoch() {
+        return configEpoch;
+    }
+    
     public void setConfigEpoch(long configEpoch) {
         this.configEpoch = configEpoch;
     }
-
+    
     @Override
     public String toString() {
         return "Node:[" +

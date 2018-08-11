@@ -25,14 +25,17 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @since 1.0.0
  */
 public class ClusterBumpEpochCommandHandler extends AbstractCommandHandler {
-
+    
     public ClusterBumpEpochCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
-        if (message.length != 2) { replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return; }
+        if (message.length != 2) {
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
+        }
         boolean bumped = managers.states.clusterBumpConfigEpochWithoutConsensus();
         reply(t, (bumped ? "BUMPED" : "STILL") + " " + server.myself.configEpoch);
     }

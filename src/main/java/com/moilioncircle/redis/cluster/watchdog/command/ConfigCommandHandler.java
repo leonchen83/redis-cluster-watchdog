@@ -26,24 +26,29 @@ import static java.lang.Long.parseLong;
  * @since 1.0.0
  */
 public class ConfigCommandHandler extends AbstractCommandHandler {
-
+    
     public ConfigCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length == 4 && message[1] != null && message[1].equalsIgnoreCase("set")) {
             if (message[2] == null || !message[2].equalsIgnoreCase("cluster-node-timeout")) {
-                replyError(t, "ERR wrong number of arguments for 'config' command"); return;
+                replyError(t, "ERR wrong number of arguments for 'config' command");
+                return;
             }
             if (message[3] == null) {
-                replyError(t, "ERR wrong number of arguments for 'config' command"); return;
+                replyError(t, "ERR wrong number of arguments for 'config' command");
+                return;
             }
             try {
                 long timeout = parseLong(message[3]);
-                managers.configuration.setClusterNodeTimeout(timeout); reply(t, "OK");
-            } catch (Exception e) { replyError(t, "ERR wrong number of arguments for 'config' command"); }
+                managers.configuration.setClusterNodeTimeout(timeout);
+                reply(t, "OK");
+            } catch (Exception e) {
+                replyError(t, "ERR wrong number of arguments for 'config' command");
+            }
         } else if (message.length == 2 && message[1] != null && message[1].equalsIgnoreCase("rewrite")) {
             reply(t, "OK");
         } else {

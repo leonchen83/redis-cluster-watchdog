@@ -43,7 +43,10 @@ public class SimpleReplicationListener implements ReplicationListener {
     public void onSetReplication(String ip, int port, StorageEngine engine) {
         new Thread(() -> {
             try {
-                if (replicator != null) { replicator.close(); replicator = null; }
+                if (replicator != null) {
+                    replicator.close();
+                    replicator = null;
+                }
                 //
                 replicator = new RedisReplicator(ip, port, Configuration.defaultSetting());
                 replicator.addRdbListener(new RdbListener.Adaptor() {
@@ -79,13 +82,18 @@ public class SimpleReplicationListener implements ReplicationListener {
 
     @Override
     public void onUnsetReplication(StorageEngine engine) {
-        try { Replicator r = replicator; if (r != null) r.close(); }
-        catch (IOException e) { throw new UncheckedIOException(e); }
+        try {
+            Replicator r = replicator;
+            if (r != null) r.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
     public long onGetSlaveOffset() {
         Replicator r = this.replicator;
-        if (r == null) return 0L; return r.getConfiguration().getReplOffset();
+        if (r == null) return 0L;
+        return r.getConfiguration().getReplOffset();
     }
 }

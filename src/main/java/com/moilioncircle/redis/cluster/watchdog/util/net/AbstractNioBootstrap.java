@@ -30,12 +30,10 @@ import java.util.function.Supplier;
  */
 public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
     protected static final Log logger = LogFactory.getLog(AbstractNioBootstrap.class);
-
+    protected final NetworkConfiguration configuration;
     protected Supplier<ChannelHandler> encoder;
     protected Supplier<ChannelHandler> decoder;
-
     protected volatile TransportListener<T> listener;
-    protected final NetworkConfiguration configuration;
 
     protected AbstractNioBootstrap(NetworkConfiguration configuration) {
         this.configuration = configuration;
@@ -67,7 +65,9 @@ public abstract class AbstractNioBootstrap<T> implements NioBootstrap<T> {
 
     @Override
     public TransportListener<T> setTransportListener(TransportListener<T> listener) {
-        TransportListener<T> r = this.listener; this.listener = listener; return r;
+        TransportListener<T> r = this.listener;
+        this.listener = listener;
+        return r;
     }
 
     public Supplier<ChannelHandler> getEncoder() {

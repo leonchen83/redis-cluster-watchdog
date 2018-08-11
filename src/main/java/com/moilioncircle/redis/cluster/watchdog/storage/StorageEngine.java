@@ -30,50 +30,7 @@ import static com.moilioncircle.redis.cluster.watchdog.util.CRC16.crc16;
  */
 @ThreadSafe
 public interface StorageEngine extends Resourcable {
-
-    long size();
-
-    long clear();
-
-    void persist();
-
-    long size(int slot);
-
-    long clear(int slot);
-
-    Iterator<byte[]> keys();
-
-    Iterator<byte[]> keys(int slot);
-
-    /**
-     *
-     */
-    long ttl(byte[] key);
-
-    Object load(byte[] key);
-
-    boolean exist(byte[] key);
-
-    Class<?> type(byte[] key);
-
-    boolean delete(byte[] key);
-
-    boolean save(byte[] key, Object value, long expire, boolean force);
-
-    /**
-     *
-     */
-    byte[] dump(byte[] key);
-
-    boolean restore(byte[] key, byte[] serialized, long expire, boolean force);
-
-    /**
-     *
-     */
-    boolean readonly();
-
-    void readonly(boolean r);
-
+    
     /**
      *
      */
@@ -82,10 +39,56 @@ public interface StorageEngine extends Resourcable {
         int st = -1, ed = -1;
         for (int i = 0, len = key.length; i < len; i++) {
             if (key[i] == '{' && st == -1) st = i;
-            if (key[i] == '}' && st >= 0) { ed = i; break; }
+            if (key[i] == '}' && st >= 0) {
+                ed = i;
+                break;
+            }
         }
         if (st >= 0 && ed >= 0 && ed > st + 1)
             return crc16(key, st + 1, ed) & (CLUSTER_SLOTS - 1);
         return crc16(key) & (CLUSTER_SLOTS - 1);
     }
+    
+    long size();
+    
+    long clear();
+    
+    void persist();
+    
+    long size(int slot);
+    
+    long clear(int slot);
+    
+    Iterator<byte[]> keys();
+    
+    Iterator<byte[]> keys(int slot);
+    
+    /**
+     *
+     */
+    long ttl(byte[] key);
+    
+    Object load(byte[] key);
+    
+    boolean exist(byte[] key);
+    
+    Class<?> type(byte[] key);
+    
+    boolean delete(byte[] key);
+    
+    boolean save(byte[] key, Object value, long expire, boolean force);
+    
+    /**
+     *
+     */
+    byte[] dump(byte[] key);
+    
+    boolean restore(byte[] key, byte[] serialized, long expire, boolean force);
+    
+    /**
+     *
+     */
+    boolean readonly();
+    
+    void readonly(boolean r);
 }

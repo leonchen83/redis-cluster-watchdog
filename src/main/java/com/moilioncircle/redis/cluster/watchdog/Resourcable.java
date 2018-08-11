@@ -23,23 +23,29 @@ import java.util.concurrent.TimeUnit;
  * @since 1.0.0
  */
 public interface Resourcable {
-
-    void start();
-
-    void stop();
-
-    void stop(long timeout, TimeUnit unit);
-
+    
     static void startQuietly(Resourcable resource) {
-        try { resource.start(); } catch (Throwable e) {}
+        try {
+            resource.start();
+        } catch (Throwable e) {
+        }
     }
-
+    
     static void stopQuietly(Resourcable resource) {
         stopQuietly(resource, 0, TimeUnit.MILLISECONDS);
     }
-
+    
     static void stopQuietly(Resourcable resource, long timeout, TimeUnit unit) {
-        try { resource.stop(timeout, unit); } catch (Throwable e) {}
+        try {
+            resource.stop(timeout, unit);
+        } catch (Throwable e) {
+        }
     }
-
+    
+    void start();
+    
+    void stop();
+    
+    void stop(long timeout, TimeUnit unit);
+    
 }

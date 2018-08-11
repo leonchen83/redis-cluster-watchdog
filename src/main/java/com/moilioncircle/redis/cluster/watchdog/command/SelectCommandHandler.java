@@ -26,21 +26,31 @@ import static java.lang.Integer.parseInt;
  * @since 1.0.0
  */
 public class SelectCommandHandler extends AbstractCommandHandler {
-
+    
     public SelectCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "ERR wrong number of arguments for 'select' command"); return;
+            replyError(t, "ERR wrong number of arguments for 'select' command");
+            return;
         }
-
+        
         try {
             int db = parseInt(message[1]);
-            if (db < 0 || db >= 16) { replyError(t, "ERR DB index is out of range"); return; }
-            if (db != 0) { replyError(t, "ERR SELECT is not allowed in cluster mode"); return; } reply(t, "OK");
-        } catch (Exception e) { replyError(t, "ERR Invalid db number:" + message[1]); }
+            if (db < 0 || db >= 16) {
+                replyError(t, "ERR DB index is out of range");
+                return;
+            }
+            if (db != 0) {
+                replyError(t, "ERR SELECT is not allowed in cluster mode");
+                return;
+            }
+            reply(t, "OK");
+        } catch (Exception e) {
+            replyError(t, "ERR Invalid db number:" + message[1]);
+        }
     }
 }

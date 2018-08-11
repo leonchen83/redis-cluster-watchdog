@@ -34,11 +34,6 @@ import static com.moilioncircle.redis.cluster.watchdog.ClusterConfigInfo.valueOf
 public class ClusterCommandHandler extends AbstractCommandHandler {
 
     private Map<String, CommandHandler> clusterHandlers = new HashMap<>();
-    public CommandHandler get(String name) { return clusterHandlers.get(name.toLowerCase()); }
-
-    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
-        return clusterHandlers.put(name.toLowerCase(), handler);
-    }
 
     public ClusterCommandHandler(ClusterManagers managers) {
         super(managers);
@@ -64,14 +59,24 @@ public class ClusterCommandHandler extends AbstractCommandHandler {
         addCommandHandler("count-failure-reports", new ClusterCountFailureReportsCommandHandler(managers));
     }
 
+    public CommandHandler get(String name) {
+        return clusterHandlers.get(name.toLowerCase());
+    }
+
+    public CommandHandler addCommandHandler(String name, CommandHandler handler) {
+        return clusterHandlers.put(name.toLowerCase(), handler);
+    }
+
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length < 2 || message[1] == null) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
 
         CommandHandler handler = get(message[1]);
         if (handler == null) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
         managers.cron.execute(() -> {
             ClusterConfigInfo previous;

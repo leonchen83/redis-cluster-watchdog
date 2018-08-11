@@ -41,12 +41,9 @@ public class ListenableFuture<T> extends AbstractCompletableFuture<T> {
     private static final int NORMAL = 2;
     private static final int EXCEPTIONAL = 3;
     private static final int CANCELED = 4;
-
-    protected volatile Object object;
-
     protected final CountDownLatch latch = new CountDownLatch(1);
-
     protected final AtomicInteger status = new AtomicInteger(NEW);
+    protected volatile Object object;
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
@@ -110,7 +107,9 @@ public class ListenableFuture<T> extends AbstractCompletableFuture<T> {
     @Override
     public boolean success(T value) {
         if (!this.status.compareAndSet(NEW, COMPLETING)) return false;
-        this.object = value; this.status.set(NORMAL); latch.countDown();
+        this.object = value;
+        this.status.set(NORMAL);
+        latch.countDown();
         listener.onComplete(this);
         return true;
     }
@@ -121,7 +120,9 @@ public class ListenableFuture<T> extends AbstractCompletableFuture<T> {
     @Override
     public boolean failure(Throwable cause) {
         if (!this.status.compareAndSet(NEW, COMPLETING)) return false;
-        this.object = cause; this.status.set(EXCEPTIONAL); latch.countDown();
+        this.object = cause;
+        this.status.set(EXCEPTIONAL);
+        latch.countDown();
         listener.onComplete(this);
         return true;
     }

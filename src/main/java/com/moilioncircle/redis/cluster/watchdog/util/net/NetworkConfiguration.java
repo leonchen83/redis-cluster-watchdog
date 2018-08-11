@@ -23,14 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @since 1.0.0
  */
 public class NetworkConfiguration {
-
-    private NetworkConfiguration() {
-    }
-
-    public static NetworkConfiguration defaultSetting() {
-        return new NetworkConfiguration();
-    }
-
+    
     protected int soLinger = 0;
     protected int soTimeout = 0;
     protected int soBacklog = 1024;
@@ -42,54 +35,20 @@ public class NetworkConfiguration {
     protected boolean autoReconnect = false;
     protected volatile long connectTimeout = SECONDS.toMillis(5);
     protected volatile long reconnectInterval = SECONDS.toMillis(5);
+    private NetworkConfiguration() {
+    }
 
+    public static NetworkConfiguration defaultSetting() {
+        return new NetworkConfiguration();
+    }
+    
     /**
      *
      */
     public int getSoLinger() {
         return soLinger;
     }
-
-    public int getSoTimeout() {
-        return soTimeout;
-    }
-
-    public int getSoBacklog() {
-        return soBacklog;
-    }
-
-    public boolean isTcpNoDelay() {
-        return tcpNoDelay;
-    }
-
-    public boolean isSoKeepAlive() {
-        return soKeepAlive;
-    }
-
-    public boolean isSoReuseAddr() {
-        return soReuseAddr;
-    }
-
-    public long getConnectTimeout() {
-        return connectTimeout;
-    }
-
-    public boolean isAutoReconnect() {
-        return autoReconnect;
-    }
-
-    public int getSoSendBufferSize() {
-        return soSendBufferSize;
-    }
-
-    public int getSoRecvBufferSize() {
-        return soRecvBufferSize;
-    }
-
-    public long getReconnectInterval() {
-        return reconnectInterval;
-    }
-
+    
     /**
      *
      */
@@ -97,52 +56,92 @@ public class NetworkConfiguration {
         this.soLinger = soLinger;
         return this;
     }
-
+    
+    public int getSoTimeout() {
+        return soTimeout;
+    }
+    
     public NetworkConfiguration setSoTimeout(int soTimeout) {
         this.soTimeout = soTimeout;
         return this;
     }
-
+    
+    public int getSoBacklog() {
+        return soBacklog;
+    }
+    
     public NetworkConfiguration setSoBacklog(int soBacklog) {
         this.soBacklog = soBacklog;
         return this;
     }
-
+    
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+    
     public NetworkConfiguration setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
         return this;
     }
-
+    
+    public boolean isSoKeepAlive() {
+        return soKeepAlive;
+    }
+    
     public NetworkConfiguration setSoKeepAlive(boolean soKeepAlive) {
         this.soKeepAlive = soKeepAlive;
         return this;
     }
-
+    
+    public boolean isSoReuseAddr() {
+        return soReuseAddr;
+    }
+    
     public NetworkConfiguration setSoReuseAddr(boolean soReuseAddr) {
         this.soReuseAddr = soReuseAddr;
         return this;
     }
-
+    
+    public long getConnectTimeout() {
+        return connectTimeout;
+    }
+    
     public NetworkConfiguration setConnectTimeout(long connectTimeout) {
         this.connectTimeout = connectTimeout;
         return this;
     }
-
+    
+    public boolean isAutoReconnect() {
+        return autoReconnect;
+    }
+    
     public NetworkConfiguration setAutoReconnect(boolean autoReconnect) {
         this.autoReconnect = autoReconnect;
         return this;
     }
-
+    
+    public int getSoSendBufferSize() {
+        return soSendBufferSize;
+    }
+    
     public NetworkConfiguration setSoSendBufferSize(int soSendBufferSize) {
         this.soSendBufferSize = soSendBufferSize;
         return this;
     }
-
+    
+    public int getSoRecvBufferSize() {
+        return soRecvBufferSize;
+    }
+    
     public NetworkConfiguration setSoRecvBufferSize(int soRecvBufferSize) {
         this.soRecvBufferSize = soRecvBufferSize;
         return this;
     }
-
+    
+    public long getReconnectInterval() {
+        return reconnectInterval;
+    }
+    
     public NetworkConfiguration setReconnectInterval(long reconnectInterval) {
         this.reconnectInterval = reconnectInterval;
         return this;

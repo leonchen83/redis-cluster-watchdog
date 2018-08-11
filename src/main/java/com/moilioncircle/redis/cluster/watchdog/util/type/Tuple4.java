@@ -50,6 +50,27 @@ public class Tuple4<T1, T2, T3, T4> implements Iterable<Object> {
         this.v4 = rhs.getV4();
     }
 
+    public static <V> Tuple4<V, V, V, V> from(V... ary) {
+        if (ary == null || ary.length != 4) throw new IllegalArgumentException();
+        return new Tuple4<>(ary[0], ary[1], ary[2], ary[3]);
+    }
+
+    public static <V> Tuple4<V, V, V, V> from(Iterator<V> iterator) {
+        List<V> list = new ArrayList<>();
+        while (iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        return from(list.toArray((V[]) new Object[list.size()]));
+    }
+
+    public static <V> Tuple4<V, V, V, V> from(Iterable<V> iterable) {
+        return from(iterable.iterator());
+    }
+
+    public static <V> Tuple4<V, V, V, V> from(Collection<V> collection) {
+        return from((Iterable<V>) collection);
+    }
+
     public T1 getV1() {
         return v1;
     }
@@ -100,27 +121,6 @@ public class Tuple4<T1, T2, T3, T4> implements Iterable<Object> {
     @Override
     public String toString() {
         return "[" + v1 + ", " + v2 + ", " + v3 + ", " + v4 + "]";
-    }
-
-    public static <V> Tuple4<V, V, V, V> from(V... ary) {
-        if (ary == null || ary.length != 4) throw new IllegalArgumentException();
-        return new Tuple4<>(ary[0], ary[1], ary[2], ary[3]);
-    }
-
-    public static <V> Tuple4<V, V, V, V> from(Iterator<V> iterator) {
-        List<V> list = new ArrayList<>();
-        while (iterator.hasNext()) {
-            list.add(iterator.next());
-        }
-        return from(list.toArray((V[]) new Object[list.size()]));
-    }
-
-    public static <V> Tuple4<V, V, V, V> from(Iterable<V> iterable) {
-        return from(iterable.iterator());
-    }
-
-    public static <V> Tuple4<V, V, V, V> from(Collection<V> collection) {
-        return from((Iterable<V>) collection);
     }
 
     public Object[] toArray() {

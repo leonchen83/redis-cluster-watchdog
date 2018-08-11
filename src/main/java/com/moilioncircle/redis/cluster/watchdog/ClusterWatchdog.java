@@ -24,18 +24,18 @@ import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
  * @since 1.0.0
  */
 public interface ClusterWatchdog extends Resourcable {
-
+    
     void setStorageEngine(StorageEngine engine);
-
+    
     ClusterConfiguration getClusterConfiguration();
-
+    
     CommandHandler addCommandHandler(String name, CommandHandler handler);
-
+    
     ClusterNodeListener setClusterNodeListener(ClusterNodeListener clusterNodeListener);
-
+    
     ReplicationListener setReplicationListener(ReplicationListener replicationListener);
-
+    
     ClusterStateListener setClusterStateListener(ClusterStateListener clusterStateListener);
-
+    
     ClusterConfigListener setClusterConfigListener(ClusterConfigListener clusterConfigListener);
 }

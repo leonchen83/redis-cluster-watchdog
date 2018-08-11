@@ -37,54 +37,54 @@ public class ByteMap<V> implements Map<Byte, V> {
     //
     private static final int MASK = 0x000000FF;
     private static final byte[] INT2BYTE = new byte[256];
-
+    
     static {
         INT2BYTE[Byte.MAX_VALUE & MASK] = Byte.MAX_VALUE;
         for (byte b = Byte.MIN_VALUE; b < Byte.MAX_VALUE; b++) {
             INT2BYTE[b & MASK] = b;
         }
     }
-
-    private int size;
+    
     private final Object[] table;
-
+    private int size;
+    
     public ByteMap() {
         this.size = 0;
         this.table = new Object[256];
     }
-
+    
     @Override
     public int size() {
         return this.size;
     }
-
+    
     @Override
     public boolean isEmpty() {
         return this.size == 0;
     }
-
+    
     @Override
     public void clear() {
         if (this.size <= 0) return;
         fill(table, null);
         size = 0;
     }
-
+    
     @Override
     public Set<Byte> keySet() {
         return new KeySet();
     }
-
+    
     @Override
     public Collection<V> values() {
         return new Values();
     }
-
+    
     @Override
     public V get(final Object key) {
         return (V) this.table[index(key)];
     }
-
+    
     @Override
     public V put(Byte key, V value) {
         final int index = index(key);
@@ -93,7 +93,7 @@ public class ByteMap<V> implements Map<Byte, V> {
         this.table[index] = value;
         return r;
     }
-
+    
     @Override
     public V remove(final Object key) {
         final int index = index(key);
@@ -102,17 +102,17 @@ public class ByteMap<V> implements Map<Byte, V> {
         this.table[index] = null;
         return r;
     }
-
+    
     @Override
     public boolean containsKey(Object key) {
         return this.table[index(key)] != null;
     }
-
+    
     @Override
     public Set<Map.Entry<Byte, V>> entrySet() {
         return new EntrySet();
     }
-
+    
     @Override
     public boolean containsValue(final Object value) {
         for (final Object element : this.table) {
@@ -120,7 +120,7 @@ public class ByteMap<V> implements Map<Byte, V> {
         }
         return false;
     }
-
+    
     @Override
     public void putAll(Map<? extends Byte, ? extends V> map) {
         if (map == null) return;
@@ -128,87 +128,87 @@ public class ByteMap<V> implements Map<Byte, V> {
             put(entry.getKey(), entry.getValue());
         }
     }
-
+    
     protected int index(Object key) {
         final Byte index = (Byte) key;
         return index & MASK;
     }
-
+    
     protected Iterator<V> valueIterator() {
         return new ValueIterator();
     }
-
+    
     protected Iterator<Byte> keyIterator() {
         return new KeyIterator();
     }
-
+    
     protected Iterator<Map.Entry<Byte, V>> entryIterator() {
         return new EntryIterator();
     }
-
+    
     private class Values extends AbstractCollection<V> {
-
+        
         @Override
         public int size() {
             return size;
         }
-
+        
         @Override
         public void clear() {
             ByteMap.this.clear();
         }
-
+        
         @Override
         public Iterator<V> iterator() {
             return valueIterator();
         }
-
+        
         @Override
         public boolean contains(Object value) {
             return containsValue(value);
         }
     }
-
+    
     private class KeySet extends AbstractSet<Byte> {
-
+        
         @Override
         public int size() {
             return size;
         }
-
+        
         @Override
         public void clear() {
             ByteMap.this.clear();
         }
-
+        
         @Override
         public Iterator<Byte> iterator() {
             return keyIterator();
         }
-
+        
         @Override
         public boolean contains(final Object key) {
             return key != null && key instanceof Byte && containsKey(key);
         }
     }
-
+    
     private class EntrySet extends AbstractSet<Map.Entry<Byte, V>> {
-
+        
         @Override
         public int size() {
             return size;
         }
-
+        
         @Override
         public void clear() {
             ByteMap.this.clear();
         }
-
+        
         @Override
         public Iterator<Map.Entry<Byte, V>> iterator() {
             return entryIterator();
         }
-
+        
         @Override
         public boolean contains(final Object entry) {
             if (!(entry instanceof Map.Entry)) return false;
@@ -217,22 +217,22 @@ public class ByteMap<V> implements Map<Byte, V> {
             return candidate != null && candidate.equals(e.getValue());
         }
     }
-
+    
     private abstract class AbstractIterator<T> implements Iterator<T> {
-
+        
         protected int index = prefetch(0);
         protected int prev = index;
-
+        
         @Override
         public final boolean hasNext() {
             return this.index >= 0;
         }
-
+        
         @Override
         public final void remove() {
             ByteMap.this.remove((byte) prev);
         }
-
+        
         protected final int prefetch(int index) {
             for (int i = index, length = table.length; i < length; i++) {
                 if (table[i] != null) return i;
@@ -240,9 +240,9 @@ public class ByteMap<V> implements Map<Byte, V> {
             return -1;
         }
     }
-
+    
     private class KeyIterator extends AbstractIterator<Byte> {
-
+        
         @Override
         public Byte next() {
             if (this.index < 0) return null;
@@ -252,9 +252,9 @@ public class ByteMap<V> implements Map<Byte, V> {
             return r;
         }
     }
-
+    
     private class ValueIterator extends AbstractIterator<V> {
-
+        
         @Override
         public V next() {
             if (this.index < 0) return null;
@@ -264,9 +264,9 @@ public class ByteMap<V> implements Map<Byte, V> {
             return r;
         }
     }
-
+    
     private class EntryIterator extends AbstractIterator<Map.Entry<Byte, V>> {
-
+        
         @Override
         public Map.Entry<Byte, V> next() {
             if (this.index < 0) return null;
@@ -276,25 +276,25 @@ public class ByteMap<V> implements Map<Byte, V> {
             return r;
         }
     }
-
+    
     protected class Entry implements Map.Entry<Byte, V> {
-
+        
         private final int index;
-
+        
         public Entry(int index) {
             this.index = index;
         }
-
+        
         @Override
         public Byte getKey() {
             return (byte) this.index;
         }
-
+        
         @Override
         public V getValue() {
             return (V) table[this.index];
         }
-
+        
         @Override
         public V setValue(V value) {
             final V r = (V) table[this.index];
@@ -303,5 +303,5 @@ public class ByteMap<V> implements Map<Byte, V> {
             return r;
         }
     }
-
+    
 }

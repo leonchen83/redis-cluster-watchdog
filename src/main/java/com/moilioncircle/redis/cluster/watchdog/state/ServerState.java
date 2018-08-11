@@ -27,9 +27,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 1.0.0
  */
 public class ServerState {
-    public int masterPort; public String masterHost;
-    public ClusterNode myself; public ClusterState cluster;
-    public long iteration = 0; public String previousAddress;
-    public long stateSaveTime = 0; public long amongMinorityTime = 0;
+    public int masterPort;
+    public String masterHost;
+    public ClusterNode myself;
+    public ClusterState cluster;
+    public long iteration = 0;
+    public String previousAddress;
+    public long stateSaveTime = 0;
+    public long amongMinorityTime = 0;
     public Map<Transport<RCmbMessage>, ClusterLink> cfd = new ConcurrentHashMap<>();
 }

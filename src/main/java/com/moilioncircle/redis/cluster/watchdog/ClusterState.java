@@ -23,20 +23,26 @@ package com.moilioncircle.redis.cluster.watchdog;
 public enum ClusterState {
     CLUSTER_OK((byte) 0, "ok"),
     CLUSTER_FAIL((byte) 1, "fail");
-
+    
     private final byte state;
     private final String display;
-
-    public byte getState() { return state; }
-    public String getDisplay() { return display; }
-
+    
     ClusterState(byte state, String display) {
-        this.state = state; this.display = display;
+        this.state = state;
+        this.display = display;
     }
-
+    
     public static ClusterState valueOf(byte state) {
         if (state == 0) return CLUSTER_OK;
         else if (state == 1) return CLUSTER_FAIL;
         else throw new UnsupportedOperationException(String.valueOf(state));
+    }
+    
+    public byte getState() {
+        return state;
+    }
+    
+    public String getDisplay() {
+        return display;
     }
 }

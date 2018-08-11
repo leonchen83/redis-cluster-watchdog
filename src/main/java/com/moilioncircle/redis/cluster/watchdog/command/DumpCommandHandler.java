@@ -24,19 +24,23 @@ import com.moilioncircle.redis.cluster.watchdog.util.net.transport.Transport;
  * @since 1.0.0
  */
 public class DumpCommandHandler extends AbstractCommandHandler {
-
+    
     public DumpCommandHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (rawMessage.length != 2) {
-            replyError(t, "ERR wrong number of arguments for 'dump' command"); return;
+            replyError(t, "ERR wrong number of arguments for 'dump' command");
+            return;
         }
-
+        
         byte[] key = rawMessage[1];
-        if (key == null) { replyError(t, "ERR Invalid key: null"); return; }
+        if (key == null) {
+            replyError(t, "ERR Invalid key: null");
+            return;
+        }
         replyBulk(t, managers.engine.dump(key));
     }
 }

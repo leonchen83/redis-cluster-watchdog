@@ -30,13 +30,13 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSl
  * @since 1.0.0
  */
 public class ClusterMessageUpdateHandler extends AbstractClusterMessageHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterMessageUpdateHandler.class);
-
+    
     public ClusterMessageUpdateHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Update packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
@@ -46,6 +46,7 @@ public class ClusterMessageUpdateHandler extends AbstractClusterMessageHandler {
         ClusterNode node = managers.nodes.clusterLookupNode(name);
         if (node == null || node.configEpoch >= epoch) return true;
         if (nodeIsSlave(node)) managers.nodes.clusterSetNodeAsMaster(node);
-        clusterUpdateSlotsConfigWith(node, node.configEpoch = epoch, hdr.data.config.slots); return true;
+        clusterUpdateSlotsConfigWith(node, node.configEpoch = epoch, hdr.data.config.slots);
+        return true;
     }
 }

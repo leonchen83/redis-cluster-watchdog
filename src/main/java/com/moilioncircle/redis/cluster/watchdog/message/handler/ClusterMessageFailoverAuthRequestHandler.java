@@ -35,19 +35,21 @@ import static com.moilioncircle.redis.cluster.watchdog.state.NodeStates.nodeIsSl
  * @since 1.0.0
  */
 public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMessageHandler {
-
+    
     private static final Log logger = LogFactory.getLog(ClusterMessageFailoverAuthRequestHandler.class);
-
+    
     public ClusterMessageFailoverAuthRequestHandler(ClusterManagers managers) {
         super(managers);
     }
-
+    
     @Override
     public boolean handle(ClusterNode sender, ClusterLink link, ClusterMessage hdr) {
         logger.debug("Failover auth request packet received: node:" + (link.node == null ? "(nil)" : link.node.name));
-        if (sender == null) return true; clusterSendFailoverAuthIfNeeded(sender, hdr); return true;
+        if (sender == null) return true;
+        clusterSendFailoverAuthIfNeeded(sender, hdr);
+        return true;
     }
-
+    
     public void clusterSendFailoverAuthIfNeeded(ClusterNode node, ClusterMessage hdr) {
         ClusterNode master = node.master;
         long now = System.currentTimeMillis();
@@ -59,13 +61,14 @@ public class ClusterMessageFailoverAuthRequestHandler extends AbstractClusterMes
         if (server.cluster.lastVoteEpoch == server.cluster.currentEpoch) return;
         if (nodeIsMaster(node) || master == null || (!nodeFailed(master) && !force)) return;
         if (now - master.votedTime < managers.configuration.getClusterNodeTimeout() * 2) return;
-
+        
         for (int i = 0; i < CLUSTER_SLOTS; i++) {
             if (!bitmapTestBit(hdr.slots, i)) continue;
             if (server.cluster.slots[i] == null) continue;
-            if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue; return;
+            if (server.cluster.slots[i].configEpoch <= hdr.configEpoch) continue;
+            return;
         }
-
+        
         managers.messages.clusterSendFailoverAuth(node);
         node.master.votedTime = System.currentTimeMillis();
         server.cluster.lastVoteEpoch = server.cluster.currentEpoch;

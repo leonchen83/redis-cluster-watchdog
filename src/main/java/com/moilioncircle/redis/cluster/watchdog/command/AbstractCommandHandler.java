@@ -26,30 +26,30 @@ import com.moilioncircle.redis.cluster.watchdog.storage.StorageEngine;
  * @since 1.0.0
  */
 public abstract class AbstractCommandHandler extends CommandHandler.Adaptor {
-
+    
     protected final ServerState server;
     protected final ClusterManagers managers;
-
+    
     public AbstractCommandHandler(ClusterManagers managers) {
         this.managers = managers;
         this.server = managers.server;
     }
-
+    
     @Override
     public StorageEngine getStorageEngine() {
         return managers.engine;
     }
-
+    
     @Override
     public void setStorageEngine(StorageEngine storageEngine) {
         throw new UnsupportedOperationException();
     }
-
+    
     @Override
     public ClusterConfiguration getConfiguration() {
         return managers.configuration;
     }
-
+    
     @Override
     public void setConfiguration(ClusterConfiguration configuration) {
         throw new UnsupportedOperationException();

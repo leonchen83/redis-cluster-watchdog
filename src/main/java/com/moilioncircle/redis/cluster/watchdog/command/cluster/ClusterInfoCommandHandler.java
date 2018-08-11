@@ -41,14 +41,18 @@ public class ClusterInfoCommandHandler extends AbstractCommandHandler {
     @Override
     public void handle(Transport<byte[][]> t, String[] message, byte[][] rawMessage) {
         if (message.length != 2) {
-            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments"); return;
+            replyError(t, "ERR Wrong CLUSTER subcommand or number of arguments");
+            return;
         }
 
         int assigned = 0, normal = 0, fail = 0, pFail = 0;
         for (int j = 0; j < CLUSTER_SLOTS; j++) {
             ClusterNode node = server.cluster.slots[j];
-            if (node == null) continue; assigned++;
-            if (nodeFailed(node)) fail++; else if (nodePFailed(node)) pFail++; else normal++;
+            if (node == null) continue;
+            assigned++;
+            if (nodeFailed(node)) fail++;
+            else if (nodePFailed(node)) pFail++;
+            else normal++;
         }
 
         long epoch;

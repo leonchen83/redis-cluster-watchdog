@@ -26,18 +26,18 @@ import java.net.SocketAddress;
  * @since 1.0.0
  */
 public interface Transport<T> {
-
+    
     long getId();
-
+    
     ConnectionStatus getStatus();
-
+    
     SocketAddress getLocalAddress();
-
+    
     SocketAddress getRemoteAddress();
-
+    
     CompletableFuture<Void> disconnect(Throwable cause);
-
+    
     <V> CompletableFuture<Void> write(V message, boolean flush);
-
+    
     TransportListener<T> setTransportListener(TransportListener<T> listener);
 }

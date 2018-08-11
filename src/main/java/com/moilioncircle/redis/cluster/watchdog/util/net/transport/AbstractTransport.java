@@ -32,9 +32,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SuppressWarnings("unchecked")
 public abstract class AbstractTransport<T> extends SimpleChannelInboundHandler<T> implements Transport<T> {
 
-    private long id;
-    protected volatile TransportListener<T> listener;
     private static AtomicInteger acc = new AtomicInteger();
+    protected volatile TransportListener<T> listener;
+    private long id;
 
     protected AbstractTransport(AbstractNioBootstrap<T> listener) {
         super((Class<T>) Object.class);
@@ -54,7 +54,9 @@ public abstract class AbstractTransport<T> extends SimpleChannelInboundHandler<T
 
     @Override
     public synchronized TransportListener<T> setTransportListener(TransportListener<T> listener) {
-        TransportListener<T> r = this.listener; this.listener = listener; return r;
+        TransportListener<T> r = this.listener;
+        this.listener = listener;
+        return r;
     }
 
     @Override

@@ -29,35 +29,35 @@ import java.net.InetSocketAddress;
  * @since 1.0.0
  */
 public class DefaultSession<T> implements Session<T> {
-
+    
     protected final Transport<T> transport;
-
+    
     public DefaultSession(Transport<T> transport) {
         this.transport = transport;
     }
-
+    
     @Override
     public long getId() {
         return transport.getId();
     }
-
+    
     @Override
     public ConnectionStatus getStatus() {
         return this.transport.getStatus();
     }
-
+    
     @Override
     public String getLocalAddress(String value) {
         if (value != null) return value;
-        return  ((InetSocketAddress) transport.getLocalAddress()).getAddress().getHostAddress();
+        return ((InetSocketAddress) transport.getLocalAddress()).getAddress().getHostAddress();
     }
-
+    
     @Override
     public String getRemoteAddress(String value) {
         if (value != null) return value;
         return ((InetSocketAddress) transport.getRemoteAddress()).getAddress().getHostAddress();
     }
-
+    
     @Override
     public CompletableFuture<Void> send(T message) {
         if (transport.getStatus() == ConnectionStatus.CONNECTED) {
@@ -68,15 +68,15 @@ public class DefaultSession<T> implements Session<T> {
             return r;
         }
     }
-
+    
     @Override
     public CompletableFuture<Void> disconnect(Throwable cause) {
         return transport.disconnect(cause);
     }
-
+    
     @Override
     public String toString() {
         return transport.toString();
     }
-
+    
 }
